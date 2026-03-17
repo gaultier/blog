@@ -8,7 +8,7 @@ A data race is a concurrent access to shared data in a way that does not respect
 
 The symptoms are bizarre and very painful to diagnose: stale reads, inconsistent data, 'impossible' code path taken, crashes, etc. 
 
-Since some compilers are very aggressive at re-ordering and optimizing code in the absence of explicit data dependencies, the compiled program can be very diffrent from what the code looks like.
+Since some compilers are very aggressive at re-ordering and optimizing code in the absence of explicit data dependencies, the compiled program can be very different from what the code looks like.
 
 This is exacerbated by another actor: the CPU. On a typical machine, there are multiple CPUs, some on the same die and some on different dies, and they all have to coordinate to access the same memory. They also share a cache which has to be kept in sync with the real data. A data race will typically result in an out-of-date cache.
 
@@ -44,7 +44,7 @@ This is exacerbated by another actor: the CPU. On a typical machine, there are m
 
 ## In practice
 
-This is great to have formally defined, but it's not very actionable. Many programming languages do not have enough compile time guarantees to avoid data races at compile time, and thus provide a runtime race detector: Go, C and C++ with Thread Sanitizer, etc.
+This is great to have formally defined, but it's not very actionable. Many programming languages do not have enough compile time guarantees to avoid data races at compile time, and thus provide a runtime race detector: Go, C and C++ with Thread Sanitizer (a.k.a. TSan), etc.
 
 Typically these can detect some data races but not all, and incur a big performance penalty (I have experienced x5 to x20 slow-downs in real production code). Also, they typically require that *all* the code in the program is compiled with this detector enabled, which is sometimes very time-consuming, or not possible at all (some projects use closed-source libraries). Additionally there is the case of new emerging programming languages which do not have yet a race detector implemented.
 
@@ -68,11 +68,11 @@ This can be refined further as we'll see but it's good enough for now, and that'
 ## Example
 
 
-I [fixed](https://github.com/ory/kratos/commit/66739820c9d45ad4bc465b2ce3e10311967e29e4) recently a data race in Go at work. I have reproduced it in C for simplicity, because Go inlines function calls quite heavily and some functions, e.g. `append()`, `len()`, are not real functions but in fact builtin, it's hard to trace them.
+I recently [fixed](https://github.com/ory/kratos/commit/66739820c9d45ad4bc465b2ce3e10311967e29e4) a data race in Go at work. Since it is an open-source project I can share my work which is great! I have reproduced this race in C for simplicity, because Go inlines function calls quite heavily and some functions, e.g. `append()`, `len()`, are not real functions but in fact builtin, it's hard to trace them.
 
-In theory DTrace can trace arbitrary instructions and static probes, but in Go static probes are annoying to declare since that needs CGO, and on ARM64 macOS (my current laptop) tracing arbitratry instructions does not work.
+In theory DTrace can trace arbitrary instructions and static probes, but in Go static probes are annoying to declare since that needs CGO, and on ARM64 macOS (my current laptop) tracing arbitrary instructions does not work.
 
-The program appends data to a growable byte array in a thread, and reads the length of this byte array in another thread, without synchronization, until an expected value is reached. Text book read-write data race, but this kind of thing happens in production code when the compiler does not protect us from ourselves:
+The program appends data to a growable byte array in a thread, and reads the length of this byte array in another thread, without synchronization, until an expected value is reached. Textbook read-write data race, but this kind of thing happens in production code when the compiler does not protect us from ourselves:
 
 ```c
 #include <assert.h>
@@ -155,7 +155,7 @@ A few notes about this code:
 
 
 
-## ThreadSanitizer
+## Thread Sanitizer
 
 Now we run it with Thread Sanitizer:
 
@@ -344,7 +344,7 @@ There are many ways to fix this race, this one might not be the best since it wi
 
 Now you might be thinking: wait a minute, how do we know that the D script is actually working? It seems to track concurrent accesses, but the fix with the mutex actually creates a critical section, or 'exclusive' section, where only one thread has access at any point to the data structure. As such, there are no concurrent accesses.
 
-Let's check the correctness by applying a smarter, possibly more performant fix of the data race using a RW lock:
+Let's check the correctness by applying a smarter, possibly more performant fix of the data race using a RW lock (called in Go `sync.RWMutex`):
 
 ```diff
 --- blog1.c	2026-03-13 16:39:18
@@ -477,23 +477,27 @@ And N concurrent readers are fine. In fact, if we comment out this condition, we
 | Program with mutex, release mode    | 44.5 ms | 714 ms                        | 156 ms                            |
 | Program with RW lock, release mode  | 4.3 s   | 4.9   s                       | 4.2 s                             |
 
-- 'Release mode' means `clang -O2`
-- My machine is a macOS M4 Pro
-- The RW lock program has one writer thread and one reader thread to compare apples to apples
-- For the DTrace column, the time is measured using `timestamp` in the `BEGIN` and `END` probes
-- For the other columns, `hyperfine './cmd' --shell=none --warmup=3 -i` is used
+How the benchmarks were done:
+
+- 'Release mode' means `clang -O2`.
+- My machine is a macOS M4 Pro.
+- The RW lock program has one writer thread and one reader thread to compare apples to apples.
+- For the DTrace column, the time is measured using `timestamp` in the `BEGIN` and `END` probes.
+- For the other columns, `hyperfine './cmd' --shell=none --warmup=3 -i` is used.
+- We do not care about the exact values, only about the slowdown ratio between the first column (without race detector) and the other columns (with race detector).
 
 
 Commentary:
 
-- When there are races, DTrace performs really badly because it reports all races it sees, which is however great for the DevUX
-- The racy program in release mode never terminates because the compiler does whatever it wants in the presence of undefined behavior
-- In the absence of data races, DTrace performs really well compared to TSan, we only see a ~3-4x slowdown, compared to a 16x slowdown with TSan
-- RW lock performs horribly compared to the mutex version for some reason, but I did not investigate why. I just see that the benchmark is dominated by `pthread_rwlock_lock_slow`. I think we are simply in the worst case scenario for a RW lock where there is 1 reader and 1 writer, and RW lock optimizes for the cases of N readers and 1 writer from time to time.
+- When there are races, DTrace performs really badly because it reports all races it sees, which is however great for the DevUX. If we make DTrace also report timestamps and the call stack, the runtime goes to 7.5s.
+- DTrace has many tunables so it's possible that we can make it much faster this way.
+- The racy program in release mode never terminates because the compiler does whatever it wants in the presence of undefined behavior.
+- In the absence of data races, DTrace performs really well compared to TSan, we only see a ~3-4x slowdown, compared to a 16x slowdown with TSan.
+- RW lock performs horribly compared to the mutex version. I just profiled it real quick and saw that the benchmark is dominated by `pthread_rwlock_lock_slow`. I think we are simply in the worst case scenario for a RW lock where there is 1 reader and 1 writer, and a RW lock optimizes for the cases of N readers most of the time, and 1 writer coming in from time to time. A typical implementation does a simple atomic increment where there are only readers, which is very fast, and acquires a mutex lock when there is one writer in the mix.
 
 ## Conclusion
 
-Thread Sanitizer does a lot more than what we have covered, because it understands all the synchronization primitives: condition variables, atomics, etc. It tracks 'happens before' relationships between threads that call these primitives. We do not do that in our crude D script, even though we perhaps could, with a good amount of post-procssing to eliminate false positives.
+Thread Sanitizer does a lot more than what we have covered, because it understands all the synchronization primitives: condition variables, atomics, etc. It tracks 'happens before' relationships between threads that call these primitives. We do not do that in our crude D script, even though we perhaps could, with a good amount of post-processing to eliminate false positives.
 
 Another major difference is that Thread Sanitizer is general purpose and tries to track all memory accesses, whereas our DTrace approach selectively tracks a few memory accesses.
 
@@ -502,6 +506,9 @@ Even though, I think this is already a pretty good approach, in the spirit of '2
 Finally, remember that neither our DTrace approach nor Thread Sanitizer guarantee that *all* data races will be caught, since these are runtime detectors that only see the code paths actually taken when observing this particular run of the program, and also because they operate with limited amounts of memory: they cannot remember *all* memory accesses in the program, they only do a best effort to remember most of them. They do not prove the absence of bugs, only their presence.
 
 In fact, while writing this article and the accompanying test programs, Thread Sanitizer very rarely flagged the glaring data races. That was motivating, as well as terrifying. 
+
+
+My recommendation would still be to use your programming language or platform recommended race detector if possible. DTrace is a good fallback if that's no feasible or if you want to avoid recompiling.
 
 ## Addendum: The full code
 

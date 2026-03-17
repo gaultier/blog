@@ -71,7 +71,7 @@ Do not edit it by hand.
 <div class="article-prelude">
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
-<p class="publication-date">Published on 2026-03-11. Last modified on 2026-03-16.</p>
+<p class="publication-date">Published on 2026-03-11. Last modified on 2026-03-17.</p>
 </div>
 <div class="article-title">
   <h1>Detect data races with DTrace in any language</h1>
@@ -93,7 +93,7 @@ Do not edit it by hand.
 </li>
 
   <li>
-    <a href="#threadsanitizer">ThreadSanitizer</a>
+    <a href="#thread-sanitizer">Thread Sanitizer</a>
 </li>
 
   <li>
@@ -121,7 +121,7 @@ Do not edit it by hand.
 <p><em>For a gentle introduction to DTrace especially in conjunction with Go, see my past article: <a href="/blog/an_optimization_and_debugging_story_go_dtrace.html">An optimization and debugging story with Go and DTrace</a>, or my other <a href="/blog/articles-by-tag.html#dtrace">DTrace articles</a>.</em></p>
 <p>A data race is a concurrent access to shared data in a way that does not respect the rules of the programming language. Some languages are stricter or looser when they establish how that can happen, but they all forbid <em>some</em> kinds of concurrent (unsynchronized) accesses, typically write-write or read-write.</p>
 <p>The symptoms are bizarre and very painful to diagnose: stale reads, inconsistent data, 'impossible' code path taken, crashes, etc.</p>
-<p>Since some compilers are very aggressive at re-ordering and optimizing code in the absence of explicit data dependencies, the compiled program can be very diffrent from what the code looks like.</p>
+<p>Since some compilers are very aggressive at re-ordering and optimizing code in the absence of explicit data dependencies, the compiled program can be very different from what the code looks like.</p>
 <p>This is exacerbated by another actor: the CPU. On a typical machine, there are multiple CPUs, some on the same die and some on different dies, and they all have to coordinate to access the same memory. They also share a cache which has to be kept in sync with the real data. A data race will typically result in an out-of-date cache.</p>
 <h2 id="the-theory">
   <a class="title" href="#the-theory">The theory</a>
@@ -151,7 +151,7 @@ operations, which have special characteristics.</p>
   <a class="title" href="#in-practice">In practice</a>
   <a class="hash-anchor" href="#in-practice" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>This is great to have formally defined, but it's not very actionable. Many programming languages do not have enough compile time guarantees to avoid data races at compile time, and thus provide a runtime race detector: Go, C and C++ with Thread Sanitizer, etc.</p>
+<p>This is great to have formally defined, but it's not very actionable. Many programming languages do not have enough compile time guarantees to avoid data races at compile time, and thus provide a runtime race detector: Go, C and C++ with Thread Sanitizer (a.k.a. TSan), etc.</p>
 <p>Typically these can detect some data races but not all, and incur a big performance penalty (I have experienced x5 to x20 slow-downs in real production code). Also, they typically require that <em>all</em> the code in the program is compiled with this detector enabled, which is sometimes very time-consuming, or not possible at all (some projects use closed-source libraries). Additionally there is the case of new emerging programming languages which do not have yet a race detector implemented.</p>
 <p>What can we do then?</p>
 <p>What if we could somehow use DTrace to observe our program and detect, like a runtime race detector, invalid accesses? It does not have to catch <em>all</em> races, <em>some</em> would be already nice. Even a crude approach could be helpful.</p>
@@ -168,9 +168,9 @@ operations, which have special characteristics.</p>
   <a class="title" href="#example">Example</a>
   <a class="hash-anchor" href="#example" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>I <a href="https://github.com/ory/kratos/commit/66739820c9d45ad4bc465b2ce3e10311967e29e4">fixed</a> recently a data race in Go at work. I have reproduced it in C for simplicity, because Go inlines function calls quite heavily and some functions, e.g. <code>append()</code>, <code>len()</code>, are not real functions but in fact builtin, it's hard to trace them.</p>
-<p>In theory DTrace can trace arbitrary instructions and static probes, but in Go static probes are annoying to declare since that needs CGO, and on ARM64 macOS (my current laptop) tracing arbitratry instructions does not work.</p>
-<p>The program appends data to a growable byte array in a thread, and reads the length of this byte array in another thread, without synchronization, until an expected value is reached. Text book read-write data race, but this kind of thing happens in production code when the compiler does not protect us from ourselves:</p>
+<p>I recently <a href="https://github.com/ory/kratos/commit/66739820c9d45ad4bc465b2ce3e10311967e29e4">fixed</a> a data race in Go at work. Since it is an open-source project I can share my work which is great! I have reproduced this race in C for simplicity, because Go inlines function calls quite heavily and some functions, e.g. <code>append()</code>, <code>len()</code>, are not real functions but in fact builtin, it's hard to trace them.</p>
+<p>In theory DTrace can trace arbitrary instructions and static probes, but in Go static probes are annoying to declare since that needs CGO, and on ARM64 macOS (my current laptop) tracing arbitrary instructions does not work.</p>
+<p>The program appends data to a growable byte array in a thread, and reads the length of this byte array in another thread, without synchronization, until an expected value is reached. Textbook read-write data race, but this kind of thing happens in production code when the compiler does not protect us from ourselves:</p>
 <pre>
   <div class="code-header">
     <span>C</span>
@@ -253,9 +253,9 @@ operations, which have special characteristics.</p>
 <li>The moment someone modifies the program, for example to print the last element of the array inside the loop on the main thread, we'll likely get a segfault, because <code>byte_array_push</code> modifies the fields of the <code>ByteArray</code> structure, which have to always be consistent with each other: <code>data</code>, <code>len</code>, and <code>cap</code>.  Since there is no synchronization primitive to ensure that, the other threads can see the structure in an inconsistent, half-updated state. That's the reason why we cannot simply make <code>len</code> an atomic. This issue of inconsistent state is even clearer if one thread does a lot of <code>byte_array_push()</code> and another <code>byte_array_pop()</code>: the program will very quickly explode because it tried to access a value out of bounds in the array, for example.</li>
 <li>There is another big issue with this code: since the thread pushing values to the growable array uses <code>realloc()</code>, the <code>data</code> field, which holds all the array elements, may change each time a new element is added: the allocator may decide to allocate a bigger piece of memory, return the address, and free the old piece of memory. Since the main thread has no synchronization with the other thread, if it decides to, for example, print the first element of the array, even if <code>len</code> has the latest value and is greater than zero, it may well be that <code>data</code> has a stale value and points to the old memory. That's a use-after-free bug, and a potential security vulnerability.</li>
 </ul>
-<h2 id="threadsanitizer">
-  <a class="title" href="#threadsanitizer">ThreadSanitizer</a>
-  <a class="hash-anchor" href="#threadsanitizer" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="thread-sanitizer">
+  <a class="title" href="#thread-sanitizer">Thread Sanitizer</a>
+  <a class="hash-anchor" href="#thread-sanitizer" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Now we run it with Thread Sanitizer:</p>
 <pre>
@@ -446,7 +446,7 @@ operations, which have special characteristics.</p>
   <a class="hash-anchor" href="#improvements" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Now you might be thinking: wait a minute, how do we know that the D script is actually working? It seems to track concurrent accesses, but the fix with the mutex actually creates a critical section, or 'exclusive' section, where only one thread has access at any point to the data structure. As such, there are no concurrent accesses.</p>
-<p>Let's check the correctness by applying a smarter, possibly more performant fix of the data race using a RW lock:</p>
+<p>Let's check the correctness by applying a smarter, possibly more performant fix of the data race using a RW lock (called in Go <code>sync.RWMutex</code>):</p>
 <pre>
   <div class="code-header">
     <span>Diff</span>
@@ -620,29 +620,33 @@ operations, which have special characteristics.</p>
 </table>
 
 
+<p>How the benchmarks were done:</p>
 <ul>
-<li>'Release mode' means <code>clang -O2</code></li>
-<li>My machine is a macOS M4 Pro</li>
-<li>The RW lock program has one writer thread and one reader thread to compare apples to apples</li>
-<li>For the DTrace column, the time is measured using <code>timestamp</code> in the <code>BEGIN</code> and <code>END</code> probes</li>
-<li>For the other columns, <code>hyperfine './cmd' --shell=none --warmup=3 -i</code> is used</li>
+<li>'Release mode' means <code>clang -O2</code>.</li>
+<li>My machine is a macOS M4 Pro.</li>
+<li>The RW lock program has one writer thread and one reader thread to compare apples to apples.</li>
+<li>For the DTrace column, the time is measured using <code>timestamp</code> in the <code>BEGIN</code> and <code>END</code> probes.</li>
+<li>For the other columns, <code>hyperfine './cmd' --shell=none --warmup=3 -i</code> is used.</li>
+<li>We do not care about the exact values, only about the slowdown ratio between the first column (without race detector) and the other columns (with race detector).</li>
 </ul>
 <p>Commentary:</p>
 <ul>
-<li>When there are races, DTrace performs really badly because it reports all races it sees, which is however great for the DevUX</li>
-<li>The racy program in release mode never terminates because the compiler does whatever it wants in the presence of undefined behavior</li>
-<li>In the absence of data races, DTrace performs really well compared to TSan, we only see a ~3-4x slowdown, compared to a 16x slowdown with TSan</li>
-<li>RW lock performs horribly compared to the mutex version for some reason, but I did not investigate why. I just see that the benchmark is dominated by <code>pthread_rwlock_lock_slow</code>. I think we are simply in the worst case scenario for a RW lock where there is 1 reader and 1 writer, and RW lock optimizes for the cases of N readers and 1 writer from time to time.</li>
+<li>When there are races, DTrace performs really badly because it reports all races it sees, which is however great for the DevUX. If we make DTrace also report timestamps and the call stack, the runtime goes to 7.5s.</li>
+<li>DTrace has many tunables so it's possible that we can make it much faster this way.</li>
+<li>The racy program in release mode never terminates because the compiler does whatever it wants in the presence of undefined behavior.</li>
+<li>In the absence of data races, DTrace performs really well compared to TSan, we only see a ~3-4x slowdown, compared to a 16x slowdown with TSan.</li>
+<li>RW lock performs horribly compared to the mutex version. I just profiled it real quick and saw that the benchmark is dominated by <code>pthread_rwlock_lock_slow</code>. I think we are simply in the worst case scenario for a RW lock where there is 1 reader and 1 writer, and a RW lock optimizes for the cases of N readers most of the time, and 1 writer coming in from time to time. A typical implementation does a simple atomic increment where there are only readers, which is very fast, and acquires a mutex lock when there is one writer in the mix.</li>
 </ul>
 <h2 id="conclusion">
   <a class="title" href="#conclusion">Conclusion</a>
   <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>Thread Sanitizer does a lot more than what we have covered, because it understands all the synchronization primitives: condition variables, atomics, etc. It tracks 'happens before' relationships between threads that call these primitives. We do not do that in our crude D script, even though we perhaps could, with a good amount of post-procssing to eliminate false positives.</p>
+<p>Thread Sanitizer does a lot more than what we have covered, because it understands all the synchronization primitives: condition variables, atomics, etc. It tracks 'happens before' relationships between threads that call these primitives. We do not do that in our crude D script, even though we perhaps could, with a good amount of post-processing to eliminate false positives.</p>
 <p>Another major difference is that Thread Sanitizer is general purpose and tries to track all memory accesses, whereas our DTrace approach selectively tracks a few memory accesses.</p>
 <p>Even though, I think this is already a pretty good approach, in the spirit of '20% of the work gets you 80% of the way there'. The main appeal is that it avoids having to rebuild the whole program with different flags which can be very time consuming, or sometimes not feasible at all.</p>
 <p>Finally, remember that neither our DTrace approach nor Thread Sanitizer guarantee that <em>all</em> data races will be caught, since these are runtime detectors that only see the code paths actually taken when observing this particular run of the program, and also because they operate with limited amounts of memory: they cannot remember <em>all</em> memory accesses in the program, they only do a best effort to remember most of them. They do not prove the absence of bugs, only their presence.</p>
 <p>In fact, while writing this article and the accompanying test programs, Thread Sanitizer very rarely flagged the glaring data races. That was motivating, as well as terrifying.</p>
+<p>My recommendation would still be to use your programming language or platform recommended race detector if possible. DTrace is a good fallback if that's no feasible or if you want to avoid recompiling.</p>
 <h2 id="addendum-the-full-code">
   <a class="title" href="#addendum-the-full-code">Addendum: The full code</a>
   <a class="hash-anchor" href="#addendum-the-full-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
