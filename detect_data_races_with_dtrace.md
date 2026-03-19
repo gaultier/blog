@@ -488,7 +488,7 @@ And N concurrent readers are fine. In fact, if we comment out this condition, we
 |                                     | Runtime | Runtime with Thread Sanitizer | Runtime with DTrace race detector |
 |-------------------------------------|---------|-------------------------------|-----------------------------------|
 | Racy program, debug mode            | 6.3 ms  | 275.8 ms                      | 7.05 s                            |
-| Racy program, release mode          | DNF     | DNF                           | DNF                               |
+| Racy program, release mode          | DNF [^1]| DNF [^1]                      | DNF [^1]                          |
 | Program with mutex, release mode    | 44.5 ms | 714 ms                        | 156 ms                            |
 | Program with RW lock, release mode  | 4.3 s   | 4.9   s                       | 4.2 s                             |
 
@@ -501,6 +501,7 @@ How the benchmarks were done:
 - For the other columns, `hyperfine './cmd' --shell=none --warmup=3 -i` is used.
 - We do not care about the exact values, only about the slowdown ratio between the first column (without race detector) and the other columns (with race detector).
 
+[^1]: DNF means Did Not Finish, and that's because the compiler compiles the loop polling for the length of the array into an infinite loop with an empty body, because the read of the length is hoisted out of the loop body, as previously explained.
 
 Commentary:
 
