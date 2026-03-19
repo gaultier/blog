@@ -1,5 +1,5 @@
 Title: Detect data races with DTrace in any language
-Tags: DTrace, Concurrency
+Tags: DTrace, Concurrency, Go, C
 ---
 
 *For a gentle introduction to DTrace especially in conjunction with Go, see my past article: [An optimization and debugging story with Go and DTrace](/blog/an_optimization_and_debugging_story_go_dtrace.html), or my other [DTrace articles](/blog/articles-by-tag.html#dtrace).*
