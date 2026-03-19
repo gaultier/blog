@@ -498,7 +498,7 @@ How the benchmarks were done:
 - My machine is a macOS M4 Pro.
 - The RW lock program has one writer thread and one reader thread to compare apples to apples.
 - For the DTrace column, the time is measured using `timestamp` in the `BEGIN` and `END` probes.
-- For the other columns, `hyperfine './cmd' --shell=none --warmup=3 -i` is used.
+- For the other columns, `hyperfine './cmd' --shell=none --warmup=3 --ignore-failure` is used.
 - We do not care about the exact values, only about the slowdown ratio between the first column (without race detector) and the other columns (with race detector).
 
 [^1]: DNF means Did Not Finish, and that's because the compiler compiles the loop polling for the length of the array into an infinite loop with an empty body, because the read of the length is hoisted out of the loop body, as previously explained.
