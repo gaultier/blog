@@ -4,6 +4,8 @@ Tags: DTrace, Concurrency
 
 *For a gentle introduction to DTrace especially in conjunction with Go, see my past article: [An optimization and debugging story with Go and DTrace](/blog/an_optimization_and_debugging_story_go_dtrace.html), or my other [DTrace articles](/blog/articles-by-tag.html#dtrace).*
 
+I recently [fixed](https://github.com/ory/kratos/commit/66739820c9d45ad4bc465b2ce3e10311967e29e4) a data race in Go at work. Well, I fixed a number of them, but this one is easy to understand so I'll use it to talk about race detectors. Since I work on an open-source project, I can share my work which is great!
+
 A data race is a concurrent access to shared data in a way that does not respect the rules of the programming language. Some languages are stricter or looser when they establish how that can happen, but they all forbid *some* kinds of concurrent (unsynchronized) accesses, typically write-write or read-write. 
 
 The symptoms are bizarre and very painful to diagnose: stale reads, inconsistent data, 'impossible' code path taken, crashes, etc. 
@@ -65,10 +67,10 @@ This can be refined further as we'll see but it's good enough for now, and that'
 
 
 
-## Example
+## A C example
 
 
-I recently [fixed](https://github.com/ory/kratos/commit/66739820c9d45ad4bc465b2ce3e10311967e29e4) a data race in Go at work. Since it is an open-source project I can share my work which is great! I have reproduced this race in C for simplicity, because Go inlines function calls quite heavily and some functions, e.g. `append()`, `len()`, are not real functions but in fact builtin, it's hard to trace them. Also, C is a lingua franca and since there is no runtime (garbage collector, scheduler) to speak of, I find it easier to understand what's going on.
+I have reproduced the Go race in C for simplicity, because Go inlines function calls quite heavily and some functions, e.g. `append()`, `len()`, are not real functions but in fact builtin, it's hard to trace them. Also, C is a lingua franca and since there is no runtime (garbage collector, scheduler) to speak of, I find it easier to understand what's going on. But no worries, we'll come back to the Go code in a bit.
 
 In theory DTrace can trace arbitrary instructions and static probes, but in Go static probes are annoying to declare since that needs CGO, and on ARM64 macOS (my current laptop) tracing arbitrary instructions does not work.
 
@@ -507,6 +509,144 @@ Commentary:
 - The racy program in release mode never terminates because as previously mentioned, the compiler does whatever it wants in the presence of undefined behavior, and in this case, generates an infinite loop.
 - In the absence of data races, DTrace performs really well compared to TSan, we only see a ~3-4x slowdown, compared to a 16x slowdown with TSan. This of course depends on how many probes fire, and how much our script prints.
 - RW lock performs horribly compared to the mutex version. I just profiled it real quick and saw that the benchmark is dominated by `pthread_rwlock_lock_slow`. I think we are simply in the worst case scenario for a RW lock where there is 1 reader and 1 writer, and a RW lock optimizes for the cases of N readers most of the time, and 1 writer coming in from time to time. A typical implementation does a simple atomic increment where there are only readers, which is very fast, and acquires a mutex lock when there is one writer in the mix.
+
+
+## Back to Go
+
+Alright, now that we have something working, let's try it on the [original racy Go program](https://github.com/ory-corp/cloud/blob/9790393d018f14d561429830a1757ff501ea0c0a/kratos/kratos-oss/courier/http_test.go#L29-L130). 
+
+Due to the nature of Go, we have to make minor adjustments:
+
+- The thread id is replaced by the goroutine id
+- Since M goroutines can run on N threads, we cannot use DTrace's `self->` which is thread-local, we have to use a global map where the key is the goroutine id. I covered this in a [past article](/blog/an_optimization_and_debugging_story_go_dtrace.html#addendum-a-goroutine-aware-d-script).
+- We do not have to change the program to introduce getters and setters because the code happens to already use a closure to [append elements to the slice](https://github.com/ory-corp/cloud/blob/9790393d018f14d561429830a1757ff501ea0c0a/kratos/kratos-oss/courier/http_test.go#L74-L74), and another to [read the length of the slice](https://github.com/ory-corp/cloud/blob/9790393d018f14d561429830a1757ff501ea0c0a/kratos/kratos-oss/courier/http_test.go#L114-L114). By reading the generated assembly, we can infer which registers to use in DTrace to get a hold of the pointer to the shared slice.
+- The only change I did to the Go code was increase the number of elements appended to the slice, and reduce the sleeping time in the polling loop that reads the length, to simply make the race more frequent so that I can experiment faster
+
+
+```dtrace
+#pragma D option dynvarsize=16m
+#pragma D option cleanrate=100hz
+
+typedef enum {AccessKindRead=1, AccessKindWrite=2} AccessKind;
+
+typedef struct {
+  AccessKind kind;
+  size_t tid;
+  int ts;
+} Access;
+
+typedef struct {
+  void* data;
+  size_t len, cap;
+} GoSlice;
+
+Access accesses[uintptr_t /* data ptr */];
+
+int func_access[string];
+
+uintptr_t gid_to_mem[int];
+
+BEGIN {
+  // Record which kind of access each function does.
+  func_access["github.com/ory/kratos/courier_test.TestQueueHTTPEmail.func3"] = AccessKindRead;
+  func_access["github.com/ory/kratos/courier_test.TestQueueHTTPEmail.func1"] = AccessKindWrite;
+}
+
+pid$target::*TestQueueHTTPEmail.func1:entry {
+  this->my_access_kind = func_access[probefunc];
+  this->now = timestamp;
+
+  this->goroutine_id = uregs[R_X28];
+  this->ptr_to_slice_header = *(uintptr_t*)copyin(uregs[R_X26] + 16, 8);
+  this->go_slice = (GoSlice*)copyin(this->ptr_to_slice_header, sizeof(GoSlice));
+  this->mem_ptr = (int)this->ptr_to_slice_header;
+  this->theirs = accesses[this->mem_ptr];
+
+  if (this->theirs.tid !=0 &&  // 'if a thread is concurrently accessing the same memory...'
+      this->theirs.tid != this->goroutine_id &&  // 'and this is another thread as the current one...'
+      (this->my_access_kind == AccessKindWrite || this->theirs.kind == AccessKindWrite)) { // 'and at least one access is a write...'
+    printf("possible data race: my_access_kind:%d my_tid=%d my_ts=%d their_access_kind:%d their_tid=%d their_ts=%d mem_ptr=%p\n", this->my_access_kind, this->goroutine_id, this->now, this->theirs.kind, this->theirs.tid, this->theirs.ts, this->mem_ptr);
+    ustack();
+  }
+
+  // Update the map with the current access.
+  accesses[this->mem_ptr].kind = this->my_access_kind;
+  accesses[this->mem_ptr].tid = this->goroutine_id;
+  accesses[this->mem_ptr].ts = this->now;
+  gid_to_mem[this->goroutine_id] = this->mem_ptr;
+}
+
+pid$target::*TestQueueHTTPEmail.func3:entry {
+  this->my_access_kind = func_access[probefunc];
+  this->now = timestamp;
+
+  this->goroutine_id = uregs[R_X28];
+  this->ptr_to_slice_header = *(uintptr_t*)copyin(uregs[R_X26] + 8, 8);
+  this->go_slice = (GoSlice*)copyin(this->ptr_to_slice_header, sizeof(GoSlice));
+  this->mem_ptr = (int)this->ptr_to_slice_header;
+  this->theirs = accesses[this->mem_ptr];
+
+  if (this->theirs.tid !=0 &&  // 'if a thread is concurrently accessing the same memory...'
+      this->theirs.tid != this->goroutine_id &&  // 'and this is another thread as the current one...'
+      (this->my_access_kind == AccessKindWrite || this->theirs.kind == AccessKindWrite)) { // 'and at least one access is a write...'
+    printf("possible data race: my_access_kind:%d my_tid=%d my_ts=%d their_access_kind:%d their_tid=%d their_ts=%d mem_ptr=%p\n", this->my_access_kind, this->goroutine_id, this->now, this->theirs.kind, this->theirs.tid, this->theirs.ts, this->mem_ptr);
+    ustack();
+  }
+
+  // Update the map with the current access.
+  accesses[this->mem_ptr].kind = this->my_access_kind;
+  accesses[this->mem_ptr].tid = this->goroutine_id;
+  accesses[this->mem_ptr].ts = this->now;
+  gid_to_mem[this->goroutine_id] = this->mem_ptr;
+}
+
+pid$target::*TestQueueHTTPEmail.func1:return,
+pid$target::*TestQueueHTTPEmail.func3:return
+{
+  this->goroutine_id = uregs[R_X28];
+  this->mem_ptr = gid_to_mem[this->goroutine_id];
+  if (this->mem_ptr != 0){
+  // Clear the map since the access is done.
+    accesses[this->mem_ptr].kind = 0;
+    accesses[this->mem_ptr].tid = 0;
+    accesses[this->mem_ptr].ts = 0;
+    gid_to_mem[this->goroutine_id] = 0;
+  }
+}
+
+```
+
+A few notes about Go's generated assembly, on ARM64, per the [Go ABI](https://github.com/golang/go/blob/master/src/cmd/compile/abi-internal.md):
+
+- Inside a goroutine, the register `X28` always stores a pointer to the goroutine information, which we use as goroutine id
+- Inside a closure, the register `X26` stores a pointer to the captured environment (i.e. variables) at offset 8. By following this pointer, we find the shared slice, which is captured by the closures.
+
+This is a small difference between Go and C: for C we watched for concurrent access to the length field of the byte array. For Go we watch for concurrent access to the slice.
+There isn't a real reason for that, I just wanted to tweak the approach slightly.
+
+When we run it, we see that the read-write race is detected:
+
+```plaintext
+ 12  13933 github.com/ory/kratos/courier_test.TestQueueHTTPEmail.func1:entry possible data race: my_access_kind:2 my_tid=114567426771776 my_ts=84677501145916 their_access_kind:1 their_tid=64 their_ts=0 mem_ptr=cc832d38
+
+              courier.test`github.com/ory/kratos/courier_test.TestQueueHTTPEmail.func1
+              courier.test`net/http.HandlerFunc.ServeHTTP+0x38
+              courier.test`net/http.serverHandler.ServeHTTP+0xb0
+              courier.test`net/http.(*conn).serve+0x51c
+              courier.test`net/http.(*Server).Serve.gowrap3+0x24
+              courier.test`runtime.goexit.abi0+0x4
+
+  9  13934 github.com/ory/kratos/courier_test.TestQueueHTTPEmail.func3:entry possible data race: my_access_kind:1 my_tid=114567393856320 my_ts=84677501654791 their_access_kind:2 their_tid=114567426771776 their_ts=-2073554395 mem_ptr=cc832d38
+
+              courier.test`github.com/ory/kratos/courier_test.TestQueueHTTPEmail.func3
+              courier.test`github.com/ory/x/resilience.Retry+0x28c
+              courier.test`github.com/ory/kratos/courier_test.TestQueueHTTPEmail+0x3750
+              courier.test`testing.tRunner+0xc4
+              courier.test`testing.(*T).Run.gowrap1+0x20
+              courier.test`runtime.goexit.abi0+0x4
+```
+
+
 
 ## Conclusion
 

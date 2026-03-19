@@ -89,7 +89,7 @@ Do not edit it by hand.
 </li>
 
   <li>
-    <a href="#example">Example</a>
+    <a href="#a-c-example">A C example</a>
 </li>
 
   <li>
@@ -109,6 +109,10 @@ Do not edit it by hand.
 </li>
 
   <li>
+    <a href="#back-to-go">Back to Go</a>
+</li>
+
+  <li>
     <a href="#conclusion">Conclusion</a>
 </li>
 
@@ -119,6 +123,7 @@ Do not edit it by hand.
 </details>
 
 <p><em>For a gentle introduction to DTrace especially in conjunction with Go, see my past article: <a href="/blog/an_optimization_and_debugging_story_go_dtrace.html">An optimization and debugging story with Go and DTrace</a>, or my other <a href="/blog/articles-by-tag.html#dtrace">DTrace articles</a>.</em></p>
+<p>I recently <a href="https://github.com/ory/kratos/commit/66739820c9d45ad4bc465b2ce3e10311967e29e4">fixed</a> a data race in Go at work. Well, I fixed a number of them, but this one is easy to understand so I'll use it to talk about race detectors. Since I work on an open-source project, I can share my work which is great!</p>
 <p>A data race is a concurrent access to shared data in a way that does not respect the rules of the programming language. Some languages are stricter or looser when they establish how that can happen, but they all forbid <em>some</em> kinds of concurrent (unsynchronized) accesses, typically write-write or read-write.</p>
 <p>The symptoms are bizarre and very painful to diagnose: stale reads, inconsistent data, 'impossible' code path taken, crashes, etc.</p>
 <p>Since some compilers are very aggressive at re-ordering and optimizing code in the absence of explicit data dependencies, the compiled program can be very different from what the code looks like.</p>
@@ -164,11 +169,11 @@ operations, which have special characteristics.</p>
 <li>When start to access a piece of memory, we check the global map of accesses. If we see that another thread is already accessing the same memory address, this means that we have a concurrent access to the data structure. If at least one of them is a write (read-read is fine), this is a potential data race.</li>
 </ul>
 <p>This can be refined further as we'll see but it's good enough for now, and that's the basis of what Thread Sanitizer does.</p>
-<h2 id="example">
-  <a class="title" href="#example">Example</a>
-  <a class="hash-anchor" href="#example" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="a-c-example">
+  <a class="title" href="#a-c-example">A C example</a>
+  <a class="hash-anchor" href="#a-c-example" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>I recently <a href="https://github.com/ory/kratos/commit/66739820c9d45ad4bc465b2ce3e10311967e29e4">fixed</a> a data race in Go at work. Since it is an open-source project I can share my work which is great! I have reproduced this race in C for simplicity, because Go inlines function calls quite heavily and some functions, e.g. <code>append()</code>, <code>len()</code>, are not real functions but in fact builtin, it's hard to trace them. Also, C is a lingua franca and since there is no runtime (garbage collector, scheduler) to speak of, I find it easier to understand what's going on.</p>
+<p>I have reproduced the Go race in C for simplicity, because Go inlines function calls quite heavily and some functions, e.g. <code>append()</code>, <code>len()</code>, are not real functions but in fact builtin, it's hard to trace them. Also, C is a lingua franca and since there is no runtime (garbage collector, scheduler) to speak of, I find it easier to understand what's going on. But no worries, we'll come back to the Go code in a bit.</p>
 <p>In theory DTrace can trace arbitrary instructions and static probes, but in Go static probes are annoying to declare since that needs CGO, and on ARM64 macOS (my current laptop) tracing arbitrary instructions does not work.</p>
 <p>The program appends data to a growable byte array in a thread, and reads the length of this byte array in another thread, without synchronization, until an expected value is reached. Textbook read-write data race, but this kind of thing happens in production code when the compiler does not protect us from ourselves:</p>
 <pre>
@@ -659,6 +664,144 @@ operations, which have special characteristics.</p>
 <li>In the absence of data races, DTrace performs really well compared to TSan, we only see a ~3-4x slowdown, compared to a 16x slowdown with TSan. This of course depends on how many probes fire, and how much our script prints.</li>
 <li>RW lock performs horribly compared to the mutex version. I just profiled it real quick and saw that the benchmark is dominated by <code>pthread_rwlock_lock_slow</code>. I think we are simply in the worst case scenario for a RW lock where there is 1 reader and 1 writer, and a RW lock optimizes for the cases of N readers most of the time, and 1 writer coming in from time to time. A typical implementation does a simple atomic increment where there are only readers, which is very fast, and acquires a mutex lock when there is one writer in the mix.</li>
 </ul>
+<h2 id="back-to-go">
+  <a class="title" href="#back-to-go">Back to Go</a>
+  <a class="hash-anchor" href="#back-to-go" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>Alright, now that we have something working, let's try it on the <a href="https://github.com/ory-corp/cloud/blob/9790393d018f14d561429830a1757ff501ea0c0a/kratos/kratos-oss/courier/http_test.go#L29-L130">original racy Go program</a>.</p>
+<p>Due to the nature of Go, we have to make minor adjustments:</p>
+<ul>
+<li>The thread id is replaced by the goroutine id</li>
+<li>Since M goroutines can run on N threads, we cannot use DTrace's <code>self-&gt;</code> which is thread-local, we have to use a global map where the key is the goroutine id. I covered this in a <a href="/blog/an_optimization_and_debugging_story_go_dtrace.html#addendum-a-goroutine-aware-d-script">past article</a>.</li>
+<li>We do not have to change the program to introduce getters and setters because the code happens to already use a closure to <a href="https://github.com/ory-corp/cloud/blob/9790393d018f14d561429830a1757ff501ea0c0a/kratos/kratos-oss/courier/http_test.go#L74-L74">append elements to the slice</a>, and another to <a href="https://github.com/ory-corp/cloud/blob/9790393d018f14d561429830a1757ff501ea0c0a/kratos/kratos-oss/courier/http_test.go#L114-L114">read the length of the slice</a>. By reading the generated assembly, we can infer which registers to use in DTrace to get a hold of the pointer to the shared slice.</li>
+<li>The only change I did to the Go code was increase the number of elements appended to the slice, and reduce the sleeping time in the polling loop that reads the length, to simply make the race more frequent so that I can experiment faster</li>
+</ul>
+<pre>
+  <div class="code-header">
+    <span>Dtrace</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">#pragma D option dynvarsize=16m</span>
+<span class="line-number"></span><span class="code-hl">#pragma D option cleanrate=100hz</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">typedef enum {AccessKindRead=1, AccessKindWrite=2} AccessKind;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">typedef struct {</span>
+<span class="line-number"></span><span class="code-hl">  AccessKind kind;</span>
+<span class="line-number"></span><span class="code-hl">  size_t tid;</span>
+<span class="line-number"></span><span class="code-hl">  int ts;</span>
+<span class="line-number"></span><span class="code-hl">} Access;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">typedef struct {</span>
+<span class="line-number"></span><span class="code-hl">  void* data;</span>
+<span class="line-number"></span><span class="code-hl">  size_t len, cap;</span>
+<span class="line-number"></span><span class="code-hl">} GoSlice;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">Access accesses[uintptr_t /* data ptr */];</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">int func_access[string];</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">uintptr_t gid_to_mem[int];</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">BEGIN {</span>
+<span class="line-number"></span><span class="code-hl">  // Record which kind of access each function does.</span>
+<span class="line-number"></span><span class="code-hl">  func_access[&quot;github.com/ory/kratos/courier_test.TestQueueHTTPEmail.func3&quot;] = AccessKindRead;</span>
+<span class="line-number"></span><span class="code-hl">  func_access[&quot;github.com/ory/kratos/courier_test.TestQueueHTTPEmail.func1&quot;] = AccessKindWrite;</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">pid$target::*TestQueueHTTPEmail.func1:entry {</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;my_access_kind = func_access[probefunc];</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;now = timestamp;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;goroutine_id = uregs[R_X28];</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;ptr_to_slice_header = *(uintptr_t*)copyin(uregs[R_X26] + 16, 8);</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;go_slice = (GoSlice*)copyin(this-&gt;ptr_to_slice_header, sizeof(GoSlice));</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;mem_ptr = (int)this-&gt;ptr_to_slice_header;</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;theirs = accesses[this-&gt;mem_ptr];</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  if (this-&gt;theirs.tid !=0 &amp;&amp;  // 'if a thread is concurrently accessing the same memory...'</span>
+<span class="line-number"></span><span class="code-hl">      this-&gt;theirs.tid != this-&gt;goroutine_id &amp;&amp;  // 'and this is another thread as the current one...'</span>
+<span class="line-number"></span><span class="code-hl">      (this-&gt;my_access_kind == AccessKindWrite || this-&gt;theirs.kind == AccessKindWrite)) { // 'and at least one access is a write...'</span>
+<span class="line-number"></span><span class="code-hl">    printf(&quot;possible data race: my_access_kind:%d my_tid=%d my_ts=%d their_access_kind:%d their_tid=%d their_ts=%d mem_ptr=%p\n&quot;, this-&gt;my_access_kind, this-&gt;goroutine_id, this-&gt;now, this-&gt;theirs.kind, this-&gt;theirs.tid, this-&gt;theirs.ts, this-&gt;mem_ptr);</span>
+<span class="line-number"></span><span class="code-hl">    ustack();</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  // Update the map with the current access.</span>
+<span class="line-number"></span><span class="code-hl">  accesses[this-&gt;mem_ptr].kind = this-&gt;my_access_kind;</span>
+<span class="line-number"></span><span class="code-hl">  accesses[this-&gt;mem_ptr].tid = this-&gt;goroutine_id;</span>
+<span class="line-number"></span><span class="code-hl">  accesses[this-&gt;mem_ptr].ts = this-&gt;now;</span>
+<span class="line-number"></span><span class="code-hl">  gid_to_mem[this-&gt;goroutine_id] = this-&gt;mem_ptr;</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">pid$target::*TestQueueHTTPEmail.func3:entry {</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;my_access_kind = func_access[probefunc];</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;now = timestamp;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;goroutine_id = uregs[R_X28];</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;ptr_to_slice_header = *(uintptr_t*)copyin(uregs[R_X26] + 8, 8);</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;go_slice = (GoSlice*)copyin(this-&gt;ptr_to_slice_header, sizeof(GoSlice));</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;mem_ptr = (int)this-&gt;ptr_to_slice_header;</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;theirs = accesses[this-&gt;mem_ptr];</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  if (this-&gt;theirs.tid !=0 &amp;&amp;  // 'if a thread is concurrently accessing the same memory...'</span>
+<span class="line-number"></span><span class="code-hl">      this-&gt;theirs.tid != this-&gt;goroutine_id &amp;&amp;  // 'and this is another thread as the current one...'</span>
+<span class="line-number"></span><span class="code-hl">      (this-&gt;my_access_kind == AccessKindWrite || this-&gt;theirs.kind == AccessKindWrite)) { // 'and at least one access is a write...'</span>
+<span class="line-number"></span><span class="code-hl">    printf(&quot;possible data race: my_access_kind:%d my_tid=%d my_ts=%d their_access_kind:%d their_tid=%d their_ts=%d mem_ptr=%p\n&quot;, this-&gt;my_access_kind, this-&gt;goroutine_id, this-&gt;now, this-&gt;theirs.kind, this-&gt;theirs.tid, this-&gt;theirs.ts, this-&gt;mem_ptr);</span>
+<span class="line-number"></span><span class="code-hl">    ustack();</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  // Update the map with the current access.</span>
+<span class="line-number"></span><span class="code-hl">  accesses[this-&gt;mem_ptr].kind = this-&gt;my_access_kind;</span>
+<span class="line-number"></span><span class="code-hl">  accesses[this-&gt;mem_ptr].tid = this-&gt;goroutine_id;</span>
+<span class="line-number"></span><span class="code-hl">  accesses[this-&gt;mem_ptr].ts = this-&gt;now;</span>
+<span class="line-number"></span><span class="code-hl">  gid_to_mem[this-&gt;goroutine_id] = this-&gt;mem_ptr;</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">pid$target::*TestQueueHTTPEmail.func1:return,</span>
+<span class="line-number"></span><span class="code-hl">pid$target::*TestQueueHTTPEmail.func3:return</span>
+<span class="line-number"></span><span class="code-hl">{</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;goroutine_id = uregs[R_X28];</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;mem_ptr = gid_to_mem[this-&gt;goroutine_id];</span>
+<span class="line-number"></span><span class="code-hl">  if (this-&gt;mem_ptr != 0){</span>
+<span class="line-number"></span><span class="code-hl">  // Clear the map since the access is done.</span>
+<span class="line-number"></span><span class="code-hl">    accesses[this-&gt;mem_ptr].kind = 0;</span>
+<span class="line-number"></span><span class="code-hl">    accesses[this-&gt;mem_ptr].tid = 0;</span>
+<span class="line-number"></span><span class="code-hl">    accesses[this-&gt;mem_ptr].ts = 0;</span>
+<span class="line-number"></span><span class="code-hl">    gid_to_mem[this-&gt;goroutine_id] = 0;</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+</code></pre>
+<p>A few notes about Go's generated assembly, on ARM64, per the <a href="https://github.com/golang/go/blob/master/src/cmd/compile/abi-internal.md">Go ABI</a>:</p>
+<ul>
+<li>Inside a goroutine, the register <code>X28</code> always stores a pointer to the goroutine information, which we use as goroutine id</li>
+<li>Inside a closure, the register <code>X26</code> stores a pointer to the captured environment (i.e. variables) at offset 8. By following this pointer, we find the shared slice, which is captured by the closures.</li>
+</ul>
+<p>This is a small difference between Go and C: for C we watched for concurrent access to the length field of the byte array. For Go we watch for concurrent access to the slice.
+There isn't a real reason for that, I just wanted to tweak the approach slightly.</p>
+<p>When we run it, we see that the read-write race is detected:</p>
+<pre>
+  <div class="code-header">
+    <span>Plaintext</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-plaintext"><span class="line-number"></span><span class="code-hl"> 12  13933 github.com/ory/kratos/courier_test.TestQueueHTTPEmail.func1:entry possible data race: my_access_kind:2 my_tid=114567426771776 my_ts=84677501145916 their_access_kind:1 their_tid=64 their_ts=0 mem_ptr=cc832d38</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">              courier.test`github.com/ory/kratos/courier_test.TestQueueHTTPEmail.func1</span>
+<span class="line-number"></span><span class="code-hl">              courier.test`net/http.HandlerFunc.ServeHTTP+0x38</span>
+<span class="line-number"></span><span class="code-hl">              courier.test`net/http.serverHandler.ServeHTTP+0xb0</span>
+<span class="line-number"></span><span class="code-hl">              courier.test`net/http.(*conn).serve+0x51c</span>
+<span class="line-number"></span><span class="code-hl">              courier.test`net/http.(*Server).Serve.gowrap3+0x24</span>
+<span class="line-number"></span><span class="code-hl">              courier.test`runtime.goexit.abi0+0x4</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  9  13934 github.com/ory/kratos/courier_test.TestQueueHTTPEmail.func3:entry possible data race: my_access_kind:1 my_tid=114567393856320 my_ts=84677501654791 their_access_kind:2 their_tid=114567426771776 their_ts=-2073554395 mem_ptr=cc832d38</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">              courier.test`github.com/ory/kratos/courier_test.TestQueueHTTPEmail.func3</span>
+<span class="line-number"></span><span class="code-hl">              courier.test`github.com/ory/x/resilience.Retry+0x28c</span>
+<span class="line-number"></span><span class="code-hl">              courier.test`github.com/ory/kratos/courier_test.TestQueueHTTPEmail+0x3750</span>
+<span class="line-number"></span><span class="code-hl">              courier.test`testing.tRunner+0xc4</span>
+<span class="line-number"></span><span class="code-hl">              courier.test`testing.(*T).Run.gowrap1+0x20</span>
+<span class="line-number"></span><span class="code-hl">              courier.test`runtime.goexit.abi0+0x4</span>
+</code></pre>
 <h2 id="conclusion">
   <a class="title" href="#conclusion">Conclusion</a>
   <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
