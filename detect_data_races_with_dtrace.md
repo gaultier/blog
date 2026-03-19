@@ -663,7 +663,7 @@ Finally, remember that neither our DTrace approach nor Thread Sanitizer guarante
 In fact, while writing this article and the accompanying test programs, Thread Sanitizer very rarely flagged the glaring data races. That was motivating, as well as terrifying. 
 
 
-My recommendation would still be to use your programming language or platform recommended race detector if possible. DTrace is a good fallback if that's not feasible or if you want to avoid recompiling.
+My recommendation would still be to use your programming language or platform recommended race detector if possible. DTrace is a good fallback if that's not feasible or if you want to avoid recompiling, for example when troubleshooting in the production environment.
 
 ## Addendum: The full code
 

@@ -814,7 +814,7 @@ There isn't a real reason for that, I just wanted to tweak the approach slightly
 <p>However, deciphering assembly produced by the Go compiler is non-trivial, so if you have access to DTrace static probes, I think it's much, much easier that way.</p>
 <p>Finally, remember that neither our DTrace approach nor Thread Sanitizer guarantee that <em>all</em> data races will be caught, since these are runtime detectors that only see the code paths actually taken when observing this particular run of the program, and also because they operate with limited amounts of memory: they cannot remember <em>all</em> memory accesses in the program, they only do a best effort to remember most of them. They do not prove the absence of bugs, only their presence.</p>
 <p>In fact, while writing this article and the accompanying test programs, Thread Sanitizer very rarely flagged the glaring data races. That was motivating, as well as terrifying.</p>
-<p>My recommendation would still be to use your programming language or platform recommended race detector if possible. DTrace is a good fallback if that's not feasible or if you want to avoid recompiling.</p>
+<p>My recommendation would still be to use your programming language or platform recommended race detector if possible. DTrace is a good fallback if that's not feasible or if you want to avoid recompiling, for example when troubleshooting in the production environment.</p>
 <h2 id="addendum-the-full-code">
   <a class="title" href="#addendum-the-full-code">Addendum: The full code</a>
   <a class="hash-anchor" href="#addendum-the-full-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
