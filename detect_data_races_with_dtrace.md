@@ -670,7 +670,7 @@ My recommendation would still be to use your programming language or platform re
 
 
 <details>
-  <summary>The D script</summary>
+  <summary>The D script for C</summary>
 
 ```dtrace
 #pragma D option dynvarsize=16m
@@ -725,6 +725,104 @@ pid$target::byte_array_?et_len:return /self->mem_ptr != 0/ {
 }
 ```
 </details>
+
+<details>
+  <summary>The D script for Go</summary>
+
+```dtrace
+#pragma D option dynvarsize=16m
+#pragma D option cleanrate=100hz
+
+typedef enum {AccessKindRead=1, AccessKindWrite=2} AccessKind;
+
+typedef struct {
+  AccessKind kind;
+  size_t tid;
+  int ts;
+} Access;
+
+typedef struct {
+  void* data;
+  size_t len, cap;
+} GoSlice;
+
+Access accesses[uintptr_t /* data ptr */];
+
+int func_access[string];
+
+uintptr_t gid_to_mem[int];
+
+BEGIN {
+  // Record which kind of access each function does.
+  func_access["github.com/ory/kratos/courier_test.TestQueueHTTPEmail.func3"] = AccessKindRead;
+  func_access["github.com/ory/kratos/courier_test.TestQueueHTTPEmail.func1"] = AccessKindWrite;
+}
+
+pid$target::*TestQueueHTTPEmail.func1:entry {
+  this->my_access_kind = func_access[probefunc];
+  this->now = timestamp;
+
+  this->goroutine_id = uregs[R_X28];
+  this->ptr_to_slice_header = *(uintptr_t*)copyin(uregs[R_X26] + 16, 8);
+  this->go_slice = (GoSlice*)copyin(this->ptr_to_slice_header, sizeof(GoSlice));
+  this->mem_ptr = (int)this->ptr_to_slice_header;
+  this->theirs = accesses[this->mem_ptr];
+
+  if (this->theirs.tid !=0 &&  // 'if a thread is concurrently accessing the same memory...'
+      this->theirs.tid != this->goroutine_id &&  // 'and this is another thread as the current one...'
+      (this->my_access_kind == AccessKindWrite || this->theirs.kind == AccessKindWrite)) { // 'and at least one access is a write...'
+    printf("possible data race: my_access_kind:%d my_tid=%d my_ts=%d their_access_kind:%d their_tid=%d their_ts=%d mem_ptr=%p\n", this->my_access_kind, this->goroutine_id, this->now, this->theirs.kind, this->theirs.tid, this->theirs.ts, this->mem_ptr);
+    ustack();
+  }
+
+  // Update the map with the current access.
+  accesses[this->mem_ptr].kind = this->my_access_kind;
+  accesses[this->mem_ptr].tid = this->goroutine_id;
+  accesses[this->mem_ptr].ts = this->now;
+  gid_to_mem[this->goroutine_id] = this->mem_ptr;
+}
+
+pid$target::*TestQueueHTTPEmail.func3:entry {
+  this->my_access_kind = func_access[probefunc];
+  this->now = timestamp;
+
+  this->goroutine_id = uregs[R_X28];
+  this->ptr_to_slice_header = *(uintptr_t*)copyin(uregs[R_X26] + 8, 8);
+  this->go_slice = (GoSlice*)copyin(this->ptr_to_slice_header, sizeof(GoSlice));
+  this->mem_ptr = (int)this->ptr_to_slice_header;
+  this->theirs = accesses[this->mem_ptr];
+
+  if (this->theirs.tid !=0 &&  // 'if a thread is concurrently accessing the same memory...'
+      this->theirs.tid != this->goroutine_id &&  // 'and this is another thread as the current one...'
+      (this->my_access_kind == AccessKindWrite || this->theirs.kind == AccessKindWrite)) { // 'and at least one access is a write...'
+    printf("possible data race: my_access_kind:%d my_tid=%d my_ts=%d their_access_kind:%d their_tid=%d their_ts=%d mem_ptr=%p\n", this->my_access_kind, this->goroutine_id, this->now, this->theirs.kind, this->theirs.tid, this->theirs.ts, this->mem_ptr);
+    ustack();
+  }
+
+  // Update the map with the current access.
+  accesses[this->mem_ptr].kind = this->my_access_kind;
+  accesses[this->mem_ptr].tid = this->goroutine_id;
+  accesses[this->mem_ptr].ts = this->now;
+  gid_to_mem[this->goroutine_id] = this->mem_ptr;
+}
+
+pid$target::*TestQueueHTTPEmail.func1:return,
+pid$target::*TestQueueHTTPEmail.func3:return
+{
+  this->goroutine_id = uregs[R_X28];
+  this->mem_ptr = gid_to_mem[this->goroutine_id];
+  if (this->mem_ptr != 0){
+  // Clear the map since the access is done.
+    accesses[this->mem_ptr].kind = 0;
+    accesses[this->mem_ptr].tid = 0;
+    accesses[this->mem_ptr].ts = 0;
+    gid_to_mem[this->goroutine_id] = 0;
+  }
+}
+```
+
+</details>
+
 
 <details>
   <summary>The racy C program</summary>

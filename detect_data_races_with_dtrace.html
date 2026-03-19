@@ -820,7 +820,7 @@ There isn't a real reason for that, I just wanted to tweak the approach slightly
   <a class="hash-anchor" href="#addendum-the-full-code" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <details>
-  <summary>The D script</summary>
+  <summary>The D script for C</summary>
 <pre>
   <div class="code-header">
     <span>Dtrace</span>
@@ -875,6 +875,104 @@ There isn't a real reason for that, I just wanted to tweak the approach slightly
 <span class="line-number"></span><span class="code-hl">  accesses[self-&gt;mem_ptr].tid = 0;</span>
 <span class="line-number"></span><span class="code-hl">  accesses[self-&gt;mem_ptr].ts = 0;</span>
 <span class="line-number"></span><span class="code-hl">  self-&gt;mem_ptr = 0;</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+</code></pre>
+</details>
+<details>
+  <summary>The D script for Go</summary>
+<pre>
+  <div class="code-header">
+    <span>Dtrace</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">#pragma D option dynvarsize=16m</span>
+<span class="line-number"></span><span class="code-hl">#pragma D option cleanrate=100hz</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">typedef enum {AccessKindRead=1, AccessKindWrite=2} AccessKind;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">typedef struct {</span>
+<span class="line-number"></span><span class="code-hl">  AccessKind kind;</span>
+<span class="line-number"></span><span class="code-hl">  size_t tid;</span>
+<span class="line-number"></span><span class="code-hl">  int ts;</span>
+<span class="line-number"></span><span class="code-hl">} Access;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">typedef struct {</span>
+<span class="line-number"></span><span class="code-hl">  void* data;</span>
+<span class="line-number"></span><span class="code-hl">  size_t len, cap;</span>
+<span class="line-number"></span><span class="code-hl">} GoSlice;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">Access accesses[uintptr_t /* data ptr */];</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">int func_access[string];</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">uintptr_t gid_to_mem[int];</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">BEGIN {</span>
+<span class="line-number"></span><span class="code-hl">  // Record which kind of access each function does.</span>
+<span class="line-number"></span><span class="code-hl">  func_access[&quot;github.com/ory/kratos/courier_test.TestQueueHTTPEmail.func3&quot;] = AccessKindRead;</span>
+<span class="line-number"></span><span class="code-hl">  func_access[&quot;github.com/ory/kratos/courier_test.TestQueueHTTPEmail.func1&quot;] = AccessKindWrite;</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">pid$target::*TestQueueHTTPEmail.func1:entry {</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;my_access_kind = func_access[probefunc];</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;now = timestamp;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;goroutine_id = uregs[R_X28];</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;ptr_to_slice_header = *(uintptr_t*)copyin(uregs[R_X26] + 16, 8);</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;go_slice = (GoSlice*)copyin(this-&gt;ptr_to_slice_header, sizeof(GoSlice));</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;mem_ptr = (int)this-&gt;ptr_to_slice_header;</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;theirs = accesses[this-&gt;mem_ptr];</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  if (this-&gt;theirs.tid !=0 &amp;&amp;  // 'if a thread is concurrently accessing the same memory...'</span>
+<span class="line-number"></span><span class="code-hl">      this-&gt;theirs.tid != this-&gt;goroutine_id &amp;&amp;  // 'and this is another thread as the current one...'</span>
+<span class="line-number"></span><span class="code-hl">      (this-&gt;my_access_kind == AccessKindWrite || this-&gt;theirs.kind == AccessKindWrite)) { // 'and at least one access is a write...'</span>
+<span class="line-number"></span><span class="code-hl">    printf(&quot;possible data race: my_access_kind:%d my_tid=%d my_ts=%d their_access_kind:%d their_tid=%d their_ts=%d mem_ptr=%p\n&quot;, this-&gt;my_access_kind, this-&gt;goroutine_id, this-&gt;now, this-&gt;theirs.kind, this-&gt;theirs.tid, this-&gt;theirs.ts, this-&gt;mem_ptr);</span>
+<span class="line-number"></span><span class="code-hl">    ustack();</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  // Update the map with the current access.</span>
+<span class="line-number"></span><span class="code-hl">  accesses[this-&gt;mem_ptr].kind = this-&gt;my_access_kind;</span>
+<span class="line-number"></span><span class="code-hl">  accesses[this-&gt;mem_ptr].tid = this-&gt;goroutine_id;</span>
+<span class="line-number"></span><span class="code-hl">  accesses[this-&gt;mem_ptr].ts = this-&gt;now;</span>
+<span class="line-number"></span><span class="code-hl">  gid_to_mem[this-&gt;goroutine_id] = this-&gt;mem_ptr;</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">pid$target::*TestQueueHTTPEmail.func3:entry {</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;my_access_kind = func_access[probefunc];</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;now = timestamp;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;goroutine_id = uregs[R_X28];</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;ptr_to_slice_header = *(uintptr_t*)copyin(uregs[R_X26] + 8, 8);</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;go_slice = (GoSlice*)copyin(this-&gt;ptr_to_slice_header, sizeof(GoSlice));</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;mem_ptr = (int)this-&gt;ptr_to_slice_header;</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;theirs = accesses[this-&gt;mem_ptr];</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  if (this-&gt;theirs.tid !=0 &amp;&amp;  // 'if a thread is concurrently accessing the same memory...'</span>
+<span class="line-number"></span><span class="code-hl">      this-&gt;theirs.tid != this-&gt;goroutine_id &amp;&amp;  // 'and this is another thread as the current one...'</span>
+<span class="line-number"></span><span class="code-hl">      (this-&gt;my_access_kind == AccessKindWrite || this-&gt;theirs.kind == AccessKindWrite)) { // 'and at least one access is a write...'</span>
+<span class="line-number"></span><span class="code-hl">    printf(&quot;possible data race: my_access_kind:%d my_tid=%d my_ts=%d their_access_kind:%d their_tid=%d their_ts=%d mem_ptr=%p\n&quot;, this-&gt;my_access_kind, this-&gt;goroutine_id, this-&gt;now, this-&gt;theirs.kind, this-&gt;theirs.tid, this-&gt;theirs.ts, this-&gt;mem_ptr);</span>
+<span class="line-number"></span><span class="code-hl">    ustack();</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  // Update the map with the current access.</span>
+<span class="line-number"></span><span class="code-hl">  accesses[this-&gt;mem_ptr].kind = this-&gt;my_access_kind;</span>
+<span class="line-number"></span><span class="code-hl">  accesses[this-&gt;mem_ptr].tid = this-&gt;goroutine_id;</span>
+<span class="line-number"></span><span class="code-hl">  accesses[this-&gt;mem_ptr].ts = this-&gt;now;</span>
+<span class="line-number"></span><span class="code-hl">  gid_to_mem[this-&gt;goroutine_id] = this-&gt;mem_ptr;</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">pid$target::*TestQueueHTTPEmail.func1:return,</span>
+<span class="line-number"></span><span class="code-hl">pid$target::*TestQueueHTTPEmail.func3:return</span>
+<span class="line-number"></span><span class="code-hl">{</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;goroutine_id = uregs[R_X28];</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;mem_ptr = gid_to_mem[this-&gt;goroutine_id];</span>
+<span class="line-number"></span><span class="code-hl">  if (this-&gt;mem_ptr != 0){</span>
+<span class="line-number"></span><span class="code-hl">  // Clear the map since the access is done.</span>
+<span class="line-number"></span><span class="code-hl">    accesses[this-&gt;mem_ptr].kind = 0;</span>
+<span class="line-number"></span><span class="code-hl">    accesses[this-&gt;mem_ptr].tid = 0;</span>
+<span class="line-number"></span><span class="code-hl">    accesses[this-&gt;mem_ptr].ts = 0;</span>
+<span class="line-number"></span><span class="code-hl">    gid_to_mem[this-&gt;goroutine_id] = 0;</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 </details>
