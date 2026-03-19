@@ -1,5 +1,8 @@
 ## Ideas for articles
 
+- [ ] Clever and surprising stuff I found in the Go implementation
+    - `Transition from growing 2x for small slices to growing 1.25x for large slices. This formula gives a smooth-ish transition between the two.` (runtime/slice.go)
+    - Channel elements are limited in size to 1<<16 (runtime.chan.go)
 - [ ] A tale of two APIs: Device Attestation on iOS and Android
 - [ ] a weird advantage of using TLA+ (using TLA+ generated traces as input for the real program)
 - [ ] compiler architecture and implementation with live playground
