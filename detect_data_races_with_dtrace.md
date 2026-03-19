@@ -505,7 +505,7 @@ How the benchmarks were done:
 
 Commentary:
 
-- When there are races, DTrace performs really badly because it reports all races it sees, which is however great for the DevUX. If we make DTrace also report timestamps and the call stack, the runtime goes to 7.5s.
+- When there are races, DTrace performs really badly because it reports all races it sees, which is however great for the developer experience. If we make DTrace also report timestamps and the call stack, the runtime goes to 7.5s.
 - DTrace has many tunables so it's possible that we can make it much faster this way.
 - The racy program in release mode never terminates because as previously mentioned, the compiler does whatever it wants in the presence of undefined behavior, and in this case, generates an infinite loop.
 - In the absence of data races, DTrace performs really well compared to TSan, we only see a ~3-4x slowdown, compared to a 16x slowdown with TSan. This of course depends on how many probes fire, and how much our script prints.
