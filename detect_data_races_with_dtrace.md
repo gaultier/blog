@@ -61,7 +61,7 @@ So here is the idea:
 - Using DTrace, we observe functions that read and write this data structure. DTrace can also observe arbitrary locations in the program with [function offset probes (33.6.2. Tracing Arbitrary Instructions)](https://illumos.org/books/dtrace/chp-user.html#chp-user) or statically defined probes, but simply tracing functions is enough to demonstrate the point here.
 - When entering such a function, we record in a global map the thread id and the kind of access (read/write). The key in this map is the memory address being accessed.
 - When exiting such a function, we clear the entry in the map, because the access has ended. 
-- When start to access a piece of memory, we check the global map of accesses. If we see that another thread is already accessing the same memory address, this means that we have a concurrent access to the data structure. If at least one of them is a write (read-read is fine), this is a potential data race.
+- When starting to access a piece of memory, we check the global map of accesses. If we see that another thread is already accessing the same memory address, this means that we have a concurrent access to the data structure. If at least one of them is a write (read-read is fine), this is a potential data race.
 
 This can be refined further as we'll see but it's good enough for now, and that's the basis of what Thread Sanitizer does.
 
@@ -407,7 +407,7 @@ Let's check the correctness by applying a smarter, possibly more performant fix 
      }
 ```
 
-The code is very similar in its structure to the mutex version, but this now allows for N concurrent reader or one concurrent writer. It means that we now can have multiple concurrent threads reading the same address in memory. 
+The code is very similar in its structure to the mutex version, but this now allows for N concurrent readers or one concurrent writer. It means that we now can have multiple concurrent threads reading the same address in memory. 
 
 To take full advantage of this, we spawn another thread that also reads the length in a loop:
 
