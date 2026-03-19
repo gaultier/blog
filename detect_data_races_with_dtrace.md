@@ -650,18 +650,20 @@ When we run it, we see that the read-write race is detected:
 
 ## Conclusion
 
-Thread Sanitizer does a lot more than what we have covered, because it understands all the synchronization primitives: condition variables, atomics, etc. It tracks 'happens before' relationships between threads that call these primitives. We do not do that in our crude D script, even though we perhaps could, with a good amount of post-processing to eliminate false positives.
+Thread Sanitizer does a lot more than what we have covered, because it understands all the synchronization primitives: condition variables, atomics, etc. It tracks 'happens before' relationships between threads that call these primitives. We do not do that in our crude D script, even though we perhaps could, with a good amount of post-processing in a general purpose language.
 
-Another major difference is that Thread Sanitizer is general purpose and tries to track all memory accesses, whereas our DTrace approach selectively tracks a few memory accesses.
+Another major difference is that Thread Sanitizer is general purpose and tries to track all memory accesses, whereas our DTrace approach selectively tracks a few memory accesses: we 'zoom in' on a specific piece of code.
 
-Even though, I think this is already a pretty good approach, in the spirit of '20% of the work gets you 80% of the way there'. The main appeal is that it avoids having to rebuild the whole program with different flags which can be very time consuming, or sometimes not feasible at all.
+Even though, I think this is already a pretty good approach, in the spirit of '20% of the work gets you 80% of the way there'. The main appeal is that it avoids having to rebuild the whole program with different flags which can be very time consuming, or sometimes not feasible at all. 
+
+However, deciphering assembly produced by the Go compiler is non-trivial, so if you have access to DTrace static probes, I think it's much, much easier that way.
 
 Finally, remember that neither our DTrace approach nor Thread Sanitizer guarantee that *all* data races will be caught, since these are runtime detectors that only see the code paths actually taken when observing this particular run of the program, and also because they operate with limited amounts of memory: they cannot remember *all* memory accesses in the program, they only do a best effort to remember most of them. They do not prove the absence of bugs, only their presence.
 
 In fact, while writing this article and the accompanying test programs, Thread Sanitizer very rarely flagged the glaring data races. That was motivating, as well as terrifying. 
 
 
-My recommendation would still be to use your programming language or platform recommended race detector if possible. DTrace is a good fallback if that's no feasible or if you want to avoid recompiling.
+My recommendation would still be to use your programming language or platform recommended race detector if possible. DTrace is a good fallback if that's not feasible or if you want to avoid recompiling.
 
 ## Addendum: The full code
 
