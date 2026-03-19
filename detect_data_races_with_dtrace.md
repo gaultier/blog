@@ -507,7 +507,6 @@ Commentary:
 
 - When there are races, DTrace performs really badly because it reports all races it sees, which is however great for the developer experience. If we make DTrace also report timestamps and the call stack, the runtime goes to 7.5s. I wonder if TSan does better here, because it might use sampling? Meaning, it might report unique races found: a race occurring many times only gets reported once.
 - DTrace has many tunables so it's possible that we can make it much faster this way.
-- The racy program in release mode never terminates because as previously mentioned, the compiler does whatever it wants in the presence of undefined behavior, and in this case, generates an infinite loop.
 - In the absence of data races, DTrace performs really well compared to TSan, we only see a ~3-4x slowdown, compared to a 16x slowdown with TSan. This of course depends on how many probes fire, and how much our script prints.
 - RW lock performs horribly compared to the mutex version. I just profiled it real quick and saw that the benchmark is dominated by `pthread_rwlock_lock_slow`. I think we are simply in the worst case scenario for a RW lock where there is 1 reader and 1 writer, and a RW lock optimizes for the cases of N readers most of the time, and 1 writer coming in from time to time. A typical implementation does a simple atomic increment where there are only readers, which is very fast, and acquires a mutex lock when there is one writer in the mix.
 
