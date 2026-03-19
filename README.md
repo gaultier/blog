@@ -22,5 +22,5 @@ Spell (in Neovim):
 Optimize git stats:
 
 ```shell
-$ git gc --aggressive --prune=now
+$ git maintenance run
 ```

@@ -1,9 +1,6 @@
 ## Ideas for articles
 
 - [ ] A tale of two APIs: Device Attestation on iOS and Android
-- [ ] Catch data races with DTrace?
-    + Cannot use function offset probes on ARM64 (need fasttrap support)
-    + Might work on x64
 - [ ] a weird advantage of using TLA+ (using TLA+ generated traces as input for the real program)
 - [ ] compiler architecture and implementation with live playground
 - [ ] For a few data races more
@@ -19,7 +16,6 @@
 - [ ] How register allocation works (with visualization)
 - [ ] sql differences between databases - porting an application to MySQL/PostgreSQL/SQLite
 - [ ] HTTP server using arenas
-- [ ] How this blog is made. Line numbers in code snippets.
 - [ ] Banjo chords
 - [ ] Dtrace VM
 - [ ] From BIOS to bootloader to kernel to userspace
@@ -43,7 +39,6 @@
 ## Blog implementation
 
 - [ ] gen: check that for foo.md in Git, foo.html is also in Git 
-- [ ] gen: background job for `git gc --aggressive --prune=now`
 - [ ] browser: search with `/` shortcut and appears on the side
 - [ ] browser: search shows the full title path to the match e.g. 'my_article: foo/bar/baz'
 - [ ] gen: Articles excerpt on the home page?
