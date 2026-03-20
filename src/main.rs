@@ -1032,6 +1032,18 @@ fn generate_tags_page(
         }
     }
 
+    for tag1 in tag_to_articles.keys() {
+        for tag2 in tag_to_articles.keys() {
+            if tag1 != tag2 && tag1.to_lowercase() == tag2.to_lowercase() {
+                bail!(
+                    "similar tags detected with different case: {} vs {}",
+                    tag1,
+                    tag2
+                );
+            }
+        }
+    }
+
     let mut sb: Vec<u8> = Vec::with_capacity(64000);
     writeln!(
         sb,
