@@ -1,5 +1,10 @@
 ## Ideas for articles
 
+- [ ] Why are my Go tests so slow? An optimization story.
+    ```
+    int total; lockstat:::* /pid==$target && arg1>1000/ {total+=arg1;  @wait[probefunc]=quantize(arg1);}  END{printf("total_ms=%d\n", total)
+    ```
+
 - [ ] Interesting stuff from DTrace tests
     - Cross-platform variables:
       ```
