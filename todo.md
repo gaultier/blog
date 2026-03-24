@@ -1,5 +1,48 @@
 ## Ideas for articles
 
+- [ ] Interesting stuff from DTrace tests
+    - Cross-platform variables:
+      ```
+      inline user_addr_t swifterror = curpsinfo->pr_dmodel == PR_MODEL_LP64 ? uregs[R_X21] : uregs[R_R8];
+inline user_addr_t swiftself = curpsinfo->pr_dmodel == PR_MODEL_LP64 ? uregs[R_X20] : uregs[R_R10];
+      ```
+    - JSON extract
+      ```
+        bunyan*$1:::log-*
+        /json(this->j, "finished") == NULL && json(this->j, "action") != "ignore"/
+      ```
+    - builtinvars: machctimestamp, machtimestamp, vinstrs, vtimestamp, vcycles, ipl, epid, errno, cpuinstrs, cpucycles, cpu, caller, curthread
+    - arrays can have tuples as index: `a["test", "test"] = 0; a["abc", 123] = 123;`
+    - clause local variables are not initialized to 0
+      ```
+        this int x;
+
+        BEGIN
+        {
+            printf("the value of x is %d\n", this->x);
+            exit(0);
+        }
+        ```
+    - Bitfields in structs are supported
+    - The order of keys in aggregations can be chosen:
+        ```
+        @tour["Brisbane", i++, j] = sum(5 - j);
+
+        setopt("aggsortkeypos", "2");
+        printf("\nReversed by key, position 2:\n");
+        printa("%20s %8d %8d %8@d\n", @tour);
+        ```
+    - stddev(), rand(), sym(), usym(), func(), ufunc(), mod(), umod(), denormalize(), stack()
+    - setopt("aggzoom");, 	setopt("aggpack");
+    - enums: enum values can be defined based on other enum values in the same enum. Final trailing comman is not accepted.
+    - multiple BEGIN/END clauses are allowed and can be written as `dtrace:::BEGIN`
+    - ERROR probe
+    - translator
+    - inline
+    - `dtrace_zero, `ostype
+
+- [ ] macos ui from scratch
+    - SLSNewConnection: connects to the lsd daemon
 - [ ] Clever and surprising stuff I found in the Go implementation
     - `Transition from growing 2x for small slices to growing 1.25x for large slices. This formula gives a smooth-ish transition between the two.` (runtime/slice.go)
     - Channel elements are limited in size to 1<<16 (runtime.chan.go)
