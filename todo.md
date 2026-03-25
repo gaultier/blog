@@ -3,7 +3,22 @@
 - [ ] Why are my Go tests so slow? An optimization story.
     ```
     int total; lockstat:::* /pid==$target && arg1>1000/ {total+=arg1;  @wait[probefunc]=quantize(arg1);}  END{printf("total_ms=%d\n", total)
+
+    pid$target::*sqlite*step*internal*:entry {@[probefunc]=count(); @stacks[ustack()]=count()}
     ```
+
+    usr vs sys time: 
+    CGO: 18.11/36.20 secs
+    NOCGO: 26.36/16.56 secs
+    NOCGO+NOMIGRATIONS: 15.02/6.74 secs
+    CGO+NOMIGRATIONS: 15.30/6.97 secs
+
+| Configuration            | User Time (s) | Sys Time (s) |
+|--------------------------|:-------------:|:------------:|
+| CGO                      | 18.11         | 36.20        |
+| NOCGO                    | 26.36         | 16.56        |
+| CGO + No Migrations      | 15.30         | 6.97         |
+| NOCGO + No Migrations    | 15.02         | 6.74         |
 
 - [ ] Interesting stuff from DTrace tests
     - Cross-platform variables:
