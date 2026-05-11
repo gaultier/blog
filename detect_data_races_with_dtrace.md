@@ -462,7 +462,10 @@ And... no warnings, as expected. Terrific!
 This is the clause that does all the heavy lifting:
 
 ```dtrace
-      (this->my_access_kind == AccessKindWrite || this->theirs.kind == AccessKindWrite)) { // 'and at least one access is a write...'
+pid$target::byte_array_?et_len:entry {
+    // ...
+      if (/* ... */ (this->my_access_kind == AccessKindWrite || this->theirs.kind == AccessKindWrite)) { /* 'and at least one access is a write...' */ }
+    }
 ```
 
 And N concurrent readers are fine. In fact, if we comment out this condition, we see indeed that we have two concurrent readers and lots of false positives get printed:
