@@ -248,7 +248,7 @@ pid$target::byte_array_?et_len:entry {
 
   if (this->theirs.tid !=0 &&  // 'if a thread is concurrently accessing the same memory...'
       this->theirs.tid != tid &&  // 'and this is another thread as the current one...'
-      (this->my_access_kind == AccessKindWrite || this->theirs.kind == AccessKindWrite)) { // 'and at least one access is a write...'
+      (this->my_access_kind == AccessKindWrite || this->theirs.kind == AccessKindWrite))/* 'and at least one access is a write...' */ { 
     printf("possible data race: my_access_kind:%d my_tid=%d my_ts=%d their_access_kind:%d their_tid=%d their_ts=%d mem_ptr=%p\n", this->my_access_kind, tid, this->now, this->theirs.kind, this->theirs.tid, this->theirs.ts, self->mem_ptr);
     ustack();
   }
@@ -464,7 +464,7 @@ This is the clause that does all the heavy lifting:
 ```dtrace
 pid$target::byte_array_?et_len:entry {
     // ...
-      if (/* ... */ (this->my_access_kind == AccessKindWrite || this->theirs.kind == AccessKindWrite)) { /* 'and at least one access is a write...' */ }
+      if (/* ... */ (this->my_access_kind == AccessKindWrite || this->theirs.kind == AccessKindWrite)) /* 'and at least one access is a write...' */  {}
     }
 ```
 
@@ -567,7 +567,7 @@ pid$target::*TestQueueHTTPEmail.func1:entry {
 
   if (this->theirs.tid !=0 &&  // 'if a thread is concurrently accessing the same memory...'
       this->theirs.tid != this->goroutine_id &&  // 'and this is another thread as the current one...'
-      (this->my_access_kind == AccessKindWrite || this->theirs.kind == AccessKindWrite)) { // 'and at least one access is a write...'
+      (this->my_access_kind == AccessKindWrite || this->theirs.kind == AccessKindWrite))/*  'and at least one access is a write...' */ { 
     printf("possible data race: my_access_kind:%d my_tid=%d my_ts=%d their_access_kind:%d their_tid=%d their_ts=%d mem_ptr=%p\n", this->my_access_kind, this->goroutine_id, this->now, this->theirs.kind, this->theirs.tid, this->theirs.ts, this->mem_ptr);
     ustack();
   }
@@ -591,7 +591,7 @@ pid$target::*TestQueueHTTPEmail.func3:entry {
 
   if (this->theirs.tid !=0 &&  // 'if a thread is concurrently accessing the same memory...'
       this->theirs.tid != this->goroutine_id &&  // 'and this is another thread as the current one...'
-      (this->my_access_kind == AccessKindWrite || this->theirs.kind == AccessKindWrite)) { // 'and at least one access is a write...'
+      (this->my_access_kind == AccessKindWrite || this->theirs.kind == AccessKindWrite)) /*  'and at least one access is a write...' */ { 
     printf("possible data race: my_access_kind:%d my_tid=%d my_ts=%d their_access_kind:%d their_tid=%d their_ts=%d mem_ptr=%p\n", this->my_access_kind, this->goroutine_id, this->now, this->theirs.kind, this->theirs.tid, this->theirs.ts, this->mem_ptr);
     ustack();
   }
@@ -708,7 +708,7 @@ pid$target::byte_array_?et_len:entry {
 
   if (this->theirs.tid !=0 &&  // 'if a thread is concurrently accessing the same memory...'
       this->theirs.tid != tid &&  // 'and this is another thread as the current one...'
-      (this->my_access_kind == AccessKindWrite || this->theirs.kind == AccessKindWrite)) { // 'and at least one access is a write...'
+      (this->my_access_kind == AccessKindWrite || this->theirs.kind == AccessKindWrite)) /*  'and at least one access is a write...' */ { 
     printf("possible data race: my_access_kind:%d my_tid=%d my_ts=%d their_access_kind:%d their_tid=%d their_ts=%d mem_ptr=%p\n", this->my_access_kind, tid, this->now, this->theirs.kind, this->theirs.tid, this->theirs.ts, self->mem_ptr);
     ustack();
   }
@@ -773,7 +773,7 @@ pid$target::*TestQueueHTTPEmail.func1:entry {
 
   if (this->theirs.tid !=0 &&  // 'if a thread is concurrently accessing the same memory...'
       this->theirs.tid != this->goroutine_id &&  // 'and this is another thread as the current one...'
-      (this->my_access_kind == AccessKindWrite || this->theirs.kind == AccessKindWrite)) { // 'and at least one access is a write...'
+      (this->my_access_kind == AccessKindWrite || this->theirs.kind == AccessKindWrite)) /*  'and at least one access is a write...' */ { 
     printf("possible data race: my_access_kind:%d my_tid=%d my_ts=%d their_access_kind:%d their_tid=%d their_ts=%d mem_ptr=%p\n", this->my_access_kind, this->goroutine_id, this->now, this->theirs.kind, this->theirs.tid, this->theirs.ts, this->mem_ptr);
     ustack();
   }
@@ -797,7 +797,7 @@ pid$target::*TestQueueHTTPEmail.func3:entry {
 
   if (this->theirs.tid !=0 &&  // 'if a thread is concurrently accessing the same memory...'
       this->theirs.tid != this->goroutine_id &&  // 'and this is another thread as the current one...'
-      (this->my_access_kind == AccessKindWrite || this->theirs.kind == AccessKindWrite)) { // 'and at least one access is a write...'
+      (this->my_access_kind == AccessKindWrite || this->theirs.kind == AccessKindWrite)) /*  'and at least one access is a write...' */ { 
     printf("possible data race: my_access_kind:%d my_tid=%d my_ts=%d their_access_kind:%d their_tid=%d their_ts=%d mem_ptr=%p\n", this->my_access_kind, this->goroutine_id, this->now, this->theirs.kind, this->theirs.tid, this->theirs.ts, this->mem_ptr);
     ustack();
   }
