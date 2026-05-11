@@ -217,7 +217,10 @@ Alright, now let's implement our idea in DTrace:
 #pragma D option dynvarsize=16m
 #pragma D option cleanrate=100hz
 
-typedef enum {AccessKindRead=1, AccessKindWrite=2} AccessKind;
+typedef enum {
+  AccessKindRead = 1,
+  AccessKindWrite = 2
+} AccessKind;
 
 typedef struct {
   AccessKind kind;
@@ -229,26 +232,29 @@ Access accesses[uintptr_t /* data ptr */];
 
 int func_access[string];
 
-BEGIN {
+BEGIN
+{
   // Record which kind of access each function does.
   func_access["byte_array_get_len"] = AccessKindRead;
   func_access["byte_array_set_len"] = AccessKindWrite;
 }
 
 // Watch `byte_array_get_len` and `byte_array_set_len`.
-pid$target::byte_array_?et_len:entry {
+pid$target::byte_array_?et_len:entry
+{
   // `arg0` is the pointer to the `ByteArray` structure,
   // and `len` is at offset `8` in the `ByteArray` structure (on 64 bits systems).
   // So this gets the value of `byte_array->len`.
   self->mem_ptr = arg0 + 8;
   this->theirs = accesses[self->mem_ptr];
+
   // Get the access kind based on the function: `byte_array_get_len` is a read and `byte_array_set_len` is a write.
   this->my_access_kind = func_access[probefunc];
   this->now = timestamp;
 
-  if (this->theirs.tid !=0 &&  // 'if a thread is concurrently accessing the same memory...'
-      this->theirs.tid != tid &&  // 'and this is another thread as the current one...'
-      (this->my_access_kind == AccessKindWrite || this->theirs.kind == AccessKindWrite))/* 'and at least one access is a write...' */ { 
+  if (this->theirs.tid != 0 && // 'if a thread is concurrently accessing the same memory...'
+      this->theirs.tid != tid && // 'and this is another thread as the current one...'
+      (this->my_access_kind == AccessKindWrite || this->theirs.kind == AccessKindWrite)) /* 'and at least one access is a write...' */ {
     printf("possible data race: my_access_kind:%d my_tid=%d my_ts=%d their_access_kind:%d their_tid=%d their_ts=%d mem_ptr=%p\n", this->my_access_kind, tid, this->now, this->theirs.kind, this->theirs.tid, this->theirs.ts, self->mem_ptr);
     ustack();
   }
@@ -259,7 +265,9 @@ pid$target::byte_array_?et_len:entry {
   accesses[self->mem_ptr].ts = this->now;
 }
 
-pid$target::byte_array_?et_len:return /self->mem_ptr != 0/ {
+pid$target::byte_array_?et_len:return
+/ self->mem_ptr != 0 /
+{
   // Clear the map since the access is done.
   accesses[self->mem_ptr].kind = 0;
   accesses[self->mem_ptr].tid = 0;
@@ -462,10 +470,12 @@ And... no warnings, as expected. Terrific!
 This is the clause that does all the heavy lifting:
 
 ```dtrace
-pid$target::byte_array_?et_len:entry {
-    // ...
-      if (/* ... */ (this->my_access_kind == AccessKindWrite || this->theirs.kind == AccessKindWrite)) /* 'and at least one access is a write...' */  {}
-    }
+pid$target::byte_array_?et_len:entry
+{
+  // ...
+  if (/* ... */ (this->my_access_kind == AccessKindWrite || this->theirs.kind == AccessKindWrite)) /* 'and at least one access is a write...' */ {
+  }
+}
 ```
 
 And N concurrent readers are fine. In fact, if we comment out this condition, we see indeed that we have two concurrent readers and lots of false positives get printed:
@@ -530,7 +540,10 @@ Due to the nature of Go, we have to make minor adjustments:
 #pragma D option dynvarsize=16m
 #pragma D option cleanrate=100hz
 
-typedef enum {AccessKindRead=1, AccessKindWrite=2} AccessKind;
+typedef enum {
+  AccessKindRead = 1,
+  AccessKindWrite = 2
+} AccessKind;
 
 typedef struct {
   AccessKind kind;
@@ -539,7 +552,7 @@ typedef struct {
 } Access;
 
 typedef struct {
-  void* data;
+  void *data;
   size_t len, cap;
 } GoSlice;
 
@@ -549,13 +562,15 @@ int func_access[string];
 
 uintptr_t gid_to_mem[int];
 
-BEGIN {
+BEGIN
+{
   // Record which kind of access each function does.
   func_access["github.com/ory/kratos/courier_test.TestQueueHTTPEmail.func3"] = AccessKindRead;
   func_access["github.com/ory/kratos/courier_test.TestQueueHTTPEmail.func1"] = AccessKindWrite;
 }
 
-pid$target::*TestQueueHTTPEmail.func1:entry {
+pid$target::*TestQueueHTTPEmail.func1:entry
+{
   this->my_access_kind = func_access[probefunc];
   this->now = timestamp;
 
@@ -565,9 +580,9 @@ pid$target::*TestQueueHTTPEmail.func1:entry {
   this->mem_ptr = (int)this->ptr_to_slice_header;
   this->theirs = accesses[this->mem_ptr];
 
-  if (this->theirs.tid !=0 &&  // 'if a thread is concurrently accessing the same memory...'
-      this->theirs.tid != this->goroutine_id &&  // 'and this is another thread as the current one...'
-      (this->my_access_kind == AccessKindWrite || this->theirs.kind == AccessKindWrite))/*  'and at least one access is a write...' */ { 
+  if (this->theirs.tid != 0 && // 'if a thread is concurrently accessing the same memory...'
+      this->theirs.tid != this->goroutine_id && // 'and this is another thread as the current one...'
+      (this->my_access_kind == AccessKindWrite || this->theirs.kind == AccessKindWrite)) /*  'and at least one access is a write...' */ {
     printf("possible data race: my_access_kind:%d my_tid=%d my_ts=%d their_access_kind:%d their_tid=%d their_ts=%d mem_ptr=%p\n", this->my_access_kind, this->goroutine_id, this->now, this->theirs.kind, this->theirs.tid, this->theirs.ts, this->mem_ptr);
     ustack();
   }
@@ -579,7 +594,8 @@ pid$target::*TestQueueHTTPEmail.func1:entry {
   gid_to_mem[this->goroutine_id] = this->mem_ptr;
 }
 
-pid$target::*TestQueueHTTPEmail.func3:entry {
+pid$target::*TestQueueHTTPEmail.func3:entry
+{
   this->my_access_kind = func_access[probefunc];
   this->now = timestamp;
 
@@ -589,9 +605,9 @@ pid$target::*TestQueueHTTPEmail.func3:entry {
   this->mem_ptr = (int)this->ptr_to_slice_header;
   this->theirs = accesses[this->mem_ptr];
 
-  if (this->theirs.tid !=0 &&  // 'if a thread is concurrently accessing the same memory...'
-      this->theirs.tid != this->goroutine_id &&  // 'and this is another thread as the current one...'
-      (this->my_access_kind == AccessKindWrite || this->theirs.kind == AccessKindWrite)) /*  'and at least one access is a write...' */ { 
+  if (this->theirs.tid != 0 && // 'if a thread is concurrently accessing the same memory...'
+      this->theirs.tid != this->goroutine_id && // 'and this is another thread as the current one...'
+      (this->my_access_kind == AccessKindWrite || this->theirs.kind == AccessKindWrite)) /*  'and at least one access is a write...' */ {
     printf("possible data race: my_access_kind:%d my_tid=%d my_ts=%d their_access_kind:%d their_tid=%d their_ts=%d mem_ptr=%p\n", this->my_access_kind, this->goroutine_id, this->now, this->theirs.kind, this->theirs.tid, this->theirs.ts, this->mem_ptr);
     ustack();
   }
@@ -608,15 +624,14 @@ pid$target::*TestQueueHTTPEmail.func3:return
 {
   this->goroutine_id = uregs[R_X28];
   this->mem_ptr = gid_to_mem[this->goroutine_id];
-  if (this->mem_ptr != 0){
-  // Clear the map since the access is done.
+  if (this->mem_ptr != 0) {
+    // Clear the map since the access is done.
     accesses[this->mem_ptr].kind = 0;
     accesses[this->mem_ptr].tid = 0;
     accesses[this->mem_ptr].ts = 0;
     gid_to_mem[this->goroutine_id] = 0;
   }
 }
-
 ```
 
 A few notes about Go's generated assembly, on ARM64, per the [Go ABI](https://github.com/golang/go/blob/master/src/cmd/compile/abi-internal.md):
@@ -679,7 +694,10 @@ My recommendation would still be to use your programming language or platform re
 #pragma D option dynvarsize=16m
 #pragma D option cleanrate=100hz
 
-typedef enum {AccessKindRead=1, AccessKindWrite=2} AccessKind;
+typedef enum {
+  AccessKindRead = 1,
+  AccessKindWrite = 2
+} AccessKind;
 
 typedef struct {
   AccessKind kind;
@@ -691,13 +709,15 @@ Access accesses[uintptr_t /* data ptr */];
 
 int func_access[string];
 
-BEGIN {
+BEGIN
+{
   // Record which kind of access each function does.
   func_access["byte_array_get_len"] = AccessKindRead;
   func_access["byte_array_set_len"] = AccessKindWrite;
 }
 
-pid$target::byte_array_?et_len:entry {
+pid$target::byte_array_?et_len:entry
+{
   // `arg0` is the pointer to the `ByteArray` structure,
   // and `len` is at offset `8` in the `ByteArray` structure.
   // So this gets the value of `byte_array->len`.
@@ -706,9 +726,9 @@ pid$target::byte_array_?et_len:entry {
   this->my_access_kind = func_access[probefunc];
   this->now = timestamp;
 
-  if (this->theirs.tid !=0 &&  // 'if a thread is concurrently accessing the same memory...'
-      this->theirs.tid != tid &&  // 'and this is another thread as the current one...'
-      (this->my_access_kind == AccessKindWrite || this->theirs.kind == AccessKindWrite)) /*  'and at least one access is a write...' */ { 
+  if (this->theirs.tid != 0 && // 'if a thread is concurrently accessing the same memory...'
+      this->theirs.tid != tid && // 'and this is another thread as the current one...'
+      (this->my_access_kind == AccessKindWrite || this->theirs.kind == AccessKindWrite)) /*  'and at least one access is a write...' */ {
     printf("possible data race: my_access_kind:%d my_tid=%d my_ts=%d their_access_kind:%d their_tid=%d their_ts=%d mem_ptr=%p\n", this->my_access_kind, tid, this->now, this->theirs.kind, this->theirs.tid, this->theirs.ts, self->mem_ptr);
     ustack();
   }
@@ -719,7 +739,9 @@ pid$target::byte_array_?et_len:entry {
   accesses[self->mem_ptr].ts = this->now;
 }
 
-pid$target::byte_array_?et_len:return /self->mem_ptr != 0/ {
+pid$target::byte_array_?et_len:return
+/ self->mem_ptr != 0 /
+{
   // Clear the map since the access is done.
   accesses[self->mem_ptr].kind = 0;
   accesses[self->mem_ptr].tid = 0;
@@ -736,7 +758,10 @@ pid$target::byte_array_?et_len:return /self->mem_ptr != 0/ {
 #pragma D option dynvarsize=16m
 #pragma D option cleanrate=100hz
 
-typedef enum {AccessKindRead=1, AccessKindWrite=2} AccessKind;
+typedef enum {
+  AccessKindRead = 1,
+  AccessKindWrite = 2
+} AccessKind;
 
 typedef struct {
   AccessKind kind;
@@ -745,7 +770,7 @@ typedef struct {
 } Access;
 
 typedef struct {
-  void* data;
+  void *data;
   size_t len, cap;
 } GoSlice;
 
@@ -755,13 +780,15 @@ int func_access[string];
 
 uintptr_t gid_to_mem[int];
 
-BEGIN {
+BEGIN
+{
   // Record which kind of access each function does.
   func_access["github.com/ory/kratos/courier_test.TestQueueHTTPEmail.func3"] = AccessKindRead;
   func_access["github.com/ory/kratos/courier_test.TestQueueHTTPEmail.func1"] = AccessKindWrite;
 }
 
-pid$target::*TestQueueHTTPEmail.func1:entry {
+pid$target::*TestQueueHTTPEmail.func1:entry
+{
   this->my_access_kind = func_access[probefunc];
   this->now = timestamp;
 
@@ -771,9 +798,9 @@ pid$target::*TestQueueHTTPEmail.func1:entry {
   this->mem_ptr = (int)this->ptr_to_slice_header;
   this->theirs = accesses[this->mem_ptr];
 
-  if (this->theirs.tid !=0 &&  // 'if a thread is concurrently accessing the same memory...'
-      this->theirs.tid != this->goroutine_id &&  // 'and this is another thread as the current one...'
-      (this->my_access_kind == AccessKindWrite || this->theirs.kind == AccessKindWrite)) /*  'and at least one access is a write...' */ { 
+  if (this->theirs.tid != 0 && // 'if a thread is concurrently accessing the same memory...'
+      this->theirs.tid != this->goroutine_id && // 'and this is another thread as the current one...'
+      (this->my_access_kind == AccessKindWrite || this->theirs.kind == AccessKindWrite)) /*  'and at least one access is a write...' */ {
     printf("possible data race: my_access_kind:%d my_tid=%d my_ts=%d their_access_kind:%d their_tid=%d their_ts=%d mem_ptr=%p\n", this->my_access_kind, this->goroutine_id, this->now, this->theirs.kind, this->theirs.tid, this->theirs.ts, this->mem_ptr);
     ustack();
   }
@@ -785,7 +812,8 @@ pid$target::*TestQueueHTTPEmail.func1:entry {
   gid_to_mem[this->goroutine_id] = this->mem_ptr;
 }
 
-pid$target::*TestQueueHTTPEmail.func3:entry {
+pid$target::*TestQueueHTTPEmail.func3:entry
+{
   this->my_access_kind = func_access[probefunc];
   this->now = timestamp;
 
@@ -795,9 +823,9 @@ pid$target::*TestQueueHTTPEmail.func3:entry {
   this->mem_ptr = (int)this->ptr_to_slice_header;
   this->theirs = accesses[this->mem_ptr];
 
-  if (this->theirs.tid !=0 &&  // 'if a thread is concurrently accessing the same memory...'
-      this->theirs.tid != this->goroutine_id &&  // 'and this is another thread as the current one...'
-      (this->my_access_kind == AccessKindWrite || this->theirs.kind == AccessKindWrite)) /*  'and at least one access is a write...' */ { 
+  if (this->theirs.tid != 0 && // 'if a thread is concurrently accessing the same memory...'
+      this->theirs.tid != this->goroutine_id && // 'and this is another thread as the current one...'
+      (this->my_access_kind == AccessKindWrite || this->theirs.kind == AccessKindWrite)) /*  'and at least one access is a write...' */ {
     printf("possible data race: my_access_kind:%d my_tid=%d my_ts=%d their_access_kind:%d their_tid=%d their_ts=%d mem_ptr=%p\n", this->my_access_kind, this->goroutine_id, this->now, this->theirs.kind, this->theirs.tid, this->theirs.ts, this->mem_ptr);
     ustack();
   }
@@ -814,8 +842,8 @@ pid$target::*TestQueueHTTPEmail.func3:return
 {
   this->goroutine_id = uregs[R_X28];
   this->mem_ptr = gid_to_mem[this->goroutine_id];
-  if (this->mem_ptr != 0){
-  // Clear the map since the access is done.
+  if (this->mem_ptr != 0) {
+    // Clear the map since the access is done.
     accesses[this->mem_ptr].kind = 0;
     accesses[this->mem_ptr].tid = 0;
     accesses[this->mem_ptr].ts = 0;
