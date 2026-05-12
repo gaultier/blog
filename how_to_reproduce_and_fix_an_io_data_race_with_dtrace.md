@@ -94,51 +94,59 @@ We have two main possible approaches: observe system calls (with the `syscall::r
 
 
 ```dtrace
-pid$target::os.ReadFile:entry  {
-  this->name = stringof(copyin(arg0, arg1)); 
+pid$target::os.ReadFile:entry
+{
+  this->name = stringof(copyin(arg0, arg1));
   ustack();
-  printf("name=%s\n", this->name); 
+  printf("name=%s\n", this->name);
 }
 
-pid$target::os.ReadFile:return  {}
+pid$target::os.ReadFile:return
+{
+}
 
-pid$target::os.WriteFile:entry  {
-  this->name = stringof(copyin(arg0, arg1)); 
+pid$target::os.WriteFile:entry
+{
+  this->name = stringof(copyin(arg0, arg1));
   ustack();
-  printf("name=%s\n", this->name); 
+  printf("name=%s\n", this->name);
 }
 
-pid$target::os.WriteFile:return  {}
-
-pid$target::os.Stat:entry  {}
-
-pid$target::os.Stat:return  {
-  printf("err=%d\n", arg2); 
+pid$target::os.WriteFile:return
+{
 }
 
-syscall::write:entry 
-/pid==$target && arg0 > 2/
+pid$target::os.Stat:entry
+{
+}
+
+pid$target::os.Stat:return
+{
+  printf("err=%d\n", arg2);
+}
+
+syscall::write:entry
+/ pid == $target && arg0 > 2 /
 {
   self->trace = 1;
 }
 
-syscall::write:return 
-/pid==$target && self->trace != 0/
+syscall::write:return
+/ pid == $target && self->trace != 0 /
 {
   printf("write return: res=%d\n", arg0);
   self->trace = 0;
 }
 
-syscall::read:entry 
-/pid==$target && arg0 > 2/
+syscall::read:entry
+/ pid == $target && arg0 > 2 /
 {
   printf("fd=%d\n", arg0);
   self->trace = 1;
 }
 
-
-syscall::read:return 
-/pid==$target && self->trace != 0/
+syscall::read:return
+/ pid == $target && self->trace != 0 /
 {
   printf("read return: res=%d\n", arg0);
   self->trace = 0;

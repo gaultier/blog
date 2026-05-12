@@ -32,7 +32,8 @@ The only challenge here is to know which registers the string is passed in. One 
 Alternatively, we can brute-force our way by first printing all registers and inferring from their value what is what:
 
 ```dtrace
-pid$target::database?sql.*.QueryContext:entry {
+pid$target::database?sql.*.QueryContext:entry
+{
   printf("%p %p %p %p %p %p %p %p %p\n", arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
 }
 ```
@@ -58,8 +59,9 @@ So let's for now only print the query string, and while we're at it, handle both
 
 ```dtrace
 pid$target::database?sql.*.ExecContext:entry,
-pid$target::database?sql.*.QueryContext:entry {
-  this->query = stringof(copyin(arg3, arg4)); 
+pid$target::database?sql.*.QueryContext:entry
+{
+  this->query = stringof(copyin(arg3, arg4));
 
   printf("%s\n", this->query);
 }
@@ -90,11 +92,11 @@ We can fix it pretty simply by allocating a slightly larger buffer and putting t
 
 ```dtrace
 pid$target::database?sql.*.ExecContext:entry,
-pid$target::database?sql.*.QueryContext:entry {
-
-  this->query =(char*) alloca(arg4 + 1);
+pid$target::database?sql.*.QueryContext:entry
+{
+  this->query = (char*)alloca(arg4 + 1);
   this->query[arg4] = 0;
-  copyinto(arg3,(int) arg4, (void*)this->query);
+  copyinto(arg3, (int)arg4, (void*)this->query);
 
   printf("%s\n", stringof(this->query));
 }
@@ -148,22 +150,22 @@ We thus define the corresponding DTrace types:
 
 ```dtrace
 typedef struct {
-  uintptr_t size;  
-  uintptr_t ptr_bytes;  
+  uintptr_t size;
+  uintptr_t ptr_bytes;
   uint32_t hash;
   uint8_t tflag;
   uint8_t align;
   uint8_t field_align;
   uint8_t kind;
-  void* equal_func;
-  uint8_t* gc_data;
+  void *equal_func;
+  uint8_t *gc_data;
   int32_t name_offset;
   int32_t ptr_to_this;
 } GoType;
 
 typedef struct {
-  GoType* rtti;
-  void* ptr;
+  GoType *rtti;
+  void *ptr;
 } GoInterface;
 ```
 
@@ -171,29 +173,30 @@ We can then print the RTTI information of each of the four `any` arguments passe
 The only challenge is to remember to use `copyin`, since our DTrace script executes in kernel space but we are inspecting user-space memory.
 
 ```dtrace
-pid$target::database?sql.*.QueryContext:entry {
+pid$target::database?sql.*.QueryContext:entry
+{
   this->query = stringof(copyin(arg3, arg4)); // Query string.
   printf("%s\n", this->query);
 
   this->args_ptr = arg5;
 
-  this->iface0 = (GoInterface*) copyin(this->args_ptr, sizeof(GoInterface));
-  this->rtti0 = (GoType*) copyin((user_addr_t)this->iface0->rtti, sizeof(GoType));
+  this->iface0 = (GoInterface*)copyin(this->args_ptr, sizeof(GoInterface));
+  this->rtti0 = (GoType*)copyin((user_addr_t)this->iface0->rtti, sizeof(GoType));
   print(*(this->rtti0));
   printf("\n");
 
-  this->iface1 = (GoInterface*) copyin(this->args_ptr + 1*sizeof(GoInterface), sizeof(GoInterface));
-  this->rtti1 = (GoType*) copyin((user_addr_t)this->iface1->rtti, sizeof(GoType));
+  this->iface1 = (GoInterface*)copyin(this->args_ptr + 1 * sizeof(GoInterface), sizeof(GoInterface));
+  this->rtti1 = (GoType*)copyin((user_addr_t)this->iface1->rtti, sizeof(GoType));
   print(*(this->rtti1));
   printf("\n");
 
-  this->iface2 = (GoInterface*) copyin(this->args_ptr + 2*sizeof(GoInterface), sizeof(GoInterface));
-  this->rtti2 = (GoType*) copyin((user_addr_t)this->iface2->rtti, sizeof(GoType));
+  this->iface2 = (GoInterface*)copyin(this->args_ptr + 2 * sizeof(GoInterface), sizeof(GoInterface));
+  this->rtti2 = (GoType*)copyin((user_addr_t)this->iface2->rtti, sizeof(GoType));
   print(*(this->rtti2));
   printf("\n");
 
-  this->iface3 = (GoInterface*) copyin(this->args_ptr + 3*sizeof(GoInterface), sizeof(GoInterface));
-  this->rtti3 = (GoType*) copyin((user_addr_t)this->iface3->rtti, sizeof(GoType));
+  this->iface3 = (GoInterface*)copyin(this->args_ptr + 3 * sizeof(GoInterface), sizeof(GoInterface));
+  this->rtti3 = (GoType*)copyin((user_addr_t)this->iface3->rtti, sizeof(GoType));
   print(*(this->rtti3));
   printf("\n");
 }
@@ -262,7 +265,8 @@ The value `0x18` is `String`. So the last 3 variadic arguments are strings. Grea
 
 
 ```dtrace
-pid$target::database?sql.*.QueryContext:entry {
+pid$target::database?sql.*.QueryContext:entry
+{
   // [...]
 
   this->go_str1 = (GoString*)copyin((user_addr_t)this->iface1->ptr, sizeof(GoString));
@@ -312,8 +316,8 @@ This is pretty easy to map to DTrace:
 ```dtrace
 typedef struct {
   GoType type;
-  GoType* elem;
-  GoType* slice;
+  GoType *elem;
+  GoType *slice;
   uintptr_t len;
 } GoArrayType;
 ```
@@ -321,6 +325,10 @@ typedef struct {
 We can now print the RTTI for the element type to finally learn its size. For good measure we can also print the RTTI for the slice type:
 
 ```dtrace
+pid$target::database?sql.*.QueryContext:entry
+{
+  // ...
+
   this->go_arr0 = (GoArrayType*)copyin((user_addr_t)this->iface0->rtti, sizeof(GoArrayType));
   print(*(this->go_arr0));
   printf("\n");
@@ -332,6 +340,8 @@ We can now print the RTTI for the element type to finally learn its size. For go
   this->go_arr0_slice = (GoType*)copyin((user_addr_t)this->go_arr0->slice, sizeof(GoType));
   print(*(this->go_arr0_slice));
   printf("\n");
+  // ...
+}
 ```
 
 ```plaintext
@@ -384,8 +394,14 @@ GoType {
 We discover that the element size is just `0x1`, or 1. So this array is an array of 16 bytes. Time to finally print it with `tracemem` which shows a raw memory dump:
 
 ```dtrace
+pid$target::database?sql.*.QueryContext:entry
+{
+  // ...
+
   this->go_str0 = (uint8_t*)copyin((user_addr_t)this->iface0->ptr, 16);
   tracemem(this->go_str0, 16);
+  // ...
+}
 ```
 
 Which shows:
@@ -494,46 +510,46 @@ I fully understand why DTrace is so limited, to be able to run D scripts without
 #pragma D option strsize=16K
 
 typedef struct {
-  uint8_t* ptr;
+  uint8_t *ptr;
   size_t len;
-} GoString; 
+} GoString;
 
 typedef struct {
-  uintptr_t size;  
-  uintptr_t ptr_bytes;  
+  uintptr_t size;
+  uintptr_t ptr_bytes;
   uint32_t hash;
   uint8_t tflag;
   uint8_t align;
   uint8_t field_align;
   uint8_t kind;
-  void* equal_func;
-  uint8_t* gc_data;
+  void *equal_func;
+  uint8_t *gc_data;
   int32_t name_offset;
   int32_t ptr_to_this;
 } GoType;
 
 typedef struct {
-  GoType* rtti;
-  void* ptr;
+  GoType *rtti;
+  void *ptr;
 } GoInterface;
-
 
 typedef struct {
   GoType type;
-  GoType* elem;
-  GoType* slice;
+  GoType *elem;
+  GoType *slice;
   uintptr_t len;
 } GoArrayType;
 
-pid$target::database?sql.*.QueryContext:entry {
+pid$target::database?sql.*.QueryContext:entry
+{
   this->query = stringof(copyin(arg3, arg4)); // Query string.
   printf("%p %d\n", arg5, arg6);
 
   this->args_ptr = arg5;
 
   printf("%s\n", this->query);
-  this->iface0 = (GoInterface*) copyin(this->args_ptr, sizeof(GoInterface));
-  this->rtti0 = (GoType*) copyin((user_addr_t)this->iface0->rtti, sizeof(GoType));
+  this->iface0 = (GoInterface*)copyin(this->args_ptr, sizeof(GoInterface));
+  this->rtti0 = (GoType*)copyin((user_addr_t)this->iface0->rtti, sizeof(GoType));
   print(*(this->rtti0));
   printf("\n");
 
@@ -552,18 +568,18 @@ pid$target::database?sql.*.QueryContext:entry {
   this->go_str0 = (uint8_t*)copyin((user_addr_t)this->iface0->ptr, 16);
   tracemem(this->go_str0, 16);
 
-  this->iface1 = (GoInterface*) copyin(this->args_ptr + 1*sizeof(GoInterface), sizeof(GoInterface));
-  this->rtti1 = (GoType*) copyin((user_addr_t)this->iface1->rtti, sizeof(GoType));
+  this->iface1 = (GoInterface*)copyin(this->args_ptr + 1 * sizeof(GoInterface), sizeof(GoInterface));
+  this->rtti1 = (GoType*)copyin((user_addr_t)this->iface1->rtti, sizeof(GoType));
   print(*(this->rtti1));
   printf("\n");
 
-  this->iface2 = (GoInterface*) copyin(this->args_ptr + 2*sizeof(GoInterface), sizeof(GoInterface));
-  this->rtti2 = (GoType*) copyin((user_addr_t)this->iface2->rtti, sizeof(GoType));
+  this->iface2 = (GoInterface*)copyin(this->args_ptr + 2 * sizeof(GoInterface), sizeof(GoInterface));
+  this->rtti2 = (GoType*)copyin((user_addr_t)this->iface2->rtti, sizeof(GoType));
   print(*(this->rtti2));
   printf("\n");
 
-  this->iface3 = (GoInterface*) copyin(this->args_ptr + 3*sizeof(GoInterface), sizeof(GoInterface));
-  this->rtti3 = (GoType*) copyin((user_addr_t)this->iface3->rtti, sizeof(GoType));
+  this->iface3 = (GoInterface*)copyin(this->args_ptr + 3 * sizeof(GoInterface), sizeof(GoInterface));
+  this->rtti3 = (GoType*)copyin((user_addr_t)this->iface3->rtti, sizeof(GoType));
   print(*(this->rtti3));
   printf("\n");
 
