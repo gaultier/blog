@@ -56,12 +56,12 @@ Peeking at the Go runtime [code](https://github.com/golang/go/blob/master/src/ru
 
 ```dtrace
 // Creates a new goroutine.
-pid$target::runtime.newproc1:
+pid$target::runtime.newproc1: {}
 
 // Destroys a goroutine.
-pid$target::runtime.gdestroy:
+pid$target::runtime.gdestroy: {}
 
-pid$target::main.*: 
+pid$target::main.*:  {}
 ```
 
 *Functions starting with `runtime.` are from the Go runtime.*
