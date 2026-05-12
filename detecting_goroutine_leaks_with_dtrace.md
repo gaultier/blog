@@ -528,7 +528,7 @@ pid$target::runtime.gopark:entry
   this->curg = (struct g*)copyin((user_addr_t)this->curg_addr, sizeof(struct g));
   print(*this->curg);
 
-  [..]
+  // ...
 }
 ```
 

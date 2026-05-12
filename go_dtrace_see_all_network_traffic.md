@@ -25,11 +25,10 @@ The simplest form is this:
 #pragma D option strsize=16K
 
 syscall::write:entry
-/ pid == $target && arg0 > 0/
+/ pid == $target && arg0 > 0 /
 {
-   printf("fd=%d len=%d data=%s\n", arg0, arg2, stringof(copyin(arg1, arg2)));
+  printf("fd=%d len=%d data=%s\n", arg0, arg2, stringof(copyin(arg1, arg2)));
 }
-
 
 syscall::read:entry
 / pid == $target /
@@ -39,7 +38,7 @@ syscall::read:entry
 }
 
 syscall::read:return
-/ pid == $target && self->read_ptr!=0 && arg0 > 0 /
+/ pid == $target && self->read_ptr != 0 && arg0 > 0 /
 {
   printf("fd=%d len=%d data=%s\n", self->read_fd, arg0, stringof(copyin(self->read_ptr, arg0)));
 
@@ -65,7 +64,7 @@ Observing system calls system-wide also has the advantage that we can trace mult
 syscall::write:entry
 / pid == 123 || pid == 456 || execname == "curl" /
 {
-   printf("fd=%d len=%d data=%s\n", arg0, arg2, stringof(copyin(arg1, arg2)));
+  printf("fd=%d len=%d data=%s\n", arg0, arg2, stringof(copyin(arg1, arg2)));
 }
 ```
 
@@ -76,22 +75,27 @@ Then, no need to provide a PID in the DTrace invocation: `sudo dtrace -s myscrip
 Multiple probes can be grouped with commas when they share the same action, so we can instrument *all* system calls that do networking in a compact manner. Fortunately, they share the same first few arguments in the same order. I did not list every single one here, this just for illustrative purposes:
 
 ```dtrace
-syscall::write:entry, syscall::sendto_nocancel:entry, syscall::sendto:entry 
-/ pid == $target && arg0>2 && arg0 > 0/
+syscall::write:entry,
+syscall::sendto_nocancel:entry,
+syscall::sendto:entry
+/ pid == $target && arg0 > 2 && arg0 > 0 /
 {
-   printf("fd=%d len=%d data=%s\n", arg0, arg2, stringof(copyin(arg1, arg2)));
+  printf("fd=%d len=%d data=%s\n", arg0, arg2, stringof(copyin(arg1, arg2)));
 }
 
-
-syscall::read:entry, syscall::recvfrom_nocancel:entry, syscall::recvfrom:entry 
+syscall::read:entry,
+syscall::recvfrom_nocancel:entry,
+syscall::recvfrom:entry
 / pid == $target /
 {
   self->read_ptr = arg1;
   self->read_fd = arg0;
 }
 
-syscall::read:return, syscall::recvfrom_nocancel:return, syscall::recvfrom:return 
-/ pid == $target && arg0 > 0 && self->read_ptr!=0 /
+syscall::read:return,
+syscall::recvfrom_nocancel:return,
+syscall::recvfrom:return
+/ pid == $target && arg0 > 0 && self->read_ptr != 0 /
 {
   printf("fd=%d len=%d data=%s\n", self->read_fd, arg0, stringof(copyin(self->read_ptr, arg0)));
 
@@ -149,8 +153,9 @@ The [tcp](https://docs.oracle.com/en/operating-systems/solaris/oracle-solaris/11
 Let's see an example:
 
 ```dtrace
-tcp:::send, tcp:::receive
-/pid==$target/ 
+tcp:::send,
+tcp:::receive
+/ pid == $target /
 {
   tracemem(args[0]->pkt_addr->M_dat.MH_databuf, 288);
 }
@@ -315,7 +320,7 @@ Accept-Encoding: gzip
 We can trace the method `compress/gzip.(*Writer).Write` to print its input:
 
 ```dtrace
-pid$target::compress?gzip.(?Writer).Write:entry 
+pid$target::compress?gzip.(?Writer).Write:entry
 {
   printf("%s\n", stringof(copyin(arg1, arg2)));
 }
