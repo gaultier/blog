@@ -173,6 +173,25 @@ We can then print the RTTI information of each of the four `any` arguments passe
 The only challenge is to remember to use `copyin`, since our DTrace script executes in kernel space but we are inspecting user-space memory.
 
 ```dtrace
+typedef struct {
+  uintptr_t size;
+  uintptr_t ptr_bytes;
+  uint32_t hash;
+  uint8_t tflag;
+  uint8_t align;
+  uint8_t field_align;
+  uint8_t kind;
+  void *equal_func;
+  uint8_t *gc_data;
+  int32_t name_offset;
+  int32_t ptr_to_this;
+} GoType;
+
+typedef struct {
+  GoType *rtti;
+  void *ptr;
+} GoInterface;
+
 pid$target::database?sql.*.QueryContext:entry
 {
   this->query = stringof(copyin(arg3, arg4)); // Query string.
@@ -265,6 +284,30 @@ The value `0x18` is `String`. So the last 3 variadic arguments are strings. Grea
 
 
 ```dtrace
+typedef struct {
+  uint8_t *ptr;
+  size_t len;
+} GoString;
+
+typedef struct {
+  uintptr_t size;
+  uintptr_t ptr_bytes;
+  uint32_t hash;
+  uint8_t tflag;
+  uint8_t align;
+  uint8_t field_align;
+  uint8_t kind;
+  void *equal_func;
+  uint8_t *gc_data;
+  int32_t name_offset;
+  int32_t ptr_to_this;
+} GoType;
+
+typedef struct {
+  GoType *rtti;
+  void *ptr;
+} GoInterface;
+
 pid$target::database?sql.*.QueryContext:entry
 {
   // [...]
@@ -325,6 +368,27 @@ typedef struct {
 We can now print the RTTI for the element type to finally learn its size. For good measure we can also print the RTTI for the slice type:
 
 ```dtrace
+typedef struct {
+  uintptr_t size;
+  uintptr_t ptr_bytes;
+  uint32_t hash;
+  uint8_t tflag;
+  uint8_t align;
+  uint8_t field_align;
+  uint8_t kind;
+  void *equal_func;
+  uint8_t *gc_data;
+  int32_t name_offset;
+  int32_t ptr_to_this;
+} GoType;
+
+typedef struct {
+  GoType type;
+  GoType *elem;
+  GoType *slice;
+  uintptr_t len;
+} GoArrayType;
+
 pid$target::database?sql.*.QueryContext:entry
 {
   // ...
