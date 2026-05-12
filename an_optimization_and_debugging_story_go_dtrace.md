@@ -73,10 +73,14 @@ $ sudo dtrace -n 'pid$target:code.test.before:*ory*: ' -c ./code.test.before -l 
 Ok, the first two are the ones we need. Let's time the function duration then with a D script `time.d`:
 
 ```dtrace
-pid$target::*NewMigrationBox:entry { self->t=timestamp } 
+pid$target::*NewMigrationBox:entry
+{
+  self->t = timestamp;
+}
 
-pid$target::*NewMigrationBox:return {
-  this->duration = (timestamp - self->t)/1000000;
+pid$target::*NewMigrationBox:return
+{
+  this->duration = (timestamp - self->t) / 1000000;
 
   @histogram["NewMigrationBox"] = lquantize(this->duration, 0, 800, 1);
 }
@@ -148,13 +152,14 @@ Wait a minute... Are we doing any I/O in Go at all? Could it be that we *embed* 
 Let's print with DTrace the files that are being opened, whose extension is `.sql`:
 
 ```dtrace
-syscall::open:entry { 
+syscall::open:entry
+{
   self->filename = copyinstr(arg0);
 
-  if (rindex(self->filename, ".sql") == strlen(self->filename)-4) {
-    printf("%s\n", self->filename)
+  if (rindex(self->filename, ".sql") == strlen(self->filename) - 4) {
+    printf("%s\n", self->filename);
   }
-} 
+}
 ```
 
 `copyinstr` is [required](https://illumos.org/books/dtrace/chp-user.html#chp-user) because our D script runs inside the kernel but we are trying to access user-space memory. 
@@ -191,11 +196,20 @@ Contrary to popular belief, Go is not a crazy fast compiler. It's a smart compil
 If you're still not convinced to use DTrace yet, let me show you its superpower. It can show you *every* function call your program does! That's sooo useful when you do not know the codebase. Let's try it, but we are only interested in calls from within `NewMigrationBox`, and when we exit `NewMigrationBox`, we should stop tracing, because each invocation will anyway be the same:
 
 ```dtrace
-pid$target:code.test.before:*NewMigrationBox:entry { self->t = 1}
+pid$target:code.test.before:*NewMigrationBox:entry
+{
+  self->t = 1;
+}
 
-pid$target:code.test.before:*NewMigrationBox:return { exit(0) }
+pid$target:code.test.before:*NewMigrationBox:return
+{
+  exit(0);
+}
 
-pid$target:code.test.before:sort*: /self->t != 0/ {}
+pid$target:code.test.before:sort*:
+/ self->t != 0 /
+{
+}
 ```
 
 I have written more specific probes in this script by specifying more parts of the probe (the second part of the probe is the module name, here it is the executable name), to try to reduce noise (by accidentally matching probes we do not care about) and also to help with performance (the more probes are being matched, the more the performance tanks). Since we know that the performance issue is located in the sorting part, we only need to trace that.
@@ -266,11 +280,21 @@ Furthermore, most sort algorithms have worst-case performance when the input is 
 Let's confirm this finding with DTrace by printing how many elements are being sorted in `sort.Sort`. We rely on the fact that the first thing `sort.Sort` does, is to call `.Len()` on its argument:
 
 ```dtrace
-pid$target::*NewMigrationBox:entry { self->t = 1}
+pid$target::*NewMigrationBox:entry
+{
+  self->t = 1;
+}
 
-pid$target::*NewMigrationBox:return { self->t = 0}
+pid$target::*NewMigrationBox:return
+{
+  self->t = 0;
+}
 
-pid$target::sort*Len:return /self->t != 0/ {printf("%d\n", uregs[0])}
+pid$target::sort*Len:return
+/ self->t != 0 /
+{
+  printf("%d\n", uregs[0]);
+}
 ```
 
 The variable `uregs` is an array of user-space registers and the first one contains, in a `:return` probe, the return value of the function. So here we are simply printing the length of the slice being sorted.
@@ -396,12 +420,14 @@ My approach is to store all timestamps in a global map where the key is the goro
 So here goes:
 
 ```dtrace
-pid$target::*NewMigrationBox:entry { 
+pid$target::*NewMigrationBox:entry
+{
   this->goroutine_id = uregs[R_X28];
   durations_goroutines[this->goroutine_id] = timestamp;
-} 
+}
 
-pid$target::*NewMigrationBox:return {
+pid$target::*NewMigrationBox:return
+{
   this->goroutine_id = uregs[R_X28];
   this->duration = (timestamp - durations_goroutines[this->goroutine_id]) / 1000000;
 

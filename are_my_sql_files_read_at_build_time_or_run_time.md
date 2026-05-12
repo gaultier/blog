@@ -33,12 +33,12 @@ The D script is fairly straightforward:
 
 ```dtrace
 io:::start // Listen to I/O requests.
-/execname == "go" || execname == "migratest.test" / // Filter by executable name.
+/ execname == "go" || execname == "migratest.test" / // Filter by executable name.
 {
-    this->p = args[2]->fi_pathname; // Get the file name.
-    if (rindex(this->p, ".sql") == strlen(this->p)-4){ // Only consider files with a `.sql` extension.
-        printf("%s %s\n", execname, this->p);
-    }
+  this->p = args[2]->fi_pathname; // Get the file name.
+  if (rindex(this->p, ".sql") == strlen(this->p) - 4) { // Only consider files with a `.sql` extension.
+    printf("%s %s\n", execname, this->p);
+  }
 }
 ```
 
