@@ -1,5 +1,17 @@
 ## Ideas for articles
 
+- [ ] The many ways I have sped up our Go codebase
+    - Use bcrypt's fastest parameter
+    - Re-use a precomputed (at startup) bcrypt hash in tests
+    - Skip a JOIN by loading 'constant' values from the database and doing a map lookup
+    - Golden SQLite database
+    - Remove one case for PBKDF2 where the number of iteration was too high
+    and that resulted in 15s of run time just for this case.
+    - Remove some test parallelization
+    - Remove fault injection that leads to unrecoverable errors
+    - Remove flaky test for unused function
+    - Directory walk: replace `if isDir() { continue}` with `if !isFile() {continue}` to skip non regular files. 
+    - Bonus: Replace double locking of std map by a sync.Map
 - [ ] Clever and surprising stuff I found in the Go implementation
     - `Transition from growing 2x for small slices to growing 1.25x for large slices. This formula gives a smooth-ish transition between the two.` (runtime/slice.go)
     - Channel elements are limited in size to 1<<16 (runtime.chan.go)
