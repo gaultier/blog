@@ -17,7 +17,8 @@ const html_files = {
   "an_amusing_go_static_analysis_blindspot.html": ["", ""],
   "an_optimization_and_debugging_story_go_dtrace.html": ["", ""],
   "are_my_sql_files_read_at_build_time_or_run_time.html": ["", ""],
-  "articles-by-tag.html": ["", ""],
+  // Ignore `articles-by-tag.html` which only contains derived data.
+  // "articles-by-tag.html": ["", ""],
   "body_of_work.html": ["", ""],
   "build-pie-executables-with-pie.html": ["", ""],
   "compile_ziglang_from_source_on_alpine_2020_9.html": ["", ""],
@@ -88,7 +89,7 @@ function load_search_content() {
   const allPromises = new Array();
 
   for (const [file, _] of Object.entries(html_files)) {
-    search_input.placeholder = "Loading search index...";
+    search_input.placeholder = "Loading search content...";
 
     // 3. Fetch the excerpt and update this specific 'li'.
     const promise = fetch(file)
@@ -116,7 +117,7 @@ function load_search_content() {
     allPromises.push(promise);
   }
 
-  Promise.allSettled(allPromises).then(_ => { search_input.placeholder = "Search index loaded!"; search_content_loaded = true; });
+  Promise.allSettled(allPromises).then(_ => { search_input.placeholder = "Search content loaded!"; search_content_loaded = true; });
 }
 
 dom_input.addEventListener("focus", load_search_content);
