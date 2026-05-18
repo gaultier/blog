@@ -12,10 +12,12 @@ I work on a suite of Go software powering authentication, authorization, complex
 
 My first big realization in this job has been how Go is a poor language for large production systems, for a few reasons: the type system is too limited (algebraic data types, a.ka rich enums, are dearly missed; even plain C enums are dearly missed!), no nil-safety means production crashes and alerts during the night for cases that the compiler should have caught at development time, data races are extremely, extremely easy to introduce leading to hard-to-diagnose data consistency issues, and the concurrency story is much muddier than advertised (using plain Go channels and goroutines is painful and full of pitfalls). Pure CPU performance leaves also a lot to be desired, because the compiler misses many optimization opportunities compared to more mature compilers like LLVM, and there is no SIMD story. 
 I have written numerous articles about these issues, if you're curious to learn more about them.
+The Go build system and package manager is pretty good though.
 
 My second big shift as a Software Engineer in this job has been adopting LLMs to assist me in my job, be it code review, large tedious refactors, or writing code. I am not entirely satisfied at the time of writing (May 2026) about the code they produce and whether it's a net improvement over code written by hand, however the help they provide to explore a codebase, research a topic, or find security issues, has been invaluable.
 
-The Go build system and package manager is pretty good though.
+
+I also really like that most of my work is in the open due to most of the code being open-source. Interacting with the community, responding to external contributions, and sometimes pushing back on them, has been a first for me and a very valuable learning experience. My very personal preferrence (and not necessarily the one of my employer) is the SQLite model: open codebase that everybody can study and review, with a small team of core contributors working tightly together and very knowledgeable about the project. The community can suggest features or changes but the core team is in the end the ones who decide and implement (or decide not to).
 
 ## Senior Software Engineer Giesecke+Devrient, Munich, Germany; 2023-2025
 
