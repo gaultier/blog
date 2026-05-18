@@ -4,7 +4,11 @@ https://gaultier.github.io/blog/
 ## Quickstart
 
 ```shell
+# Build once.
 $ cargo run [--release]
+
+# Watch.
+$ carg run [--release] -- watch
 ```
 
 Optimize a PNG (requires `pngquant`):

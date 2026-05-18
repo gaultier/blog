@@ -71,7 +71,7 @@ Do not edit it by hand.
 <div class="article-prelude">
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
-<p class="publication-date">Published on 2025-09-25. Last modified on 2026-03-04.</p>
+<p class="publication-date">Published on 2025-09-25. Last modified on 2026-05-12.</p>
 </div>
 <div class="article-title">
   <h1>See all network traffic in a Go program, even when encrypted and compressed</h1>
@@ -138,11 +138,10 @@ Do not edit it by hand.
   <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">#pragma D option strsize=16K</span>
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">syscall::write:entry</span>
-<span class="line-number"></span><span class="code-hl">/ pid == $target &amp;&amp; arg0 &gt; 0/</span>
+<span class="line-number"></span><span class="code-hl">/ pid == $target &amp;&amp; arg0 &gt; 0 /</span>
 <span class="line-number"></span><span class="code-hl">{</span>
-<span class="line-number"></span><span class="code-hl">   printf(&quot;fd=%d len=%d data=%s\n&quot;, arg0, arg2, stringof(copyin(arg1, arg2)));</span>
+<span class="line-number"></span><span class="code-hl">  printf(&quot;fd=%d len=%d data=%s\n&quot;, arg0, arg2, stringof(copyin(arg1, arg2)));</span>
 <span class="line-number"></span><span class="code-hl">}</span>
-<span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">syscall::read:entry</span>
 <span class="line-number"></span><span class="code-hl">/ pid == $target /</span>
@@ -152,7 +151,7 @@ Do not edit it by hand.
 <span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">syscall::read:return</span>
-<span class="line-number"></span><span class="code-hl">/ pid == $target &amp;&amp; self-&gt;read_ptr!=0 &amp;&amp; arg0 &gt; 0 /</span>
+<span class="line-number"></span><span class="code-hl">/ pid == $target &amp;&amp; self-&gt;read_ptr != 0 &amp;&amp; arg0 &gt; 0 /</span>
 <span class="line-number"></span><span class="code-hl">{</span>
 <span class="line-number"></span><span class="code-hl">  printf(&quot;fd=%d len=%d data=%s\n&quot;, self-&gt;read_fd, arg0, stringof(copyin(self-&gt;read_ptr, arg0)));</span>
 <span class="line-number"></span><span class="code-hl"></span>
@@ -177,7 +176,7 @@ Do not edit it by hand.
   <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">syscall::write:entry</span>
 <span class="line-number"></span><span class="code-hl">/ pid == 123 || pid == 456 || execname == &quot;curl&quot; /</span>
 <span class="line-number"></span><span class="code-hl">{</span>
-<span class="line-number"></span><span class="code-hl">   printf(&quot;fd=%d len=%d data=%s\n&quot;, arg0, arg2, stringof(copyin(arg1, arg2)));</span>
+<span class="line-number"></span><span class="code-hl">  printf(&quot;fd=%d len=%d data=%s\n&quot;, arg0, arg2, stringof(copyin(arg1, arg2)));</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>Then, no need to provide a PID in the DTrace invocation: <code>sudo dtrace -s myscript.d</code>.</p>
@@ -191,22 +190,27 @@ Do not edit it by hand.
     <span>Dtrace</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">syscall::write:entry, syscall::sendto_nocancel:entry, syscall::sendto:entry </span>
-<span class="line-number"></span><span class="code-hl">/ pid == $target &amp;&amp; arg0&gt;2 &amp;&amp; arg0 &gt; 0/</span>
+  <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">syscall::write:entry,</span>
+<span class="line-number"></span><span class="code-hl">syscall::sendto_nocancel:entry,</span>
+<span class="line-number"></span><span class="code-hl">syscall::sendto:entry</span>
+<span class="line-number"></span><span class="code-hl">/ pid == $target &amp;&amp; arg0 &gt; 2 &amp;&amp; arg0 &gt; 0 /</span>
 <span class="line-number"></span><span class="code-hl">{</span>
-<span class="line-number"></span><span class="code-hl">   printf(&quot;fd=%d len=%d data=%s\n&quot;, arg0, arg2, stringof(copyin(arg1, arg2)));</span>
+<span class="line-number"></span><span class="code-hl">  printf(&quot;fd=%d len=%d data=%s\n&quot;, arg0, arg2, stringof(copyin(arg1, arg2)));</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">syscall::read:entry, syscall::recvfrom_nocancel:entry, syscall::recvfrom:entry </span>
+<span class="line-number"></span><span class="code-hl">syscall::read:entry,</span>
+<span class="line-number"></span><span class="code-hl">syscall::recvfrom_nocancel:entry,</span>
+<span class="line-number"></span><span class="code-hl">syscall::recvfrom:entry</span>
 <span class="line-number"></span><span class="code-hl">/ pid == $target /</span>
 <span class="line-number"></span><span class="code-hl">{</span>
 <span class="line-number"></span><span class="code-hl">  self-&gt;read_ptr = arg1;</span>
 <span class="line-number"></span><span class="code-hl">  self-&gt;read_fd = arg0;</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">syscall::read:return, syscall::recvfrom_nocancel:return, syscall::recvfrom:return </span>
-<span class="line-number"></span><span class="code-hl">/ pid == $target &amp;&amp; arg0 &gt; 0 &amp;&amp; self-&gt;read_ptr!=0 /</span>
+<span class="line-number"></span><span class="code-hl">syscall::read:return,</span>
+<span class="line-number"></span><span class="code-hl">syscall::recvfrom_nocancel:return,</span>
+<span class="line-number"></span><span class="code-hl">syscall::recvfrom:return</span>
+<span class="line-number"></span><span class="code-hl">/ pid == $target &amp;&amp; arg0 &gt; 0 &amp;&amp; self-&gt;read_ptr != 0 /</span>
 <span class="line-number"></span><span class="code-hl">{</span>
 <span class="line-number"></span><span class="code-hl">  printf(&quot;fd=%d len=%d data=%s\n&quot;, self-&gt;read_fd, arg0, stringof(copyin(self-&gt;read_ptr, arg0)));</span>
 <span class="line-number"></span><span class="code-hl"></span>
@@ -265,8 +269,9 @@ Do not edit it by hand.
     <span>Dtrace</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">tcp:::send, tcp:::receive</span>
-<span class="line-number"></span><span class="code-hl">/pid==$target/ </span>
+  <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">tcp:::send,</span>
+<span class="line-number"></span><span class="code-hl">tcp:::receive</span>
+<span class="line-number"></span><span class="code-hl">/ pid == $target /</span>
 <span class="line-number"></span><span class="code-hl">{</span>
 <span class="line-number"></span><span class="code-hl">  tracemem(args[0]-&gt;pkt_addr-&gt;M_dat.MH_databuf, 288);</span>
 <span class="line-number"></span><span class="code-hl">}</span>
@@ -444,7 +449,7 @@ Do not edit it by hand.
     <span>Dtrace</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">pid$target::compress?gzip.(?Writer).Write:entry </span>
+  <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">pid$target::compress?gzip.(?Writer).Write:entry</span>
 <span class="line-number"></span><span class="code-hl">{</span>
 <span class="line-number"></span><span class="code-hl">  printf(&quot;%s\n&quot;, stringof(copyin(arg1, arg2)));</span>
 <span class="line-number"></span><span class="code-hl">}</span>

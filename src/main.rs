@@ -1336,7 +1336,10 @@ fn watch(mtx_cond: Arc<(Mutex<()>, Condvar)>, cache: &mut HashMap<u64, Article>)
 
                             cvar.notify_all();
                         }
-                        if path.extension() == Some("md".as_ref()) {
+                        if path.extension() == Some("md".as_ref())
+                            // Ignore `README.md`.
+                            && path.file_stem() != Some("README".as_ref())
+                        {
                             println!("🔄 md file changed: {}", file_name.to_str().unwrap());
                             if let Err(err) = generate_all(cache) {
                                 eprintln!("err: {}", err);
@@ -1388,7 +1391,7 @@ where
     let addr: SocketAddr = "127.0.0.1:8001".parse().unwrap();
 
     let listener = TcpListener::bind(addr)?;
-    println!("Listening on http://{}", addr);
+    println!("Open: http://{}/blog", addr);
 
     loop {
         let (mut stream, _) = listener.accept()?;

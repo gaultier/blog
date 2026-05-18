@@ -71,7 +71,7 @@ Do not edit it by hand.
 <div class="article-prelude">
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
-<p class="publication-date">Published on 2025-07-01. Last modified on 2026-03-04.</p>
+<p class="publication-date">Published on 2025-07-01. Last modified on 2026-05-12.</p>
 </div>
 <div class="article-title">
   <h1>An optimization and debugging story with Go and DTrace</h1>
@@ -199,10 +199,14 @@ That's the core idea behind DTrace: it exists to answer questions <em>we did not
     <span>Dtrace</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">pid$target::*NewMigrationBox:entry { self-&gt;t=timestamp } </span>
+  <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">pid$target::*NewMigrationBox:entry</span>
+<span class="line-number"></span><span class="code-hl">{</span>
+<span class="line-number"></span><span class="code-hl">  self-&gt;t = timestamp;</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">pid$target::*NewMigrationBox:return {</span>
-<span class="line-number"></span><span class="code-hl">  this-&gt;duration = (timestamp - self-&gt;t)/1000000;</span>
+<span class="line-number"></span><span class="code-hl">pid$target::*NewMigrationBox:return</span>
+<span class="line-number"></span><span class="code-hl">{</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;duration = (timestamp - self-&gt;t) / 1000000;</span>
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">  @histogram[&quot;NewMigrationBox&quot;] = lquantize(this-&gt;duration, 0, 800, 1);</span>
 <span class="line-number"></span><span class="code-hl">}</span>
@@ -275,13 +279,14 @@ That's the core idea behind DTrace: it exists to answer questions <em>we did not
     <span>Dtrace</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">syscall::open:entry { </span>
+  <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">syscall::open:entry</span>
+<span class="line-number"></span><span class="code-hl">{</span>
 <span class="line-number"></span><span class="code-hl">  self-&gt;filename = copyinstr(arg0);</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">  if (rindex(self-&gt;filename, &quot;.sql&quot;) == strlen(self-&gt;filename)-4) {</span>
-<span class="line-number"></span><span class="code-hl">    printf(&quot;%s\n&quot;, self-&gt;filename)</span>
+<span class="line-number"></span><span class="code-hl">  if (rindex(self-&gt;filename, &quot;.sql&quot;) == strlen(self-&gt;filename) - 4) {</span>
+<span class="line-number"></span><span class="code-hl">    printf(&quot;%s\n&quot;, self-&gt;filename);</span>
 <span class="line-number"></span><span class="code-hl">  }</span>
-<span class="line-number"></span><span class="code-hl">} </span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p><code>copyinstr</code> is <a href="https://illumos.org/books/dtrace/chp-user.html#chp-user">required</a> because our D script runs inside the kernel but we are trying to access user-space memory.</p>
 <p>When we run this script on <code>go test -c</code> which builds the test executable, we see that all the SQL files are being opened by the Go compiler and subsequently embedded in the test binary:</p>
@@ -316,11 +321,20 @@ That's the core idea behind DTrace: it exists to answer questions <em>we did not
     <span>Dtrace</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">pid$target:code.test.before:*NewMigrationBox:entry { self-&gt;t = 1}</span>
+  <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">pid$target:code.test.before:*NewMigrationBox:entry</span>
+<span class="line-number"></span><span class="code-hl">{</span>
+<span class="line-number"></span><span class="code-hl">  self-&gt;t = 1;</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">pid$target:code.test.before:*NewMigrationBox:return { exit(0) }</span>
+<span class="line-number"></span><span class="code-hl">pid$target:code.test.before:*NewMigrationBox:return</span>
+<span class="line-number"></span><span class="code-hl">{</span>
+<span class="line-number"></span><span class="code-hl">  exit(0);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">pid$target:code.test.before:sort*: /self-&gt;t != 0/ {}</span>
+<span class="line-number"></span><span class="code-hl">pid$target:code.test.before:sort*:</span>
+<span class="line-number"></span><span class="code-hl">/ self-&gt;t != 0 /</span>
+<span class="line-number"></span><span class="code-hl">{</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>I have written more specific probes in this script by specifying more parts of the probe (the second part of the probe is the module name, here it is the executable name), to try to reduce noise (by accidentally matching probes we do not care about) and also to help with performance (the more probes are being matched, the more the performance tanks). Since we know that the performance issue is located in the sorting part, we only need to trace that.</p>
 <p>For example if all your company code is under some prefix, like for me, <code>github.com/ory</code>, and you want to see all calls to company code, the probe can be <code>pid$target::github.com?ory*:</code>. The only issue is that the Go stdlib code has no prefix and we want to see it as well...</p>
@@ -389,11 +403,21 @@ That's the core idea behind DTrace: it exists to answer questions <em>we did not
     <span>Dtrace</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">pid$target::*NewMigrationBox:entry { self-&gt;t = 1}</span>
+  <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">pid$target::*NewMigrationBox:entry</span>
+<span class="line-number"></span><span class="code-hl">{</span>
+<span class="line-number"></span><span class="code-hl">  self-&gt;t = 1;</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">pid$target::*NewMigrationBox:return { self-&gt;t = 0}</span>
+<span class="line-number"></span><span class="code-hl">pid$target::*NewMigrationBox:return</span>
+<span class="line-number"></span><span class="code-hl">{</span>
+<span class="line-number"></span><span class="code-hl">  self-&gt;t = 0;</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">pid$target::sort*Len:return /self-&gt;t != 0/ {printf(&quot;%d\n&quot;, uregs[0])}</span>
+<span class="line-number"></span><span class="code-hl">pid$target::sort*Len:return</span>
+<span class="line-number"></span><span class="code-hl">/ self-&gt;t != 0 /</span>
+<span class="line-number"></span><span class="code-hl">{</span>
+<span class="line-number"></span><span class="code-hl">  printf(&quot;%d\n&quot;, uregs[0]);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>The variable <code>uregs</code> is an array of user-space registers and the first one contains, in a <code>:return</code> probe, the return value of the function. So here we are simply printing the length of the slice being sorted.</p>
 <p>We see:</p>
@@ -512,12 +536,14 @@ That's the core idea behind DTrace: it exists to answer questions <em>we did not
     <span>Dtrace</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">pid$target::*NewMigrationBox:entry { </span>
+  <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">pid$target::*NewMigrationBox:entry</span>
+<span class="line-number"></span><span class="code-hl">{</span>
 <span class="line-number"></span><span class="code-hl">  this-&gt;goroutine_id = uregs[R_X28];</span>
 <span class="line-number"></span><span class="code-hl">  durations_goroutines[this-&gt;goroutine_id] = timestamp;</span>
-<span class="line-number"></span><span class="code-hl">} </span>
+<span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">pid$target::*NewMigrationBox:return {</span>
+<span class="line-number"></span><span class="code-hl">pid$target::*NewMigrationBox:return</span>
+<span class="line-number"></span><span class="code-hl">{</span>
 <span class="line-number"></span><span class="code-hl">  this-&gt;goroutine_id = uregs[R_X28];</span>
 <span class="line-number"></span><span class="code-hl">  this-&gt;duration = (timestamp - durations_goroutines[this-&gt;goroutine_id]) / 1000000;</span>
 <span class="line-number"></span><span class="code-hl"></span>

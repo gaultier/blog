@@ -71,7 +71,7 @@ Do not edit it by hand.
 <div class="article-prelude">
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
-<p class="publication-date">Published on 2026-03-11. Last modified on 2026-03-19.</p>
+<p class="publication-date">Published on 2026-03-11. Last modified on 2026-05-11.</p>
 </div>
 <div class="article-title">
   <h1>Detect data races with DTrace in any language</h1>
@@ -334,7 +334,10 @@ operations, which have special characteristics.</p>
   <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">#pragma D option dynvarsize=16m</span>
 <span class="line-number"></span><span class="code-hl">#pragma D option cleanrate=100hz</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">typedef enum {AccessKindRead=1, AccessKindWrite=2} AccessKind;</span>
+<span class="line-number"></span><span class="code-hl">typedef enum {</span>
+<span class="line-number"></span><span class="code-hl">  AccessKindRead = 1,</span>
+<span class="line-number"></span><span class="code-hl">  AccessKindWrite = 2</span>
+<span class="line-number"></span><span class="code-hl">} AccessKind;</span>
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">typedef struct {</span>
 <span class="line-number"></span><span class="code-hl">  AccessKind kind;</span>
@@ -346,26 +349,29 @@ operations, which have special characteristics.</p>
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">int func_access[string];</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">BEGIN {</span>
+<span class="line-number"></span><span class="code-hl">BEGIN</span>
+<span class="line-number"></span><span class="code-hl">{</span>
 <span class="line-number"></span><span class="code-hl">  // Record which kind of access each function does.</span>
 <span class="line-number"></span><span class="code-hl">  func_access[&quot;byte_array_get_len&quot;] = AccessKindRead;</span>
 <span class="line-number"></span><span class="code-hl">  func_access[&quot;byte_array_set_len&quot;] = AccessKindWrite;</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">// Watch `byte_array_get_len` and `byte_array_set_len`.</span>
-<span class="line-number"></span><span class="code-hl">pid$target::byte_array_?et_len:entry {</span>
+<span class="line-number"></span><span class="code-hl">pid$target::byte_array_?et_len:entry</span>
+<span class="line-number"></span><span class="code-hl">{</span>
 <span class="line-number"></span><span class="code-hl">  // `arg0` is the pointer to the `ByteArray` structure,</span>
 <span class="line-number"></span><span class="code-hl">  // and `len` is at offset `8` in the `ByteArray` structure (on 64 bits systems).</span>
 <span class="line-number"></span><span class="code-hl">  // So this gets the value of `byte_array-&gt;len`.</span>
 <span class="line-number"></span><span class="code-hl">  self-&gt;mem_ptr = arg0 + 8;</span>
 <span class="line-number"></span><span class="code-hl">  this-&gt;theirs = accesses[self-&gt;mem_ptr];</span>
+<span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">  // Get the access kind based on the function: `byte_array_get_len` is a read and `byte_array_set_len` is a write.</span>
 <span class="line-number"></span><span class="code-hl">  this-&gt;my_access_kind = func_access[probefunc];</span>
 <span class="line-number"></span><span class="code-hl">  this-&gt;now = timestamp;</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">  if (this-&gt;theirs.tid !=0 &amp;&amp;  // 'if a thread is concurrently accessing the same memory...'</span>
-<span class="line-number"></span><span class="code-hl">      this-&gt;theirs.tid != tid &amp;&amp;  // 'and this is another thread as the current one...'</span>
-<span class="line-number"></span><span class="code-hl">      (this-&gt;my_access_kind == AccessKindWrite || this-&gt;theirs.kind == AccessKindWrite)) { // 'and at least one access is a write...'</span>
+<span class="line-number"></span><span class="code-hl">  if (this-&gt;theirs.tid != 0 &amp;&amp; // 'if a thread is concurrently accessing the same memory...'</span>
+<span class="line-number"></span><span class="code-hl">      this-&gt;theirs.tid != tid &amp;&amp; // 'and this is another thread as the current one...'</span>
+<span class="line-number"></span><span class="code-hl">      (this-&gt;my_access_kind == AccessKindWrite || this-&gt;theirs.kind == AccessKindWrite)) /* 'and at least one access is a write...' */ {</span>
 <span class="line-number"></span><span class="code-hl">    printf(&quot;possible data race: my_access_kind:%d my_tid=%d my_ts=%d their_access_kind:%d their_tid=%d their_ts=%d mem_ptr=%p\n&quot;, this-&gt;my_access_kind, tid, this-&gt;now, this-&gt;theirs.kind, this-&gt;theirs.tid, this-&gt;theirs.ts, self-&gt;mem_ptr);</span>
 <span class="line-number"></span><span class="code-hl">    ustack();</span>
 <span class="line-number"></span><span class="code-hl">  }</span>
@@ -376,7 +382,9 @@ operations, which have special characteristics.</p>
 <span class="line-number"></span><span class="code-hl">  accesses[self-&gt;mem_ptr].ts = this-&gt;now;</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">pid$target::byte_array_?et_len:return /self-&gt;mem_ptr != 0/ {</span>
+<span class="line-number"></span><span class="code-hl">pid$target::byte_array_?et_len:return</span>
+<span class="line-number"></span><span class="code-hl">/ self-&gt;mem_ptr != 0 /</span>
+<span class="line-number"></span><span class="code-hl">{</span>
 <span class="line-number"></span><span class="code-hl">  // Clear the map since the access is done.</span>
 <span class="line-number"></span><span class="code-hl">  accesses[self-&gt;mem_ptr].kind = 0;</span>
 <span class="line-number"></span><span class="code-hl">  accesses[self-&gt;mem_ptr].tid = 0;</span>
@@ -583,7 +591,12 @@ operations, which have special characteristics.</p>
     <span>Dtrace</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">      (this-&gt;my_access_kind == AccessKindWrite || this-&gt;theirs.kind == AccessKindWrite)) { // 'and at least one access is a write...'</span>
+  <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">pid$target::byte_array_?et_len:entry</span>
+<span class="line-number"></span><span class="code-hl">{</span>
+<span class="line-number"></span><span class="code-hl">  // ...</span>
+<span class="line-number"></span><span class="code-hl">  if (/* ... */ (this-&gt;my_access_kind == AccessKindWrite || this-&gt;theirs.kind == AccessKindWrite)) /* 'and at least one access is a write...' */ {</span>
+<span class="line-number"></span><span class="code-hl">  }</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>And N concurrent readers are fine. In fact, if we comment out this condition, we see indeed that we have two concurrent readers and lots of false positives get printed:</p>
 <pre>
@@ -686,7 +699,10 @@ operations, which have special characteristics.</p>
   <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">#pragma D option dynvarsize=16m</span>
 <span class="line-number"></span><span class="code-hl">#pragma D option cleanrate=100hz</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">typedef enum {AccessKindRead=1, AccessKindWrite=2} AccessKind;</span>
+<span class="line-number"></span><span class="code-hl">typedef enum {</span>
+<span class="line-number"></span><span class="code-hl">  AccessKindRead = 1,</span>
+<span class="line-number"></span><span class="code-hl">  AccessKindWrite = 2</span>
+<span class="line-number"></span><span class="code-hl">} AccessKind;</span>
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">typedef struct {</span>
 <span class="line-number"></span><span class="code-hl">  AccessKind kind;</span>
@@ -695,7 +711,7 @@ operations, which have special characteristics.</p>
 <span class="line-number"></span><span class="code-hl">} Access;</span>
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">typedef struct {</span>
-<span class="line-number"></span><span class="code-hl">  void* data;</span>
+<span class="line-number"></span><span class="code-hl">  void *data;</span>
 <span class="line-number"></span><span class="code-hl">  size_t len, cap;</span>
 <span class="line-number"></span><span class="code-hl">} GoSlice;</span>
 <span class="line-number"></span><span class="code-hl"></span>
@@ -705,13 +721,15 @@ operations, which have special characteristics.</p>
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">uintptr_t gid_to_mem[int];</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">BEGIN {</span>
+<span class="line-number"></span><span class="code-hl">BEGIN</span>
+<span class="line-number"></span><span class="code-hl">{</span>
 <span class="line-number"></span><span class="code-hl">  // Record which kind of access each function does.</span>
 <span class="line-number"></span><span class="code-hl">  func_access[&quot;github.com/ory/kratos/courier_test.TestQueueHTTPEmail.func3&quot;] = AccessKindRead;</span>
 <span class="line-number"></span><span class="code-hl">  func_access[&quot;github.com/ory/kratos/courier_test.TestQueueHTTPEmail.func1&quot;] = AccessKindWrite;</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">pid$target::*TestQueueHTTPEmail.func1:entry {</span>
+<span class="line-number"></span><span class="code-hl">pid$target::*TestQueueHTTPEmail.func1:entry</span>
+<span class="line-number"></span><span class="code-hl">{</span>
 <span class="line-number"></span><span class="code-hl">  this-&gt;my_access_kind = func_access[probefunc];</span>
 <span class="line-number"></span><span class="code-hl">  this-&gt;now = timestamp;</span>
 <span class="line-number"></span><span class="code-hl"></span>
@@ -721,9 +739,9 @@ operations, which have special characteristics.</p>
 <span class="line-number"></span><span class="code-hl">  this-&gt;mem_ptr = (int)this-&gt;ptr_to_slice_header;</span>
 <span class="line-number"></span><span class="code-hl">  this-&gt;theirs = accesses[this-&gt;mem_ptr];</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">  if (this-&gt;theirs.tid !=0 &amp;&amp;  // 'if a thread is concurrently accessing the same memory...'</span>
-<span class="line-number"></span><span class="code-hl">      this-&gt;theirs.tid != this-&gt;goroutine_id &amp;&amp;  // 'and this is another thread as the current one...'</span>
-<span class="line-number"></span><span class="code-hl">      (this-&gt;my_access_kind == AccessKindWrite || this-&gt;theirs.kind == AccessKindWrite)) { // 'and at least one access is a write...'</span>
+<span class="line-number"></span><span class="code-hl">  if (this-&gt;theirs.tid != 0 &amp;&amp; // 'if a thread is concurrently accessing the same memory...'</span>
+<span class="line-number"></span><span class="code-hl">      this-&gt;theirs.tid != this-&gt;goroutine_id &amp;&amp; // 'and this is another thread as the current one...'</span>
+<span class="line-number"></span><span class="code-hl">      (this-&gt;my_access_kind == AccessKindWrite || this-&gt;theirs.kind == AccessKindWrite)) /*  'and at least one access is a write...' */ {</span>
 <span class="line-number"></span><span class="code-hl">    printf(&quot;possible data race: my_access_kind:%d my_tid=%d my_ts=%d their_access_kind:%d their_tid=%d their_ts=%d mem_ptr=%p\n&quot;, this-&gt;my_access_kind, this-&gt;goroutine_id, this-&gt;now, this-&gt;theirs.kind, this-&gt;theirs.tid, this-&gt;theirs.ts, this-&gt;mem_ptr);</span>
 <span class="line-number"></span><span class="code-hl">    ustack();</span>
 <span class="line-number"></span><span class="code-hl">  }</span>
@@ -735,7 +753,8 @@ operations, which have special characteristics.</p>
 <span class="line-number"></span><span class="code-hl">  gid_to_mem[this-&gt;goroutine_id] = this-&gt;mem_ptr;</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">pid$target::*TestQueueHTTPEmail.func3:entry {</span>
+<span class="line-number"></span><span class="code-hl">pid$target::*TestQueueHTTPEmail.func3:entry</span>
+<span class="line-number"></span><span class="code-hl">{</span>
 <span class="line-number"></span><span class="code-hl">  this-&gt;my_access_kind = func_access[probefunc];</span>
 <span class="line-number"></span><span class="code-hl">  this-&gt;now = timestamp;</span>
 <span class="line-number"></span><span class="code-hl"></span>
@@ -745,9 +764,9 @@ operations, which have special characteristics.</p>
 <span class="line-number"></span><span class="code-hl">  this-&gt;mem_ptr = (int)this-&gt;ptr_to_slice_header;</span>
 <span class="line-number"></span><span class="code-hl">  this-&gt;theirs = accesses[this-&gt;mem_ptr];</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">  if (this-&gt;theirs.tid !=0 &amp;&amp;  // 'if a thread is concurrently accessing the same memory...'</span>
-<span class="line-number"></span><span class="code-hl">      this-&gt;theirs.tid != this-&gt;goroutine_id &amp;&amp;  // 'and this is another thread as the current one...'</span>
-<span class="line-number"></span><span class="code-hl">      (this-&gt;my_access_kind == AccessKindWrite || this-&gt;theirs.kind == AccessKindWrite)) { // 'and at least one access is a write...'</span>
+<span class="line-number"></span><span class="code-hl">  if (this-&gt;theirs.tid != 0 &amp;&amp; // 'if a thread is concurrently accessing the same memory...'</span>
+<span class="line-number"></span><span class="code-hl">      this-&gt;theirs.tid != this-&gt;goroutine_id &amp;&amp; // 'and this is another thread as the current one...'</span>
+<span class="line-number"></span><span class="code-hl">      (this-&gt;my_access_kind == AccessKindWrite || this-&gt;theirs.kind == AccessKindWrite)) /*  'and at least one access is a write...' */ {</span>
 <span class="line-number"></span><span class="code-hl">    printf(&quot;possible data race: my_access_kind:%d my_tid=%d my_ts=%d their_access_kind:%d their_tid=%d their_ts=%d mem_ptr=%p\n&quot;, this-&gt;my_access_kind, this-&gt;goroutine_id, this-&gt;now, this-&gt;theirs.kind, this-&gt;theirs.tid, this-&gt;theirs.ts, this-&gt;mem_ptr);</span>
 <span class="line-number"></span><span class="code-hl">    ustack();</span>
 <span class="line-number"></span><span class="code-hl">  }</span>
@@ -764,8 +783,8 @@ operations, which have special characteristics.</p>
 <span class="line-number"></span><span class="code-hl">{</span>
 <span class="line-number"></span><span class="code-hl">  this-&gt;goroutine_id = uregs[R_X28];</span>
 <span class="line-number"></span><span class="code-hl">  this-&gt;mem_ptr = gid_to_mem[this-&gt;goroutine_id];</span>
-<span class="line-number"></span><span class="code-hl">  if (this-&gt;mem_ptr != 0){</span>
-<span class="line-number"></span><span class="code-hl">  // Clear the map since the access is done.</span>
+<span class="line-number"></span><span class="code-hl">  if (this-&gt;mem_ptr != 0) {</span>
+<span class="line-number"></span><span class="code-hl">    // Clear the map since the access is done.</span>
 <span class="line-number"></span><span class="code-hl">    accesses[this-&gt;mem_ptr].kind = 0;</span>
 <span class="line-number"></span><span class="code-hl">    accesses[this-&gt;mem_ptr].tid = 0;</span>
 <span class="line-number"></span><span class="code-hl">    accesses[this-&gt;mem_ptr].ts = 0;</span>
@@ -829,7 +848,10 @@ There isn't a real reason for that, I just wanted to tweak the approach slightly
   <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">#pragma D option dynvarsize=16m</span>
 <span class="line-number"></span><span class="code-hl">#pragma D option cleanrate=100hz</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">typedef enum {AccessKindRead=1, AccessKindWrite=2} AccessKind;</span>
+<span class="line-number"></span><span class="code-hl">typedef enum {</span>
+<span class="line-number"></span><span class="code-hl">  AccessKindRead = 1,</span>
+<span class="line-number"></span><span class="code-hl">  AccessKindWrite = 2</span>
+<span class="line-number"></span><span class="code-hl">} AccessKind;</span>
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">typedef struct {</span>
 <span class="line-number"></span><span class="code-hl">  AccessKind kind;</span>
@@ -841,13 +863,15 @@ There isn't a real reason for that, I just wanted to tweak the approach slightly
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">int func_access[string];</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">BEGIN {</span>
+<span class="line-number"></span><span class="code-hl">BEGIN</span>
+<span class="line-number"></span><span class="code-hl">{</span>
 <span class="line-number"></span><span class="code-hl">  // Record which kind of access each function does.</span>
 <span class="line-number"></span><span class="code-hl">  func_access[&quot;byte_array_get_len&quot;] = AccessKindRead;</span>
 <span class="line-number"></span><span class="code-hl">  func_access[&quot;byte_array_set_len&quot;] = AccessKindWrite;</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">pid$target::byte_array_?et_len:entry {</span>
+<span class="line-number"></span><span class="code-hl">pid$target::byte_array_?et_len:entry</span>
+<span class="line-number"></span><span class="code-hl">{</span>
 <span class="line-number"></span><span class="code-hl">  // `arg0` is the pointer to the `ByteArray` structure,</span>
 <span class="line-number"></span><span class="code-hl">  // and `len` is at offset `8` in the `ByteArray` structure.</span>
 <span class="line-number"></span><span class="code-hl">  // So this gets the value of `byte_array-&gt;len`.</span>
@@ -856,9 +880,9 @@ There isn't a real reason for that, I just wanted to tweak the approach slightly
 <span class="line-number"></span><span class="code-hl">  this-&gt;my_access_kind = func_access[probefunc];</span>
 <span class="line-number"></span><span class="code-hl">  this-&gt;now = timestamp;</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">  if (this-&gt;theirs.tid !=0 &amp;&amp;  // 'if a thread is concurrently accessing the same memory...'</span>
-<span class="line-number"></span><span class="code-hl">      this-&gt;theirs.tid != tid &amp;&amp;  // 'and this is another thread as the current one...'</span>
-<span class="line-number"></span><span class="code-hl">      (this-&gt;my_access_kind == AccessKindWrite || this-&gt;theirs.kind == AccessKindWrite)) { // 'and at least one access is a write...'</span>
+<span class="line-number"></span><span class="code-hl">  if (this-&gt;theirs.tid != 0 &amp;&amp; // 'if a thread is concurrently accessing the same memory...'</span>
+<span class="line-number"></span><span class="code-hl">      this-&gt;theirs.tid != tid &amp;&amp; // 'and this is another thread as the current one...'</span>
+<span class="line-number"></span><span class="code-hl">      (this-&gt;my_access_kind == AccessKindWrite || this-&gt;theirs.kind == AccessKindWrite)) /*  'and at least one access is a write...' */ {</span>
 <span class="line-number"></span><span class="code-hl">    printf(&quot;possible data race: my_access_kind:%d my_tid=%d my_ts=%d their_access_kind:%d their_tid=%d their_ts=%d mem_ptr=%p\n&quot;, this-&gt;my_access_kind, tid, this-&gt;now, this-&gt;theirs.kind, this-&gt;theirs.tid, this-&gt;theirs.ts, self-&gt;mem_ptr);</span>
 <span class="line-number"></span><span class="code-hl">    ustack();</span>
 <span class="line-number"></span><span class="code-hl">  }</span>
@@ -869,7 +893,9 @@ There isn't a real reason for that, I just wanted to tweak the approach slightly
 <span class="line-number"></span><span class="code-hl">  accesses[self-&gt;mem_ptr].ts = this-&gt;now;</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">pid$target::byte_array_?et_len:return /self-&gt;mem_ptr != 0/ {</span>
+<span class="line-number"></span><span class="code-hl">pid$target::byte_array_?et_len:return</span>
+<span class="line-number"></span><span class="code-hl">/ self-&gt;mem_ptr != 0 /</span>
+<span class="line-number"></span><span class="code-hl">{</span>
 <span class="line-number"></span><span class="code-hl">  // Clear the map since the access is done.</span>
 <span class="line-number"></span><span class="code-hl">  accesses[self-&gt;mem_ptr].kind = 0;</span>
 <span class="line-number"></span><span class="code-hl">  accesses[self-&gt;mem_ptr].tid = 0;</span>
@@ -888,7 +914,10 @@ There isn't a real reason for that, I just wanted to tweak the approach slightly
   <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">#pragma D option dynvarsize=16m</span>
 <span class="line-number"></span><span class="code-hl">#pragma D option cleanrate=100hz</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">typedef enum {AccessKindRead=1, AccessKindWrite=2} AccessKind;</span>
+<span class="line-number"></span><span class="code-hl">typedef enum {</span>
+<span class="line-number"></span><span class="code-hl">  AccessKindRead = 1,</span>
+<span class="line-number"></span><span class="code-hl">  AccessKindWrite = 2</span>
+<span class="line-number"></span><span class="code-hl">} AccessKind;</span>
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">typedef struct {</span>
 <span class="line-number"></span><span class="code-hl">  AccessKind kind;</span>
@@ -897,7 +926,7 @@ There isn't a real reason for that, I just wanted to tweak the approach slightly
 <span class="line-number"></span><span class="code-hl">} Access;</span>
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">typedef struct {</span>
-<span class="line-number"></span><span class="code-hl">  void* data;</span>
+<span class="line-number"></span><span class="code-hl">  void *data;</span>
 <span class="line-number"></span><span class="code-hl">  size_t len, cap;</span>
 <span class="line-number"></span><span class="code-hl">} GoSlice;</span>
 <span class="line-number"></span><span class="code-hl"></span>
@@ -907,13 +936,15 @@ There isn't a real reason for that, I just wanted to tweak the approach slightly
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">uintptr_t gid_to_mem[int];</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">BEGIN {</span>
+<span class="line-number"></span><span class="code-hl">BEGIN</span>
+<span class="line-number"></span><span class="code-hl">{</span>
 <span class="line-number"></span><span class="code-hl">  // Record which kind of access each function does.</span>
 <span class="line-number"></span><span class="code-hl">  func_access[&quot;github.com/ory/kratos/courier_test.TestQueueHTTPEmail.func3&quot;] = AccessKindRead;</span>
 <span class="line-number"></span><span class="code-hl">  func_access[&quot;github.com/ory/kratos/courier_test.TestQueueHTTPEmail.func1&quot;] = AccessKindWrite;</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">pid$target::*TestQueueHTTPEmail.func1:entry {</span>
+<span class="line-number"></span><span class="code-hl">pid$target::*TestQueueHTTPEmail.func1:entry</span>
+<span class="line-number"></span><span class="code-hl">{</span>
 <span class="line-number"></span><span class="code-hl">  this-&gt;my_access_kind = func_access[probefunc];</span>
 <span class="line-number"></span><span class="code-hl">  this-&gt;now = timestamp;</span>
 <span class="line-number"></span><span class="code-hl"></span>
@@ -923,9 +954,9 @@ There isn't a real reason for that, I just wanted to tweak the approach slightly
 <span class="line-number"></span><span class="code-hl">  this-&gt;mem_ptr = (int)this-&gt;ptr_to_slice_header;</span>
 <span class="line-number"></span><span class="code-hl">  this-&gt;theirs = accesses[this-&gt;mem_ptr];</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">  if (this-&gt;theirs.tid !=0 &amp;&amp;  // 'if a thread is concurrently accessing the same memory...'</span>
-<span class="line-number"></span><span class="code-hl">      this-&gt;theirs.tid != this-&gt;goroutine_id &amp;&amp;  // 'and this is another thread as the current one...'</span>
-<span class="line-number"></span><span class="code-hl">      (this-&gt;my_access_kind == AccessKindWrite || this-&gt;theirs.kind == AccessKindWrite)) { // 'and at least one access is a write...'</span>
+<span class="line-number"></span><span class="code-hl">  if (this-&gt;theirs.tid != 0 &amp;&amp; // 'if a thread is concurrently accessing the same memory...'</span>
+<span class="line-number"></span><span class="code-hl">      this-&gt;theirs.tid != this-&gt;goroutine_id &amp;&amp; // 'and this is another thread as the current one...'</span>
+<span class="line-number"></span><span class="code-hl">      (this-&gt;my_access_kind == AccessKindWrite || this-&gt;theirs.kind == AccessKindWrite)) /*  'and at least one access is a write...' */ {</span>
 <span class="line-number"></span><span class="code-hl">    printf(&quot;possible data race: my_access_kind:%d my_tid=%d my_ts=%d their_access_kind:%d their_tid=%d their_ts=%d mem_ptr=%p\n&quot;, this-&gt;my_access_kind, this-&gt;goroutine_id, this-&gt;now, this-&gt;theirs.kind, this-&gt;theirs.tid, this-&gt;theirs.ts, this-&gt;mem_ptr);</span>
 <span class="line-number"></span><span class="code-hl">    ustack();</span>
 <span class="line-number"></span><span class="code-hl">  }</span>
@@ -937,7 +968,8 @@ There isn't a real reason for that, I just wanted to tweak the approach slightly
 <span class="line-number"></span><span class="code-hl">  gid_to_mem[this-&gt;goroutine_id] = this-&gt;mem_ptr;</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">pid$target::*TestQueueHTTPEmail.func3:entry {</span>
+<span class="line-number"></span><span class="code-hl">pid$target::*TestQueueHTTPEmail.func3:entry</span>
+<span class="line-number"></span><span class="code-hl">{</span>
 <span class="line-number"></span><span class="code-hl">  this-&gt;my_access_kind = func_access[probefunc];</span>
 <span class="line-number"></span><span class="code-hl">  this-&gt;now = timestamp;</span>
 <span class="line-number"></span><span class="code-hl"></span>
@@ -947,9 +979,9 @@ There isn't a real reason for that, I just wanted to tweak the approach slightly
 <span class="line-number"></span><span class="code-hl">  this-&gt;mem_ptr = (int)this-&gt;ptr_to_slice_header;</span>
 <span class="line-number"></span><span class="code-hl">  this-&gt;theirs = accesses[this-&gt;mem_ptr];</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">  if (this-&gt;theirs.tid !=0 &amp;&amp;  // 'if a thread is concurrently accessing the same memory...'</span>
-<span class="line-number"></span><span class="code-hl">      this-&gt;theirs.tid != this-&gt;goroutine_id &amp;&amp;  // 'and this is another thread as the current one...'</span>
-<span class="line-number"></span><span class="code-hl">      (this-&gt;my_access_kind == AccessKindWrite || this-&gt;theirs.kind == AccessKindWrite)) { // 'and at least one access is a write...'</span>
+<span class="line-number"></span><span class="code-hl">  if (this-&gt;theirs.tid != 0 &amp;&amp; // 'if a thread is concurrently accessing the same memory...'</span>
+<span class="line-number"></span><span class="code-hl">      this-&gt;theirs.tid != this-&gt;goroutine_id &amp;&amp; // 'and this is another thread as the current one...'</span>
+<span class="line-number"></span><span class="code-hl">      (this-&gt;my_access_kind == AccessKindWrite || this-&gt;theirs.kind == AccessKindWrite)) /*  'and at least one access is a write...' */ {</span>
 <span class="line-number"></span><span class="code-hl">    printf(&quot;possible data race: my_access_kind:%d my_tid=%d my_ts=%d their_access_kind:%d their_tid=%d their_ts=%d mem_ptr=%p\n&quot;, this-&gt;my_access_kind, this-&gt;goroutine_id, this-&gt;now, this-&gt;theirs.kind, this-&gt;theirs.tid, this-&gt;theirs.ts, this-&gt;mem_ptr);</span>
 <span class="line-number"></span><span class="code-hl">    ustack();</span>
 <span class="line-number"></span><span class="code-hl">  }</span>
@@ -966,8 +998,8 @@ There isn't a real reason for that, I just wanted to tweak the approach slightly
 <span class="line-number"></span><span class="code-hl">{</span>
 <span class="line-number"></span><span class="code-hl">  this-&gt;goroutine_id = uregs[R_X28];</span>
 <span class="line-number"></span><span class="code-hl">  this-&gt;mem_ptr = gid_to_mem[this-&gt;goroutine_id];</span>
-<span class="line-number"></span><span class="code-hl">  if (this-&gt;mem_ptr != 0){</span>
-<span class="line-number"></span><span class="code-hl">  // Clear the map since the access is done.</span>
+<span class="line-number"></span><span class="code-hl">  if (this-&gt;mem_ptr != 0) {</span>
+<span class="line-number"></span><span class="code-hl">    // Clear the map since the access is done.</span>
 <span class="line-number"></span><span class="code-hl">    accesses[this-&gt;mem_ptr].kind = 0;</span>
 <span class="line-number"></span><span class="code-hl">    accesses[this-&gt;mem_ptr].tid = 0;</span>
 <span class="line-number"></span><span class="code-hl">    accesses[this-&gt;mem_ptr].ts = 0;</span>

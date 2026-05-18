@@ -71,7 +71,7 @@ Do not edit it by hand.
 <div class="article-prelude">
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
-<p class="publication-date">Published on 2025-10-01. Last modified on 2026-03-08.</p>
+<p class="publication-date">Published on 2025-10-01. Last modified on 2026-05-12.</p>
 </div>
 <div class="article-title">
   <h1>How to reproduce and fix an I/O data race with Go and DTrace</h1>
@@ -197,51 +197,59 @@ Do not edit it by hand.
     <span>Dtrace</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">pid$target::os.ReadFile:entry  {</span>
-<span class="line-number"></span><span class="code-hl">  this-&gt;name = stringof(copyin(arg0, arg1)); </span>
+  <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">pid$target::os.ReadFile:entry</span>
+<span class="line-number"></span><span class="code-hl">{</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;name = stringof(copyin(arg0, arg1));</span>
 <span class="line-number"></span><span class="code-hl">  ustack();</span>
-<span class="line-number"></span><span class="code-hl">  printf(&quot;name=%s\n&quot;, this-&gt;name); </span>
+<span class="line-number"></span><span class="code-hl">  printf(&quot;name=%s\n&quot;, this-&gt;name);</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">pid$target::os.ReadFile:return  {}</span>
+<span class="line-number"></span><span class="code-hl">pid$target::os.ReadFile:return</span>
+<span class="line-number"></span><span class="code-hl">{</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">pid$target::os.WriteFile:entry  {</span>
-<span class="line-number"></span><span class="code-hl">  this-&gt;name = stringof(copyin(arg0, arg1)); </span>
+<span class="line-number"></span><span class="code-hl">pid$target::os.WriteFile:entry</span>
+<span class="line-number"></span><span class="code-hl">{</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;name = stringof(copyin(arg0, arg1));</span>
 <span class="line-number"></span><span class="code-hl">  ustack();</span>
-<span class="line-number"></span><span class="code-hl">  printf(&quot;name=%s\n&quot;, this-&gt;name); </span>
+<span class="line-number"></span><span class="code-hl">  printf(&quot;name=%s\n&quot;, this-&gt;name);</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">pid$target::os.WriteFile:return  {}</span>
-<span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">pid$target::os.Stat:entry  {}</span>
-<span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">pid$target::os.Stat:return  {</span>
-<span class="line-number"></span><span class="code-hl">  printf(&quot;err=%d\n&quot;, arg2); </span>
+<span class="line-number"></span><span class="code-hl">pid$target::os.WriteFile:return</span>
+<span class="line-number"></span><span class="code-hl">{</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">syscall::write:entry </span>
-<span class="line-number"></span><span class="code-hl">/pid==$target &amp;&amp; arg0 &gt; 2/</span>
+<span class="line-number"></span><span class="code-hl">pid$target::os.Stat:entry</span>
+<span class="line-number"></span><span class="code-hl">{</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">pid$target::os.Stat:return</span>
+<span class="line-number"></span><span class="code-hl">{</span>
+<span class="line-number"></span><span class="code-hl">  printf(&quot;err=%d\n&quot;, arg2);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">syscall::write:entry</span>
+<span class="line-number"></span><span class="code-hl">/ pid == $target &amp;&amp; arg0 &gt; 2 /</span>
 <span class="line-number"></span><span class="code-hl">{</span>
 <span class="line-number"></span><span class="code-hl">  self-&gt;trace = 1;</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">syscall::write:return </span>
-<span class="line-number"></span><span class="code-hl">/pid==$target &amp;&amp; self-&gt;trace != 0/</span>
+<span class="line-number"></span><span class="code-hl">syscall::write:return</span>
+<span class="line-number"></span><span class="code-hl">/ pid == $target &amp;&amp; self-&gt;trace != 0 /</span>
 <span class="line-number"></span><span class="code-hl">{</span>
 <span class="line-number"></span><span class="code-hl">  printf(&quot;write return: res=%d\n&quot;, arg0);</span>
 <span class="line-number"></span><span class="code-hl">  self-&gt;trace = 0;</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">syscall::read:entry </span>
-<span class="line-number"></span><span class="code-hl">/pid==$target &amp;&amp; arg0 &gt; 2/</span>
+<span class="line-number"></span><span class="code-hl">syscall::read:entry</span>
+<span class="line-number"></span><span class="code-hl">/ pid == $target &amp;&amp; arg0 &gt; 2 /</span>
 <span class="line-number"></span><span class="code-hl">{</span>
 <span class="line-number"></span><span class="code-hl">  printf(&quot;fd=%d\n&quot;, arg0);</span>
 <span class="line-number"></span><span class="code-hl">  self-&gt;trace = 1;</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">syscall::read:return </span>
-<span class="line-number"></span><span class="code-hl">/pid==$target &amp;&amp; self-&gt;trace != 0/</span>
+<span class="line-number"></span><span class="code-hl">syscall::read:return</span>
+<span class="line-number"></span><span class="code-hl">/ pid == $target &amp;&amp; self-&gt;trace != 0 /</span>
 <span class="line-number"></span><span class="code-hl">{</span>
 <span class="line-number"></span><span class="code-hl">  printf(&quot;read return: res=%d\n&quot;, arg0);</span>
 <span class="line-number"></span><span class="code-hl">  self-&gt;trace = 0;</span>

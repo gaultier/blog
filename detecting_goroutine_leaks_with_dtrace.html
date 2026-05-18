@@ -71,7 +71,7 @@ Do not edit it by hand.
 <div class="article-prelude">
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
-<p class="publication-date">Published on 2025-12-21. Last modified on 2026-03-04.</p>
+<p class="publication-date">Published on 2025-12-21. Last modified on 2026-05-12.</p>
 </div>
 <div class="article-title">
   <h1>Detecting goroutine leaks with DTrace</h1>
@@ -170,11 +170,17 @@ doing garbage collection, scheduling, collecting statistics, etc, in the Go runt
   </div>
   <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">// Creates a new goroutine.</span>
 <span class="line-number"></span><span class="code-hl">pid$target::runtime.newproc1:</span>
+<span class="line-number"></span><span class="code-hl">{</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">// Destroys a goroutine.</span>
 <span class="line-number"></span><span class="code-hl">pid$target::runtime.gdestroy:</span>
+<span class="line-number"></span><span class="code-hl">{</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">pid$target::main.*: </span>
+<span class="line-number"></span><span class="code-hl">pid$target::main.*:</span>
+<span class="line-number"></span><span class="code-hl">{</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p><em>Functions starting with <code>runtime.</code> are from the Go runtime.</em></p>
 <p>We can use the <code>-F</code> DTrace command line option to see the function call tree and see:</p>
@@ -224,27 +230,27 @@ doing garbage collection, scheduling, collecting statistics, etc, in the Go runt
   </div>
   <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">int goroutines_count;</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">pid$target::main.main:entry </span>
+<span class="line-number"></span><span class="code-hl">pid$target::main.main:entry</span>
 <span class="line-number"></span><span class="code-hl">{</span>
-<span class="line-number"></span><span class="code-hl">    t=1;  // Only track goroutines spawned from inside `main` (and its callees).</span>
+<span class="line-number"></span><span class="code-hl">  t = 1; // Only track goroutines spawned from inside `main` (and its callees).</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">pid$target::runtime.newproc1:return </span>
-<span class="line-number"></span><span class="code-hl">/t!=0/ </span>
+<span class="line-number"></span><span class="code-hl">pid$target::runtime.newproc1:return</span>
+<span class="line-number"></span><span class="code-hl">/ t != 0 /</span>
 <span class="line-number"></span><span class="code-hl">{</span>
-<span class="line-number"></span><span class="code-hl">    this-&gt;g = arg1;</span>
-<span class="line-number"></span><span class="code-hl">    goroutines[this-&gt;g] = 1; // Add the new goroutine to the tracking set of active goroutines we have spawned.</span>
-<span class="line-number"></span><span class="code-hl">    goroutines_count += 1; // Increment the counter of active goroutines.</span>
-<span class="line-number"></span><span class="code-hl">    printf(&quot;goroutine %p created: count=%d\n&quot;, this-&gt;g, goroutines_count);</span>
-<span class="line-number"></span><span class="code-hl">} </span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;g = arg1;</span>
+<span class="line-number"></span><span class="code-hl">  goroutines[this-&gt;g] = 1; // Add the new goroutine to the tracking set of active goroutines we have spawned.</span>
+<span class="line-number"></span><span class="code-hl">  goroutines_count += 1; // Increment the counter of active goroutines.</span>
+<span class="line-number"></span><span class="code-hl">  printf(&quot;goroutine %p created: count=%d\n&quot;, this-&gt;g, goroutines_count);</span>
+<span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">pid$target::runtime.gdestroy:entry </span>
-<span class="line-number"></span><span class="code-hl">/goroutines[arg0] != 0/ </span>
+<span class="line-number"></span><span class="code-hl">pid$target::runtime.gdestroy:entry</span>
+<span class="line-number"></span><span class="code-hl">/ goroutines[arg0] != 0 /</span>
 <span class="line-number"></span><span class="code-hl">{</span>
-<span class="line-number"></span><span class="code-hl">    this-&gt;g = arg0;</span>
-<span class="line-number"></span><span class="code-hl">    goroutines_count -= 1; // Decrement the counter of active goroutines.</span>
-<span class="line-number"></span><span class="code-hl">    printf(&quot;goroutine %p destroyed: count=%d\n&quot;, this-&gt;g, goroutines_count);</span>
-<span class="line-number"></span><span class="code-hl">    goroutines[this-&gt;g] = 0; // Remove the goroutine from the tracking set of active goroutines we have spawned.</span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;g = arg0;</span>
+<span class="line-number"></span><span class="code-hl">  goroutines_count -= 1; // Decrement the counter of active goroutines.</span>
+<span class="line-number"></span><span class="code-hl">  printf(&quot;goroutine %p destroyed: count=%d\n&quot;, this-&gt;g, goroutines_count);</span>
+<span class="line-number"></span><span class="code-hl">  goroutines[this-&gt;g] = 0; // Remove the goroutine from the tracking set of active goroutines we have spawned.</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>A few notes:</p>
@@ -399,20 +405,19 @@ doing garbage collection, scheduling, collecting statistics, etc, in the Go runt
     <span>Dtrace</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">pid$target::runtime.gopark:entry </span>
+  <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">pid$target::runtime.gopark:entry</span>
 <span class="line-number"></span><span class="code-hl">// arg3 = traceBlockReason.</span>
-<span class="line-number"></span><span class="code-hl">/t!=0 &amp;&amp; goroutines[uregs[R_X28]] != 0/</span>
+<span class="line-number"></span><span class="code-hl">/ t != 0 &amp;&amp; goroutines[uregs[R_X28]] != 0 /</span>
 <span class="line-number"></span><span class="code-hl">{</span>
-<span class="line-number"></span><span class="code-hl">  this-&gt;g = uregs[R_X28]; </span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;g = uregs[R_X28];</span>
 <span class="line-number"></span><span class="code-hl">  this-&gt;waitreason = arg3;</span>
-<span class="line-number"></span><span class="code-hl">  </span>
-<span class="line-number"></span><span class="code-hl">  this-&gt;blocked = </span>
-<span class="line-number"></span><span class="code-hl">    this-&gt;waitreason == 1 || // traceBlockForever</span>
-<span class="line-number"></span><span class="code-hl">    this-&gt;waitreason == 3 || // traceBlockSelect</span>
-<span class="line-number"></span><span class="code-hl">    this-&gt;waitreason == 4 || // traceBlockCondWait</span>
-<span class="line-number"></span><span class="code-hl">    this-&gt;waitreason == 5 || // traceBlockSync</span>
-<span class="line-number"></span><span class="code-hl">    this-&gt;waitreason == 6 || // traceBlockChanSend</span>
-<span class="line-number"></span><span class="code-hl">    this-&gt;waitreason == 7;   // traceBlockChanRecv</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;blocked = this-&gt;waitreason == 1 || // traceBlockForever</span>
+<span class="line-number"></span><span class="code-hl">      this-&gt;waitreason == 3 || // traceBlockSelect</span>
+<span class="line-number"></span><span class="code-hl">      this-&gt;waitreason == 4 || // traceBlockCondWait</span>
+<span class="line-number"></span><span class="code-hl">      this-&gt;waitreason == 5 || // traceBlockSync</span>
+<span class="line-number"></span><span class="code-hl">      this-&gt;waitreason == 6 || // traceBlockChanSend</span>
+<span class="line-number"></span><span class="code-hl">      this-&gt;waitreason == 7; // traceBlockChanRecv</span>
 <span class="line-number"></span><span class="code-hl">  if (goroutines_blocked[this-&gt;g] == 0 &amp;&amp; this-&gt;blocked) {</span>
 <span class="line-number"></span><span class="code-hl">    goroutines_blocked_count += 1;</span>
 <span class="line-number"></span><span class="code-hl">  } else if (goroutines_blocked[this-&gt;g] == 1 &amp;&amp; this-&gt;blocked == 0) {</span>
@@ -429,11 +434,11 @@ doing garbage collection, scheduling, collecting statistics, etc, in the Go runt
     <span>Dtrace</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">pid$target::runtime.ready:entry </span>
-<span class="line-number"></span><span class="code-hl">/goroutines[arg0] != 0/ </span>
+  <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">pid$target::runtime.ready:entry</span>
+<span class="line-number"></span><span class="code-hl">/ goroutines[arg0] != 0 /</span>
 <span class="line-number"></span><span class="code-hl">{</span>
-<span class="line-number"></span><span class="code-hl">    goroutines_blocked[this-&gt;g] = 0;</span>
-<span class="line-number"></span><span class="code-hl">    goroutines_blocked_count -= 1;</span>
+<span class="line-number"></span><span class="code-hl">  goroutines_blocked[this-&gt;g] = 0;</span>
+<span class="line-number"></span><span class="code-hl">  goroutines_blocked_count -= 1;</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>And of course, if the goroutine gets destroyed, we also remove it from the 'blocked' set (if it was inside it):</p>
@@ -467,20 +472,25 @@ doing garbage collection, scheduling, collecting statistics, etc, in the Go runt
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
   <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">int goroutines_count;</span>
-<span class="line-number"></span><span class="code-hl">int goroutines_blocked_count;</span>
-<span class="line-number"></span><span class="code-hl">int goroutines[int]; </span>
-<span class="line-number"></span><span class="code-hl">int goroutines_blocked[int]; </span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">pid$target::main.main:entry { </span>
-<span class="line-number"></span><span class="code-hl">  t=1;</span>
+<span class="line-number"></span><span class="code-hl">int goroutines_blocked_count;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">int goroutines[int];</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">int goroutines_blocked[int];</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">pid$target::main.main:entry</span>
+<span class="line-number"></span><span class="code-hl">{</span>
+<span class="line-number"></span><span class="code-hl">  t = 1;</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">pid$target::runtime.newproc1:entry {</span>
+<span class="line-number"></span><span class="code-hl">pid$target::runtime.newproc1:entry</span>
+<span class="line-number"></span><span class="code-hl">{</span>
 <span class="line-number"></span><span class="code-hl">  self-&gt;gparent = arg1;</span>
-<span class="line-number"></span><span class="code-hl">} </span>
+<span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">pid$target::runtime.newproc1:return </span>
-<span class="line-number"></span><span class="code-hl">/t!=0/</span>
+<span class="line-number"></span><span class="code-hl">pid$target::runtime.newproc1:return</span>
+<span class="line-number"></span><span class="code-hl">/ t != 0 /</span>
 <span class="line-number"></span><span class="code-hl">{</span>
 <span class="line-number"></span><span class="code-hl">  this-&gt;g = arg1; // goroutine id.</span>
 <span class="line-number"></span><span class="code-hl"></span>
@@ -492,12 +502,12 @@ doing garbage collection, scheduling, collecting statistics, etc, in the Go runt
 <span class="line-number"></span><span class="code-hl">  self-&gt;gparent = 0;</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">pid$target::runtime.gdestroy:entry </span>
-<span class="line-number"></span><span class="code-hl">/goroutines[arg0] != 0/</span>
+<span class="line-number"></span><span class="code-hl">pid$target::runtime.gdestroy:entry</span>
+<span class="line-number"></span><span class="code-hl">/ goroutines[arg0] != 0 /</span>
 <span class="line-number"></span><span class="code-hl">{</span>
 <span class="line-number"></span><span class="code-hl">  this-&gt;g = arg0; // goroutine id.</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">  goroutines[this-&gt;g] = 0; </span>
+<span class="line-number"></span><span class="code-hl">  goroutines[this-&gt;g] = 0;</span>
 <span class="line-number"></span><span class="code-hl">  goroutines_count -= 1;</span>
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">  if (goroutines_blocked[this-&gt;g] != 0) {</span>
@@ -508,27 +518,26 @@ doing garbage collection, scheduling, collecting statistics, etc, in the Go runt
 <span class="line-number"></span><span class="code-hl">  printf(&quot;godestroy: goroutine=%p count=%d blocked_count=%d\n&quot;, this-&gt;g, goroutines_count, goroutines_blocked_count);</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">pid$target::runtime.ready:entry </span>
-<span class="line-number"></span><span class="code-hl">/goroutines[arg0] != 0/ </span>
+<span class="line-number"></span><span class="code-hl">pid$target::runtime.ready:entry</span>
+<span class="line-number"></span><span class="code-hl">/ goroutines[arg0] != 0 /</span>
 <span class="line-number"></span><span class="code-hl">{</span>
-<span class="line-number"></span><span class="code-hl">    goroutines_blocked[this-&gt;g] = 0;</span>
-<span class="line-number"></span><span class="code-hl">    goroutines_blocked_count -= 1;</span>
+<span class="line-number"></span><span class="code-hl">  goroutines_blocked[this-&gt;g] = 0;</span>
+<span class="line-number"></span><span class="code-hl">  goroutines_blocked_count -= 1;</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">pid$target::runtime.gopark:entry </span>
+<span class="line-number"></span><span class="code-hl">pid$target::runtime.gopark:entry</span>
 <span class="line-number"></span><span class="code-hl">// arg3 = traceBlockReason.</span>
-<span class="line-number"></span><span class="code-hl">/t!=0 &amp;&amp; goroutines[uregs[R_X28]] != 0/</span>
+<span class="line-number"></span><span class="code-hl">/ t != 0 &amp;&amp; goroutines[uregs[R_X28]] != 0 /</span>
 <span class="line-number"></span><span class="code-hl">{</span>
-<span class="line-number"></span><span class="code-hl">  this-&gt;g = uregs[R_X28]; </span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;g = uregs[R_X28];</span>
 <span class="line-number"></span><span class="code-hl">  this-&gt;waitreason = arg3;</span>
-<span class="line-number"></span><span class="code-hl">  </span>
-<span class="line-number"></span><span class="code-hl">  this-&gt;blocked = </span>
-<span class="line-number"></span><span class="code-hl">    this-&gt;waitreason == 1 || // traceBlockForever</span>
-<span class="line-number"></span><span class="code-hl">    this-&gt;waitreason == 3 || // traceBlockSelect</span>
-<span class="line-number"></span><span class="code-hl">    this-&gt;waitreason == 4 || // traceBlockCondWait</span>
-<span class="line-number"></span><span class="code-hl">    this-&gt;waitreason == 5 || // traceBlockSync</span>
-<span class="line-number"></span><span class="code-hl">    this-&gt;waitreason == 6 || // traceBlockChanSend</span>
-<span class="line-number"></span><span class="code-hl">    this-&gt;waitreason == 7;   // traceBlockChanRecv</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;blocked = this-&gt;waitreason == 1 || // traceBlockForever</span>
+<span class="line-number"></span><span class="code-hl">      this-&gt;waitreason == 3 || // traceBlockSelect</span>
+<span class="line-number"></span><span class="code-hl">      this-&gt;waitreason == 4 || // traceBlockCondWait</span>
+<span class="line-number"></span><span class="code-hl">      this-&gt;waitreason == 5 || // traceBlockSync</span>
+<span class="line-number"></span><span class="code-hl">      this-&gt;waitreason == 6 || // traceBlockChanSend</span>
+<span class="line-number"></span><span class="code-hl">      this-&gt;waitreason == 7; // traceBlockChanRecv</span>
 <span class="line-number"></span><span class="code-hl">  if (goroutines_blocked[this-&gt;g] == 0 &amp;&amp; this-&gt;blocked) {</span>
 <span class="line-number"></span><span class="code-hl">    goroutines_blocked_count += 1;</span>
 <span class="line-number"></span><span class="code-hl">  } else if (goroutines_blocked[this-&gt;g] == 1 &amp;&amp; this-&gt;blocked == 0) {</span>
@@ -539,7 +548,9 @@ doing garbage collection, scheduling, collecting statistics, etc, in the Go runt
 <span class="line-number"></span><span class="code-hl">  printf(&quot;gopark: goroutine=%p blocked=%d reason=%d blocked_count=%d\n&quot;, this-&gt;g, this-&gt;blocked, this-&gt;waitreason, goroutines_blocked_count);</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">profile-1s, END {</span>
+<span class="line-number"></span><span class="code-hl">profile-1s,</span>
+<span class="line-number"></span><span class="code-hl">END</span>
+<span class="line-number"></span><span class="code-hl">{</span>
 <span class="line-number"></span><span class="code-hl">  printf(&quot;%s: count=%d blocked_count=%d\n&quot;, probename, goroutines_count, goroutines_blocked_count);</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
@@ -626,27 +637,25 @@ use <code>getg() == getg().m.curg</code>.</p>
   </div>
   <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">struct g {</span>
 <span class="line-number"></span><span class="code-hl">  uint8_t pad[48];</span>
-<span class="line-number"></span><span class="code-hl">  struct m* m;</span>
+<span class="line-number"></span><span class="code-hl">  struct m *m;</span>
 <span class="line-number"></span><span class="code-hl">};</span>
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">struct m {</span>
 <span class="line-number"></span><span class="code-hl">  uint8_t pad[184];</span>
-<span class="line-number"></span><span class="code-hl">  struct g* curg;</span>
+<span class="line-number"></span><span class="code-hl">  struct g *curg;</span>
 <span class="line-number"></span><span class="code-hl">};</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">pid$target::runtime.gopark:entry </span>
+<span class="line-number"></span><span class="code-hl">pid$target::runtime.gopark:entry</span>
 <span class="line-number"></span><span class="code-hl">// arg3 = traceBlockReason.</span>
-<span class="line-number"></span><span class="code-hl">/goroutines[uregs[R_X28]] != 0/</span>
+<span class="line-number"></span><span class="code-hl">/ goroutines[uregs[R_X28]] != 0 /</span>
 <span class="line-number"></span><span class="code-hl">{</span>
-<span class="line-number"></span><span class="code-hl">  this-&gt;g_addr = uregs[R_X28]; </span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;g_addr = uregs[R_X28];</span>
 <span class="line-number"></span><span class="code-hl">  this-&gt;go = (struct g*)copyin(this-&gt;g_addr, sizeof(struct g));</span>
 <span class="line-number"></span><span class="code-hl">  this-&gt;m = (struct m*)copyin((user_addr_t)this-&gt;go-&gt;m, sizeof(struct m));</span>
 <span class="line-number"></span><span class="code-hl">  this-&gt;curg_addr = (uintptr_t)this-&gt;m-&gt;curg;</span>
 <span class="line-number"></span><span class="code-hl">  this-&gt;curg = (struct g*)copyin((user_addr_t)this-&gt;curg_addr, sizeof(struct g));</span>
 <span class="line-number"></span><span class="code-hl">  print(*this-&gt;curg);</span>
-<span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">  [..]</span>
+<span class="line-number"></span><span class="code-hl">  // ...</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>And voila!</p>
@@ -664,21 +673,18 @@ use <code>getg() == getg().m.curg</code>.</p>
 <span class="line-number"></span><span class="code-hl">  uintptr_t stackguard1;</span>
 <span class="line-number"></span><span class="code-hl">  uintptr_t _panic;</span>
 <span class="line-number"></span><span class="code-hl">  uintptr_t _defer;</span>
-<span class="line-number"></span><span class="code-hl">  struct m* m;</span>
+<span class="line-number"></span><span class="code-hl">  struct m *m;</span>
 <span class="line-number"></span><span class="code-hl">  uintptr_t sched[6];</span>
 <span class="line-number"></span><span class="code-hl">  uintptr_t syscallsp;</span>
 <span class="line-number"></span><span class="code-hl">  uintptr_t syscallpc;</span>
 <span class="line-number"></span><span class="code-hl">  uintptr_t syscallbp;</span>
 <span class="line-number"></span><span class="code-hl">  uintptr_t stktopsp;</span>
 <span class="line-number"></span><span class="code-hl">  uintptr_t param;</span>
-<span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">  uint32_t status;</span>
 <span class="line-number"></span><span class="code-hl">  uint32_t stackLock;</span>
-<span class="line-number"></span><span class="code-hl">    </span>
 <span class="line-number"></span><span class="code-hl">  uint64_t goid;</span>
 <span class="line-number"></span><span class="code-hl">  uintptr_t schedlink;</span>
 <span class="line-number"></span><span class="code-hl">  int64_t waitsince;</span>
-<span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">  uint8_t waitreason;</span>
 <span class="line-number"></span><span class="code-hl">  uint8_t preempt;</span>
 <span class="line-number"></span><span class="code-hl">  uint8_t preemptStop;</span>
@@ -687,11 +693,9 @@ use <code>getg() == getg().m.curg</code>.</p>
 <span class="line-number"></span><span class="code-hl">  uint8_t paniconfault;</span>
 <span class="line-number"></span><span class="code-hl">  uint8_t gcscandone;</span>
 <span class="line-number"></span><span class="code-hl">  uint8_t throwsplit;</span>
-<span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">  uint8_t activeStackChans;</span>
 <span class="line-number"></span><span class="code-hl">  uint8_t pad1[3];</span>
 <span class="line-number"></span><span class="code-hl">  uint32_t parkingOnChan;</span>
-<span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">  uint8_t inMarkAssist;</span>
 <span class="line-number"></span><span class="code-hl">  uint8_t coroexit;</span>
 <span class="line-number"></span><span class="code-hl">  int8_t raceignore;</span>
@@ -699,19 +703,15 @@ use <code>getg() == getg().m.curg</code>.</p>
 <span class="line-number"></span><span class="code-hl">  uint8_t tracking;</span>
 <span class="line-number"></span><span class="code-hl">  uint8_t trackingSeq;</span>
 <span class="line-number"></span><span class="code-hl">  uint8_t pad2[2];</span>
-<span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">  int64_t trackingStamp;</span>
 <span class="line-number"></span><span class="code-hl">  int64_t runnableTime;</span>
 <span class="line-number"></span><span class="code-hl">  uintptr_t lockedm;</span>
-<span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">  uint8_t fipsIndicator;</span>
 <span class="line-number"></span><span class="code-hl">  uint8_t syncSafePoint;</span>
 <span class="line-number"></span><span class="code-hl">  uint8_t pad3[2];</span>
 <span class="line-number"></span><span class="code-hl">  uint32_t runningCleanups;</span>
-<span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">  uint32_t sig;</span>
 <span class="line-number"></span><span class="code-hl">  uint8_t pad4[4];</span>
-<span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">  uintptr_t writebuf_ptr;</span>
 <span class="line-number"></span><span class="code-hl">  uint64_t writebuf_len;</span>
 <span class="line-number"></span><span class="code-hl">  uint64_t writebuf_cap;</span>
@@ -730,18 +730,14 @@ use <code>getg() == getg().m.curg</code>.</p>
 <span class="line-number"></span><span class="code-hl">  uintptr_t labels;</span>
 <span class="line-number"></span><span class="code-hl">  uintptr_t timer;</span>
 <span class="line-number"></span><span class="code-hl">  int64_t sleepWhen;</span>
-<span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">  uint32_t selectDone;</span>
 <span class="line-number"></span><span class="code-hl">  uint32_t goroutineProfiled;</span>
-<span class="line-number"></span><span class="code-hl">  </span>
 <span class="line-number"></span><span class="code-hl">  uintptr_t coro;</span>
 <span class="line-number"></span><span class="code-hl">  uintptr_t bubble;</span>
-<span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">  uint64_t trace[4];</span>
 <span class="line-number"></span><span class="code-hl">  int64_t gcAssistBytes;</span>
-<span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">  uintptr_t valgrindStackID;</span>
-<span class="line-number"></span><span class="code-hl">}; </span>
+<span class="line-number"></span><span class="code-hl">};</span>
 </code></pre>
 <p>and when we print the goroutine data from inside DTrace we see:</p>
 <pre>
@@ -874,20 +870,25 @@ use <code>getg() == getg().m.curg</code>.</p>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
   <code class="language-dtrace"><span class="line-number"></span><span class="code-hl">int goroutines_count;</span>
-<span class="line-number"></span><span class="code-hl">int goroutines_blocked_count;</span>
-<span class="line-number"></span><span class="code-hl">int goroutines[int]; </span>
-<span class="line-number"></span><span class="code-hl">int goroutines_blocked[int]; </span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">pid$target::main.main:entry { </span>
-<span class="line-number"></span><span class="code-hl">  t=1;</span>
+<span class="line-number"></span><span class="code-hl">int goroutines_blocked_count;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">int goroutines[int];</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">int goroutines_blocked[int];</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">pid$target::main.main:entry</span>
+<span class="line-number"></span><span class="code-hl">{</span>
+<span class="line-number"></span><span class="code-hl">  t = 1;</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">pid$target::runtime.newproc1:entry {</span>
+<span class="line-number"></span><span class="code-hl">pid$target::runtime.newproc1:entry</span>
+<span class="line-number"></span><span class="code-hl">{</span>
 <span class="line-number"></span><span class="code-hl">  self-&gt;gparent = arg1;</span>
-<span class="line-number"></span><span class="code-hl">} </span>
+<span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">pid$target::runtime.newproc1:return </span>
-<span class="line-number"></span><span class="code-hl">/t!=0/</span>
+<span class="line-number"></span><span class="code-hl">pid$target::runtime.newproc1:return</span>
+<span class="line-number"></span><span class="code-hl">/ t != 0 /</span>
 <span class="line-number"></span><span class="code-hl">{</span>
 <span class="line-number"></span><span class="code-hl">  this-&gt;g = arg1; // goroutine id.</span>
 <span class="line-number"></span><span class="code-hl"></span>
@@ -899,12 +900,12 @@ use <code>getg() == getg().m.curg</code>.</p>
 <span class="line-number"></span><span class="code-hl">  self-&gt;gparent = 0;</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">pid$target::runtime.gdestroy:entry </span>
-<span class="line-number"></span><span class="code-hl">/goroutines[arg0] != 0/</span>
+<span class="line-number"></span><span class="code-hl">pid$target::runtime.gdestroy:entry</span>
+<span class="line-number"></span><span class="code-hl">/ goroutines[arg0] != 0 /</span>
 <span class="line-number"></span><span class="code-hl">{</span>
 <span class="line-number"></span><span class="code-hl">  this-&gt;g = arg0; // goroutine id.</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">  goroutines[this-&gt;g] = 0; </span>
+<span class="line-number"></span><span class="code-hl">  goroutines[this-&gt;g] = 0;</span>
 <span class="line-number"></span><span class="code-hl">  goroutines_count -= 1;</span>
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">  if (goroutines_blocked[this-&gt;g] != 0) {</span>
@@ -915,27 +916,26 @@ use <code>getg() == getg().m.curg</code>.</p>
 <span class="line-number"></span><span class="code-hl">  printf(&quot;godestroy: goroutine=%p count=%d blocked_count=%d\n&quot;, this-&gt;g, goroutines_count, goroutines_blocked_count);</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">pid$target::runtime.ready:entry </span>
-<span class="line-number"></span><span class="code-hl">/goroutines[arg0] != 0/ </span>
+<span class="line-number"></span><span class="code-hl">pid$target::runtime.ready:entry</span>
+<span class="line-number"></span><span class="code-hl">/ goroutines[arg0] != 0 /</span>
 <span class="line-number"></span><span class="code-hl">{</span>
-<span class="line-number"></span><span class="code-hl">    goroutines_blocked[this-&gt;g] = 0;</span>
-<span class="line-number"></span><span class="code-hl">    goroutines_blocked_count -= 1;</span>
+<span class="line-number"></span><span class="code-hl">  goroutines_blocked[this-&gt;g] = 0;</span>
+<span class="line-number"></span><span class="code-hl">  goroutines_blocked_count -= 1;</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">pid$target::runtime.gopark:entry </span>
+<span class="line-number"></span><span class="code-hl">pid$target::runtime.gopark:entry</span>
 <span class="line-number"></span><span class="code-hl">// arg3 = traceBlockReason.</span>
-<span class="line-number"></span><span class="code-hl">/t!=0 &amp;&amp; goroutines[uregs[R_X28]] != 0/</span>
+<span class="line-number"></span><span class="code-hl">/ t != 0 &amp;&amp; goroutines[uregs[R_X28]] != 0 /</span>
 <span class="line-number"></span><span class="code-hl">{</span>
-<span class="line-number"></span><span class="code-hl">  this-&gt;g = uregs[R_X28]; </span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;g = uregs[R_X28];</span>
 <span class="line-number"></span><span class="code-hl">  this-&gt;waitreason = arg3;</span>
-<span class="line-number"></span><span class="code-hl">  </span>
-<span class="line-number"></span><span class="code-hl">  this-&gt;blocked = </span>
-<span class="line-number"></span><span class="code-hl">    this-&gt;waitreason == 1 || // traceBlockForever</span>
-<span class="line-number"></span><span class="code-hl">    this-&gt;waitreason == 3 || // traceBlockSelect</span>
-<span class="line-number"></span><span class="code-hl">    this-&gt;waitreason == 4 || // traceBlockCondWait</span>
-<span class="line-number"></span><span class="code-hl">    this-&gt;waitreason == 5 || // traceBlockSync</span>
-<span class="line-number"></span><span class="code-hl">    this-&gt;waitreason == 6 || // traceBlockChanSend</span>
-<span class="line-number"></span><span class="code-hl">    this-&gt;waitreason == 7;   // traceBlockChanRecv</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">  this-&gt;blocked = this-&gt;waitreason == 1 || // traceBlockForever</span>
+<span class="line-number"></span><span class="code-hl">      this-&gt;waitreason == 3 || // traceBlockSelect</span>
+<span class="line-number"></span><span class="code-hl">      this-&gt;waitreason == 4 || // traceBlockCondWait</span>
+<span class="line-number"></span><span class="code-hl">      this-&gt;waitreason == 5 || // traceBlockSync</span>
+<span class="line-number"></span><span class="code-hl">      this-&gt;waitreason == 6 || // traceBlockChanSend</span>
+<span class="line-number"></span><span class="code-hl">      this-&gt;waitreason == 7; // traceBlockChanRecv</span>
 <span class="line-number"></span><span class="code-hl">  if (goroutines_blocked[this-&gt;g] == 0 &amp;&amp; this-&gt;blocked) {</span>
 <span class="line-number"></span><span class="code-hl">    goroutines_blocked_count += 1;</span>
 <span class="line-number"></span><span class="code-hl">  } else if (goroutines_blocked[this-&gt;g] == 1 &amp;&amp; this-&gt;blocked == 0) {</span>
@@ -946,7 +946,9 @@ use <code>getg() == getg().m.curg</code>.</p>
 <span class="line-number"></span><span class="code-hl">  printf(&quot;gopark: goroutine=%p blocked=%d reason=%d blocked_count=%d\n&quot;, this-&gt;g, this-&gt;blocked, this-&gt;waitreason, goroutines_blocked_count);</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">profile-1s, END {</span>
+<span class="line-number"></span><span class="code-hl">profile-1s,</span>
+<span class="line-number"></span><span class="code-hl">END</span>
+<span class="line-number"></span><span class="code-hl">{</span>
 <span class="line-number"></span><span class="code-hl">  printf(&quot;%s: count=%d blocked_count=%d\n&quot;, probename, goroutines_count, goroutines_blocked_count);</span>
 <span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
