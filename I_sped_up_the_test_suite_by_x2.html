@@ -91,6 +91,10 @@ Do not edit it by hand.
   <li>
     <a href="#the-dirty-details">The dirty details</a>
 </li>
+
+  <li>
+    <a href="#conclusion">Conclusion</a>
+</li>
 </ul>
 </details>
 
@@ -104,6 +108,7 @@ Do not edit it by hand.
 <li>It is entirely unnecessary to apply each migration one by one, nearly all tests are only interested in the latest database schema</li>
 </ul>
 <p>And so I decided to optimize it. When doing performance optimizations, it's important to spend some time first deciding if it's worth your time on paper!</p>
+<p>As always: the code is <a href="https://github.com/ory/x/commit/91e6c4715c2d187b350e3fc589308edd23f6791d">open-source</a>.</p>
 <h2 id="quick-and-dirty-check">
   <a class="title" href="#quick-and-dirty-check">Quick and dirty check</a>
   <a class="hash-anchor" href="#quick-and-dirty-check" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -119,38 +124,73 @@ Do not edit it by hand.
   <a class="title" href="#the-implementation">The implementation</a>
   <a class="hash-anchor" href="#the-implementation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>We could do the same as in the test above: assume that a human or a tool maintains a golden database file up to date, and when a test starts, it copies this golden file, and uses it as its database.</p>
+<p>We could do the same as in the prototype above: assume that a human or a tool maintains a golden database file up to date, and when a test starts, it copies this golden file, and uses it as its database.</p>
 <p>However, that requires some out-of-band process, since new SQL migrations get added every few days, and there is a risk that this golden file gets out of sync.</p>
 <p>So I went the other way: at the start of each test, we either use the golden file if it exists, or we lazily (on demand) create it otherwise, and then start using it.</p>
-<p>Due to Go's test framework and the fact that we use a monorepo, running Go tests from many different and unrelated projects, there is no clear entry point for all tests, where we could run our logic.</p>
-<p>That means that each test must run this logic and we'll have a contention point when checking if the golden database file already exists, which we accept.</p>
-<p>The approach is, I find, quite elegant:</p>
+<p>Due to Go's test framework and the fact that we use a monorepo, running Go tests from many different and unrelated projects, there is no clear entry point for all tests, where we could run our logic<sup class="footnote-ref"><a href="#fn-1" id="fnref-1" data-footnote-ref>1</a></sup>
+.</p>
+<p>That means that each test must run this logic at the start of the test, and we'll have a contention point when checking if the golden database file already exists, which we accept.</p>
+<p>The approach is, if I dare say so, quite elegant:</p>
 <ol>
-<li>In each test, call one function to apply all database migration files. We call it the 'migration box'.</li>
-<li>In this function, first check if the golden database file exists. If it does, simply copy[^1] it to a uniquely named file, and immediately return this name, so that the test can then use it, fully isolated from the other tests.</li>
+<li>In each test, at the start, call one function to create a new database and apply all database migrations to it.</li>
+<li>In this function, first check if the golden database file exists. If it does, simply copy<sup class="footnote-ref"><a href="#fn-2" id="fnref-2" data-footnote-ref>2</a></sup>
+ it to a uniquely named file, and immediately return this name, so that the test can then use it, fully isolated from the other tests.</li>
 <li><p>If the golden database file does <em>not</em> exist, we need to apply all SQL migrations to a new database (file):</p>
 <ol>
 <li>Collect all SQL migrations files</li>
 <li>Compute a SHA256 hash of their content</li>
-<li>Create a new database file with a random name e.g. <code>/tmp/234970870</code></li>
+<li>Create a new database file with a random name e.g. <code>/tmp/123456</code></li>
 <li>Apply all SQL migrations to this new database file.</li>
-<li>Rename this file to <code>/tmp/&lt;SHA256 hash&gt;</code>. We now have our golden database! This is using content addressing: a test can simply try to find the file using the SHA256 hash and be assured that the file has had all SQL migrations applied.</li>
-<li>Copy this golden database file to a uniquely named file and return that name. The calling test can now use it, and all other subsequent tests will find the golden database and use it.</li>
+<li>Rename this file to <code>/tmp/&lt;SHA256 hash&gt;</code>. We now have our golden database! This is using content addressing: a test can simply try to find the file using the SHA256 hash and be assured that the file has had all SQL migrations applied. The name is a hash of the content.</li>
+<li>Copy this golden database file to a uniquely named file and return that name. The calling test can now use it, and all other subsequent tests will find the golden database and use it. This is the same as step 2.</li>
 </ol>
 </li>
 </ol>
 <p>A few points are critical to make it correct:</p>
 <ul>
-<li>SQL migrations are not applied to the golden database file (<code>/tmp/&lt;SHA256 hash&gt;</code>) directly: they are applied to a temporary file, which is then renamed to be the golden database file. This is crucial to avoid concurrent tests seeing a partially-written golden database file, where the file exists but not all SQL migrations have been applied yet. The golden database file either exists in its full-fledged form, or it doesn't, but it never exists in a partial form.</li>
+<li>SQL migrations are not applied to the golden database file (<code>/tmp/&lt;SHA256 hash&gt;</code>) directly: they are applied to a temporary file (in step 3.3 and 3.4), which is then renamed to be the golden database file (in step 3.5). This is crucial to avoid concurrent tests seeing a partially-written golden database file, where the file exists but not all SQL migrations have been applied yet. The golden database file either exists in its full-fledged form, or it doesn't, but it never exists in a partial form.</li>
 <li>The golden database file uses content-addressing (its name is the SHA256 hash) so that when a new SQL migration is added, the whole process works out of the box: the SHA256 hash will be different, and a new golden database file will be created, as if the old one never existed.</li>
-<li>No clean-up of old golden files is needed since they only exist in the temporary directory. They might get cleaned-up by the OS upon restart, and then the next time we run the tests, the golden file will be re-created automatically (at the cost of a longer runtime, once).</li>
+<li>This content-addressing approach has a very nice property: different projects in the monorepo use different SQL migrations, yielding a different hash. That means that the code works out of the box with all the projects without any special case: each application will use a differently-named golden database file automatically.</li>
+<li>Related, most of our applications have an open-source and an enterprise version, which has some added features. These features typically require additional SQL migrations. Again, with this approach, different variants of the same application automatically use different golden database files, with the same minimal code.</li>
+<li>No clean-up of old golden files is needed since they only exist in the temporary directory. They might get cleaned up by the OS upon restart, and then the next time we run the tests, the golden file will be re-created automatically (at the cost of a longer test suite runtime, once).</li>
+<li>There is no setup required, no extra command to run: the next time the other developers pull the main branch and run the tests, they will automatically create and use a golden database file behind the scenes, and the tests will be faster. Pretty nice!</li>
 </ul>
 <h2 id="the-dirty-details">
   <a class="title" href="#the-dirty-details">The dirty details</a>
   <a class="hash-anchor" href="#the-dirty-details" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>SQLite boast about having only one database file, which is trivially shared with others, copied, etc. However this has not been the case for a long time: there is a journal file, a WAL file (when using WAL mode), shared memory files when multiple processes are accessing the same database (which is the case when running go tests for multiple packages), etc.</p>
-<p>That means that simply using <code>cp</code> might work in some cases but not in all cases. SQLite comes with a better solution: the <a href="https://sqlite.org/backup.html">backup API</a>, which we use here, and it takes care of all these ancillary files, it works also in in-memory mode, etc.</p>
+<p>SQLite boasts about having only one database file, which is trivially shared with others, copied, etc. It was so for a long time, but nowadays, there is a journal file (<code>.db-journal</code>), a WAL file (when using WAL mode: <code>.db-wal</code>), shared memory files when multiple processes are accessing the same database (which is the case when running go tests for multiple packages: <code>.db-shm</code>), etc.</p>
+<p>That means that simply using <code>cp</code> might work in some, but not in all cases, and lead to corrupted databases or flaky tests. SQLite comes out of the box with a solution: the <a href="https://sqlite.org/backup.html">backup API</a>, which we use here, and it takes care of all these ancillary files, it works also in in-memory mode, etc.</p>
+<hr />
+<p>Some tests <em>do</em> want to apply all SQL migrations one-by-one, for example the tests for the migration code itself, so there is an opt-out flag to not use any golden database file.</p>
+<hr />
+<p>The code that applies all SQL migrations is a library that is both used by tests, and by the migration CLI tool. This CLI tool is used in production environments to apply the latest SQL migrations by operators. In this scenario, we never want to use a golden database file. To avoid any issues, the use of the golden database file is only done in tests using this check: <code>if testing.Testing() { ... }</code>.</p>
+<hr />
+<p>We support 4 different databases in all applications (SQLite, MySQL, PostgreSQL, CockroachDB) but unfortunately each database has its own quirky way to 'clone' a database schema. For this work, I only targeted SQLite, but this is doable for every database.</p>
+<hr />
+<p>Since many tests run in parallel possibly in different processes, and we do not have any synchronization mechanism (like a lock file) for simplicity, there is a chance that multiple tests concurrently create the golden database file. This is fine: it is a bit of extra work, but correctness is guaranteed by the use of <code>os.Rename</code> as the final step, which is atomic.</p>
+<hr />
+<p>An seemingly simpler approach is to squash all SQL migrations into one file called <code>current_schema.sql</code> and apply that, meaning there is only one migration, the current schema. However that also requires maintaining this file by hand each time a new SQL migration is added, and in our case there is not one current schema but many: we have a surprisingly large matrix of 'current schemas': <strong>4 databases engines</strong> (SQLite, MySQL, PostgreSQL, CockroachDB, each with their own specific migrations) <strong>x 6 applications x 2 variants</strong> (OSS and enterprise), at least.</p>
+<p>The golden database file is essentially the current schema, using content addressing, in an already optimized binary form instead of SQL, automatically managed by the code instead of by hand.</p>
+<h2 id="conclusion">
+  <a class="title" href="#conclusion">Conclusion</a>
+  <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>The final speed-up when running all tests is x2.2 . I think it's pretty good, given that there is no cost (we simply do less work) and the diff is relatively short. It took quite a bit of experimentation and research, and there are still a few things we could optimize, but I'm happy with the approach, it has been rock solid for a few months already, and I will definitely use it in future projects.</p>
+<section class="footnotes" data-footnotes>
+<ol>
+<li id="fn-1">
+<p>
+We could add <code>TestMain</code> everywhere but that would be a lot of work and still, when dealing with multiple Go packages using <code>go test ./...</code>, each package executes its tests concurrently, there is no clear way (that I know of) to tell Go: run this setup code before <em>all</em> tests in the monorepo.<a href="#fnref-1" class="footnote-backref" data-footnote-backref data-footnote-backref-idx="1" aria-label="Back to reference 1">↩</a>
+</p>
+</li>
+<li id="fn-2">
+<p>
+Using <code>cp</code> here is not quite enough, a better way is to use the <a href="https://sqlite.org/backup.html">backup API</a>, see <a href="#the-dirty-details">The dirty details</a> to understand why.<a href="#fnref-2" class="footnote-backref" data-footnote-backref data-footnote-backref-idx="2" aria-label="Back to reference 2">↩</a>
+</p>
+</li>
+</ol>
+</section>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <div id="donate">
