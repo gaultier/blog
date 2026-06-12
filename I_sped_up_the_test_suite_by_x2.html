@@ -5,7 +5,7 @@ Do not edit it by hand.
 <!DOCTYPE html>
 <html>
 <head>
-<title>I sped up the test suite by x2 with one simple change</title>
+<title>I sped up the test suite by 2x with one simple change</title>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link type="application/atom+xml" href="/blog/feed.xml" rel="self">
@@ -74,7 +74,7 @@ Do not edit it by hand.
 <p class="publication-date">Published on 2026-06-12. Last modified on 2026-06-12.</p>
 </div>
 <div class="article-title">
-  <h1>I sped up the test suite by x2 with one simple change</h1>
+  <h1>I sped up the test suite by 2x with one simple change</h1>
 <div class="tags"> <a href="/blog/articles-by-tag.html#go" class="tag">Go</a> <a href="/blog/articles-by-tag.html#sql" class="tag">SQL</a> <a href="/blog/articles-by-tag.html#optimization" class="tag">Optimization</a> </div>
 </div>
   <details class="toc"><summary>Table of contents</summary>
@@ -90,6 +90,10 @@ Do not edit it by hand.
 
   <li>
     <a href="#edge-cases-and-dead-ends">Edge cases and dead-ends</a>
+</li>
+
+  <li>
+    <a href="#why-not-squash-all-migrations">Why not squash all migrations?</a>
 </li>
 
   <li>
@@ -112,11 +116,11 @@ Do not edit it by hand.
   <a class="title" href="#quick-and-dirty-check">Quick and dirty check</a>
   <a class="hash-anchor" href="#quick-and-dirty-check" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>Optimization work can be very unrewarding: you spend a lot of time and at then end you measure, to see no difference (or perhaps worse performance than before!).</p>
+<p>Optimization work can be very unrewarding: you spend a lot of time and at the end when you measure, to see no difference (or perhaps worse performance than before!).</p>
 <p>So it's also very important, if possible, to do a quick and dirty check at the beginning, to see if the optimization has any legs.</p>
 <p>In my case, here's what I wanted to see: let's assume that every test has access to a ready-made database, with an up-to-date database schema. What's the runtime of the test suite then? That's the upper-bound for this work, where I 'optimized' the database migration code to take no time at all.</p>
-<p>Thus I did something very simple: I put a breakpoint in one test, right after all database migrations ran. This means the test stopped at a point where a pristine SQLite database was present on disk. I then copied this file with <code>cp</code> to my home directory: this is now my golden (immutable) database. I finally modified the migration code (that all tests start with), to never apply any SQL migrations, and instead just copy the golden database file, and use that.</p>
-<p>And this is what I saw:</p>
+<p>Thus I did something very simple: I put a breakpoint in one test, right after all database migrations ran. This means the test stopped at a point where a pristine SQLite database was present on disk. I then copied this file with <code>cp</code> to my home directory: this is now my golden (immutable) database. I finally modified the migration code (that all tests start with), to never apply any SQL migrations, and instead just copy (using <code>os.Copy</code>) the golden database file, and use that.</p>
+<p>And this is what I saw: a 7x speed-up!</p>
 <p><img src="golden_db_test.png" alt="Result" /></p>
 <p>Alright, it's confirmed that this optimization is worth it!</p>
 <h2 id="the-implementation">
@@ -132,16 +136,17 @@ Do not edit it by hand.
 <p>The approach is, if I dare say so, quite elegant:</p>
 <ol>
 <li>In each test, at the start, call one function to create a new database and apply all database migrations to it.</li>
-<li>In this function, first check if the golden database file exists. If it does, simply copy<sup class="footnote-ref"><a href="#fn-2" id="fnref-2" data-footnote-ref>2</a></sup>
- it to a uniquely named file, and immediately return this name, so that the test can then use it, fully isolated from the other tests.</li>
+<li>In this function, first check if the golden database file exists. If it does, simply clone<sup class="footnote-ref"><a href="#fn-2" id="fnref-2" data-footnote-ref>2</a></sup>
+ it to a new, uniquely named database file, and immediately return this name, so that the test can then use it, fully isolated from the other tests.</li>
 <li><p>If the golden database file does <em>not</em> exist, we need to apply all SQL migrations to a new database (file):</p>
 <ol>
-<li>Collect all SQL migrations files</li>
+<li>Collect all SQL migrations files and sort them</li>
 <li>Compute a SHA256 hash of their content</li>
 <li>Create a new database file with a random name e.g. <code>/tmp/123456</code></li>
 <li>Apply all SQL migrations to this new database file.</li>
 <li>Rename this file to <code>/tmp/&lt;SHA256 hash&gt;</code>. We now have our golden database! This is using content addressing: a test can simply try to find the file using the SHA256 hash and be assured that the file has had all SQL migrations applied. The name is a hash of the content.</li>
-<li>Copy this golden database file to a uniquely named file and return that name. The calling test can now use it, and all other subsequent tests will find the golden database and use it. This is the same as step 2.</li>
+<li>Clone <sup class="footnote-ref"><a href="#fn-2" id="fnref-2" data-footnote-ref>2</a></sup>
+ this golden database to a new, uniquely named file and return that name. The calling test can now use it, and all other subsequent tests will find the golden database and use it. This is the same as step 2.</li>
 </ol>
 </li>
 </ol>
@@ -158,7 +163,7 @@ Do not edit it by hand.
   <a class="title" href="#edge-cases-and-dead-ends">Edge cases and dead-ends</a>
   <a class="hash-anchor" href="#edge-cases-and-dead-ends" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>SQLite boasts about having only one database file, which is trivially shared with others, copied, etc. It was so for a long time, but nowadays, there is a journal file (<code>.db-journal</code>), a WAL file (when using WAL mode: <code>.db-wal</code>), shared memory files when multiple processes are accessing the same database (which is the case when running go tests for multiple packages: <code>.db-shm</code>), etc.</p>
+<p>SQLite boasts about having only one database file, which is trivially shared with others, copied, etc. It was true for a long time, but nowadays, there is a journal file (<code>.db-journal</code>), a WAL file (when using WAL mode: <code>.db-wal</code>), shared memory files when multiple processes are accessing the same database (which is the case when running go tests for multiple packages: <code>.db-shm</code>), etc.</p>
 <p>That means that simply using <code>cp</code> might work in some, but not in all cases, and lead to corrupted databases or flaky tests. SQLite comes out of the box with a solution: the <a href="https://sqlite.org/backup.html">backup API</a>, which we use here, and it takes care of all these ancillary files, it works also in in-memory mode, etc.</p>
 <hr />
 <p>Some tests <em>do</em> want to apply all SQL migrations one-by-one, for example the tests for the migration code itself, so there is an opt-out flag to not use any golden database file.</p>
@@ -168,19 +173,22 @@ Do not edit it by hand.
 <p>We support 4 different databases in all applications (SQLite, MySQL, PostgreSQL, CockroachDB) but unfortunately each database has its own quirky way to 'clone' a database schema. For this work, I only targeted SQLite, but this is doable for every database.</p>
 <hr />
 <p>Since many tests run in parallel possibly in different processes, and we do not have any synchronization mechanism (like a lock file) for simplicity, there is a chance that multiple tests concurrently create the golden database file. This is fine: it is a bit of extra work, but correctness is guaranteed by the use of <code>os.Rename</code> (<code>rename(2)</code> under the hood) as the final step, which is atomic.</p>
-<hr />
+<h2 id="why-not-squash-all-migrations">
+  <a class="title" href="#why-not-squash-all-migrations">Why not squash all migrations?</a>
+  <a class="hash-anchor" href="#why-not-squash-all-migrations" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
 <p>A seemingly simpler approach is to squash all SQL migrations into one file called <code>current_schema.sql</code> and apply that, meaning there is only one migration, the current schema. However that also requires maintaining this file by hand each time a new SQL migration is added, and in our case there is not one current schema but many: we have a surprisingly large matrix of 'current schemas': <strong>4 databases engines</strong> (SQLite, MySQL, PostgreSQL, CockroachDB, each with their own specific migrations) <strong>x 6 applications x 2 variants</strong> (OSS and enterprise), at least.</p>
 <p>The golden database file is essentially the current schema, using content addressing, in an already optimized binary form instead of SQL, automatically managed by the code instead of by hand.</p>
 <h2 id="conclusion">
   <a class="title" href="#conclusion">Conclusion</a>
   <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>The final speed-up when running all tests is x2.2 . I think it's pretty good, given that there is no cost (we simply do less work) and the diff is relatively short. It took quite a bit of experimentation and research, and there are still a few things we could optimize, but I'm happy with the approach, it has been rock solid for a few months already, and I will definitely use it in future projects.</p>
+<p>The final speed-up when running all tests is 2.2x . I think it's pretty good, given that there is no cost (we simply do less work) and the diff is relatively short. It took quite a bit of experimentation and research, and there are still a few things we could optimize, but I'm happy with the approach, it has been rock solid for a few months already, and I will definitely use it in future projects.</p>
 <section class="footnotes" data-footnotes>
 <ol>
 <li id="fn-1">
 <p>
-We could add <code>TestMain</code> everywhere but that would be a lot of work and still, when dealing with multiple Go packages using <code>go test ./...</code>, each package executes its tests concurrently, there is no clear way (that I know of) to tell Go: run this setup code before <em>all</em> tests in the monorepo.<a href="#fnref-1" class="footnote-backref" data-footnote-backref data-footnote-backref-idx="1" aria-label="Back to reference 1">↩</a>
+We could add <code>TestMain</code> everywhere but that would be a lot of work and still, when dealing with multiple Go packages using <code>go test ./...</code>, each package executes its tests concurrently, in a separate process, there is no clear way (that I know of) to tell Go: run this setup code before <em>all</em> tests in the monorepo.<a href="#fnref-1" class="footnote-backref" data-footnote-backref data-footnote-backref-idx="1" aria-label="Back to reference 1">↩</a>
 </p>
 </li>
 <li id="fn-2">

@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 <title>Philippe Gaultier's blog</title>
 <link href="https://gaultier.github.io/blog"/>
-<updated>2026-06-12T14:01:11+02:00</updated>
+<updated>2026-06-12T14:01:54+02:00</updated>
 <author>
   <name>Philippe Gaultier</name>
 </author>
@@ -402,10 +402,10 @@
 </entry>
     
 <entry>
-<title>I sped up the test suite by x2 with one simple change</title>
+<title>I sped up the test suite by 2x with one simple change</title>
 <link href="https://gaultier.github.io/blog/I_sped_up_the_test_suite_by_x2.html"/>
 <id>urn:uuid:1eac0fc6-6d82-5893-855b-2417cea6f9c2</id>
-<updated>2026-06-12T14:01:11+02:00</updated>
+<updated>2026-06-12T14:01:54+02:00</updated>
 <published>2026-06-12T11:37:45+02:00</published>
 </entry>
     </feed>
