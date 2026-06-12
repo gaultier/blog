@@ -2,7 +2,7 @@ Title: I sped up the test suite by 2x with one simple change
 Tags: Go, SQL, Optimization
 ---
 
-We have a giant test suite at work, mostly in Go. The test coverage is great, but it means that it's not *that* fast to run, and it only will get slower over time. Almost every test needs a pristine database. We are spending a ton of CPU time just applying again and again the same SQL migrations at the start of each test.
+We have a giant test suite at work, mostly in Go. The test coverage is great, but it means that it's not *that* fast to run, and it only will get slower over time as new tests are added. Almost every test needs a pristine database. We are spending a ton of CPU time just applying again and again the same SQL migrations at the start of each test.
 
 As mentioned in a [previous article](/blog/an_optimization_and_debugging_story_go_dtrace.html), thousands (!) of SQL migrations have accumulated over the years, and I had to fix a performance issue where we spent a lot of time simply gathering all migration files (not even applying them).
 
