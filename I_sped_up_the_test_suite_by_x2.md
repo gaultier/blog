@@ -2,9 +2,7 @@ Title: I sped up the test suite by x2 with one simple change
 Tags: Go, SQL
 ---
 
-We have a giant test suite at work, mostly in Go. The test coverage is great, but it means that it's not *that* fast to run, and it only will get slower over time.  
-
-An esteemed colleague of mine did some benchmarking and identified that a big chunk of time in tests was spent simply creating a SQLite database with the right schema, before the test code gets to even run! Since every test has its own database for isolation and reproducibility, that's costly.
+We have a giant test suite at work, mostly in Go. The test coverage is great, but it means that it's not *that* fast to run, and it only will get slower over time. Almost every test needs a pristine database. We are spending a ton of CPU time just applying again and again the same SQL migrations at the start of each test.
 
 As mentioned in a [previous article](/blog/an_optimization_and_debugging_story_go_dtrace.html), thousands (!) of SQL migrations have accumulated over the years, and I had to fix a performance issue where we spent a lot of time simply gathering all migration files (not even applying them).
 
@@ -66,14 +64,14 @@ The approach is, if I dare say so, quite elegant:
 A few points are critical to make it correct:
 
 - SQL migrations are not applied to the golden database file (`/tmp/<SHA256 hash>`) directly: they are applied to a temporary file (in step 3.3 and 3.4), which is then renamed to be the golden database file (in step 3.5). This is crucial to avoid concurrent tests seeing a partially-written golden database file, where the file exists but not all SQL migrations have been applied yet. The golden database file either exists in its full-fledged form, or it doesn't, but it never exists in a partial form.
-- The golden database file uses content-addressing (its name is the SHA256 hash) so that when a new SQL migration is added, the whole process works out of the box: the SHA256 hash will be different, and a new golden database file will be created, as if the old one never existed.
+- The golden database file uses content-addressing (its name is the SHA256 hash) so that when a new SQL migration is added, the whole process works out of the box: the SHA256 hash will be different, and a new golden database file will be created, as if the old one never existed. There is no cache invalidation strategy whatsoever by construction.
 - This content-addressing approach has a very nice property: different projects in the monorepo use different SQL migrations, yielding a different hash. That means that the code works out of the box with all the projects without any special case: each application will use a differently-named golden database file automatically.
 - Related, most of our applications have an open-source and an enterprise version, which has some added features. These features typically require additional SQL migrations. Again, with this approach, different variants of the same application automatically use different golden database files, with the same minimal code.
 - No clean-up of old golden files is needed since they only exist in the temporary directory. They might get cleaned up by the OS upon restart, and then the next time we run the tests, the golden file will be re-created automatically (at the cost of a longer test suite runtime, once).
 - There is no setup required, no extra command to run: the next time the other developers pull the main branch and run the tests, they will automatically create and use a golden database file behind the scenes, and the tests will be faster. Pretty nice!
 
 
-## The dirty details
+## Edge cases and dead-ends
 
 SQLite boasts about having only one database file, which is trivially shared with others, copied, etc. It was so for a long time, but nowadays, there is a journal file (`.db-journal`), a WAL file (when using WAL mode: `.db-wal`), shared memory files when multiple processes are accessing the same database (which is the case when running go tests for multiple packages: `.db-shm`), etc.
 
@@ -102,7 +100,7 @@ Since many tests run in parallel possibly in different processes, and we do not 
 
 ---
 
-An seemingly simpler approach is to squash all SQL migrations into one file called `current_schema.sql` and apply that, meaning there is only one migration, the current schema. However that also requires maintaining this file by hand each time a new SQL migration is added, and in our case there is not one current schema but many: we have a surprisingly large matrix of 'current schemas': **4 databases engines** (SQLite, MySQL, PostgreSQL, CockroachDB, each with their own specific migrations) **x 6 applications x 2 variants** (OSS and enterprise), at least. 
+A seemingly simpler approach is to squash all SQL migrations into one file called `current_schema.sql` and apply that, meaning there is only one migration, the current schema. However that also requires maintaining this file by hand each time a new SQL migration is added, and in our case there is not one current schema but many: we have a surprisingly large matrix of 'current schemas': **4 databases engines** (SQLite, MySQL, PostgreSQL, CockroachDB, each with their own specific migrations) **x 6 applications x 2 variants** (OSS and enterprise), at least. 
 
 The golden database file is essentially the current schema, using content addressing, in an already optimized binary form instead of SQL, automatically managed by the code instead of by hand.
 
