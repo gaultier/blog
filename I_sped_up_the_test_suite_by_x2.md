@@ -107,7 +107,9 @@ The golden database file is essentially the current schema, using content addres
 
 ## Conclusion
 
-The final speed-up when running all tests is 2.2x . I think it's pretty good, given that there is no cost (we simply do less work) and the diff is relatively short. It took quite a bit of experimentation and research, and there are still a few things we could optimize, but I'm happy with the approach, it has been rock solid for a few months already, and I will definitely use it in future projects.
+The final speed-up when running all tests is 2.2x. It's not quite the 7x from the prototype but that was expected: the real implementation always does more work (SHA256 computations, etc) and cannot take shortcuts.
+
+I think it's overall pretty good, given that there is no cost (we simply do less work) and the diff is relatively short. It took quite a bit of experimentation and research, and there are still a few things we could optimize, but I'm happy with the approach, it has been rock solid for a few months already, and I will definitely use it in future projects.
 
 
 
