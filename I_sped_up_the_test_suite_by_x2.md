@@ -96,7 +96,7 @@ We support 4 different databases in all applications (SQLite, MySQL, PostgreSQL,
 
 ---
 
-Since many tests run in parallel possibly in different processes, and we do not have any synchronization mechanism (like a lock file) for simplicity, there is a chance that multiple tests concurrently create the golden database file. This is fine: it is a bit of extra work, but correctness is guaranteed by the use of `os.Rename` (`rename(2)` under the hood) as the final step, which is atomic.
+Since many tests run in parallel possibly in different processes, and we do not have any synchronization mechanism (like a lock file) for simplicity, there is a chance that multiple tests concurrently create the golden database file. This is fine: it is a bit of extra work, but correctness is guaranteed by the use of `os.Rename` (`rename(2)` under the hood) as the final step, which is atomic. And also: the file would be replaced by exactly the same content, so this not an issue.
 
 ## Why not squash all migrations?
 

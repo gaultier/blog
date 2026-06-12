@@ -172,7 +172,7 @@ Do not edit it by hand.
 <hr />
 <p>We support 4 different databases in all applications (SQLite, MySQL, PostgreSQL, CockroachDB) but unfortunately each database has its own quirky way to 'clone' a database schema. For this work, I only targeted SQLite, but this is doable for every database.</p>
 <hr />
-<p>Since many tests run in parallel possibly in different processes, and we do not have any synchronization mechanism (like a lock file) for simplicity, there is a chance that multiple tests concurrently create the golden database file. This is fine: it is a bit of extra work, but correctness is guaranteed by the use of <code>os.Rename</code> (<code>rename(2)</code> under the hood) as the final step, which is atomic.</p>
+<p>Since many tests run in parallel possibly in different processes, and we do not have any synchronization mechanism (like a lock file) for simplicity, there is a chance that multiple tests concurrently create the golden database file. This is fine: it is a bit of extra work, but correctness is guaranteed by the use of <code>os.Rename</code> (<code>rename(2)</code> under the hood) as the final step, which is atomic. And also: the file would be replaced by exactly the same content, so this not an issue.</p>
 <h2 id="why-not-squash-all-migrations">
   <a class="title" href="#why-not-squash-all-migrations">Why not squash all migrations?</a>
   <a class="hash-anchor" href="#why-not-squash-all-migrations" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
