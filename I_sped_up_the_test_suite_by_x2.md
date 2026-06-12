@@ -1,5 +1,5 @@
 Title: I sped up the test suite by x2 with one simple change
-Tags: Go, SQL
+Tags: Go, SQL, Optimization
 ---
 
 We have a giant test suite at work, mostly in Go. The test coverage is great, but it means that it's not *that* fast to run, and it only will get slower over time. Almost every test needs a pristine database. We are spending a ton of CPU time just applying again and again the same SQL migrations at the start of each test.
@@ -114,5 +114,5 @@ The final speed-up when running all tests is x2.2 . I think it's pretty good, gi
 [^1]: We could add `TestMain` everywhere but that would be a lot of work and still, when dealing with multiple Go packages using `go test ./...`, each package executes its tests concurrently, there is no clear way (that I know of) to tell Go: run this setup code before *all* tests in the monorepo.
 
 
-[^2]: Using `cp` here is not quite enough, a better way is to use the [backup API](https://sqlite.org/backup.html), see [The dirty details](#the-dirty-details) to understand why.
+[^2]: Using `cp` here is not quite enough, a better way is to use the [backup API](https://sqlite.org/backup.html), see [Edge cases and dead-ends](#edge-cases-and-dead-ends) to understand why.
 
