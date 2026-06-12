@@ -70,4 +70,10 @@ A few points are critical to make it correct:
 
 ## The dirty details
 
-SQLite boast about having only one database file, which is trivially shared with others, copied, etc. However this has not been the case for a long time: [TODO]
+SQLite boast about having only one database file, which is trivially shared with others, copied, etc. However this has not been the case for a long time: there is a journal file, a WAL file (when using WAL mode), shared memory files when multiple processes are accessing the same database (which is the case when running go tests for multiple packages), etc.
+
+That means that simply using `cp` might work in some cases but not in all cases. SQLite comes with a better solution: the [backup API](https://sqlite.org/backup.html), which we use here, and it takes care of all these ancillary files, it works also in in-memory mode, etc.
+
+
+
+
