@@ -87,6 +87,10 @@ Do not edit it by hand.
   <li>
     <a href="#the-implementation">The implementation</a>
 </li>
+
+  <li>
+    <a href="#the-dirty-details">The dirty details</a>
+</li>
 </ul>
 </details>
 
@@ -141,6 +145,11 @@ Do not edit it by hand.
 <li>The golden database file uses content-addressing (its name is the SHA256 hash) so that when a new SQL migration is added, the whole process works out of the box: the SHA256 hash will be different, and a new golden database file will be created, as if the old one never existed.</li>
 <li>No clean-up of old golden files is needed since they only exist in the temporary directory. They might get cleaned-up by the OS upon restart, and then the next time we run the tests, the golden file will be re-created automatically (at the cost of a longer runtime, once).</li>
 </ul>
+<h2 id="the-dirty-details">
+  <a class="title" href="#the-dirty-details">The dirty details</a>
+  <a class="hash-anchor" href="#the-dirty-details" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>SQLite boast about having only one database file, which is trivially shared with others, copied, etc. However this has not been the case for a long time: [TODO]</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <div id="donate">

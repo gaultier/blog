@@ -67,3 +67,7 @@ A few points are critical to make it correct:
 - The golden database file uses content-addressing (its name is the SHA256 hash) so that when a new SQL migration is added, the whole process works out of the box: the SHA256 hash will be different, and a new golden database file will be created, as if the old one never existed.
 - No clean-up of old golden files is needed since they only exist in the temporary directory. They might get cleaned-up by the OS upon restart, and then the next time we run the tests, the golden file will be re-created automatically (at the cost of a longer runtime, once).
 
+
+## The dirty details
+
+SQLite boast about having only one database file, which is trivially shared with others, copied, etc. However this has not been the case for a long time: [TODO]
