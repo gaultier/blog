@@ -112,6 +112,7 @@ The final speed-up when running all tests is 2.2x. It's not quite the 7x from th
 I think it's overall pretty good, given that there is no cost (we simply do less work) and the diff is relatively short. It took quite a bit of experimentation and research, and there are still a few things we could optimize, but I'm happy with the approach, it has been rock solid for a few months already, and I will definitely use it in future projects.
 
 
+And finally: this work is [open-source](https://github.com/ory) and also benefits the community hacking on the code. Which is a nice feeling.
 
 [^1]: We could add `TestMain` everywhere but that would be a lot of work and still, when dealing with multiple Go packages using `go test ./...`, each package executes its tests concurrently, in a separate process, there is no clear way (that I know of) to tell Go: run this setup code before *all* tests in the monorepo.
 
