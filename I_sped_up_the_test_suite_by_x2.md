@@ -109,7 +109,7 @@ The golden database file is essentially the current schema, using content addres
 
 The final speed-up when running all tests using SQLite is **2.2x**. It's not quite the 7x from the prototype but that was expected: the real implementation always does more work (SHA256 computations, etc) and cannot take shortcuts.
 
-I think it's overall pretty good, given that there is no cost (we simply do less work) and the diff is relatively short. It took quite a bit of experimentation and research, and there are still a few things we could optimize, but I'm happy with the approach, it has been rock solid for a few months already, and I will definitely use it in future projects.
+I think it's overall pretty good, given that there is no cost (we simply do less work) and the diff is relatively short. It took quite a bit of experimentation and research, for example I spent way too much time inspecting performance profiles and wondering why we spent so much time acquiring and releasing locks inside SQLite, turns out it was just a symptom of doing way to many schema changes, which in SQLite require locking the whole database or whole table. And there are still a few things we could optimize, but I'm happy with the approach, it has been rock solid for a few months already, and I will definitely use it in future projects.
 
 
 And finally: this work is [open-source](https://github.com/ory) and also benefits the community hacking on the code. Which is a nice feeling.

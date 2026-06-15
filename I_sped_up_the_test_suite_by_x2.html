@@ -71,7 +71,7 @@ Do not edit it by hand.
 <div class="article-prelude">
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
-<p class="publication-date">Published on 2026-06-12. Last modified on 2026-06-12.</p>
+<p class="publication-date">Published on 2026-06-12. Last modified on 2026-06-15.</p>
 </div>
 <div class="article-title">
   <h1>I sped up the test suite by 2x with one simple change</h1>
@@ -184,7 +184,7 @@ Do not edit it by hand.
   <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>The final speed-up when running all tests using SQLite is <strong>2.2x</strong>. It's not quite the 7x from the prototype but that was expected: the real implementation always does more work (SHA256 computations, etc) and cannot take shortcuts.</p>
-<p>I think it's overall pretty good, given that there is no cost (we simply do less work) and the diff is relatively short. It took quite a bit of experimentation and research, and there are still a few things we could optimize, but I'm happy with the approach, it has been rock solid for a few months already, and I will definitely use it in future projects.</p>
+<p>I think it's overall pretty good, given that there is no cost (we simply do less work) and the diff is relatively short. It took quite a bit of experimentation and research, for example I spent way too much time inspecting performance profiles and wondering why we spent so much time acquiring and releasing locks inside SQLite, turns out it was just a symptom of doing way to many schema changes, which in SQLite require locking the whole database or whole table. And there are still a few things we could optimize, but I'm happy with the approach, it has been rock solid for a few months already, and I will definitely use it in future projects.</p>
 <p>And finally: this work is <a href="https://github.com/ory">open-source</a> and also benefits the community hacking on the code. Which is a nice feeling.</p>
 <section class="footnotes" data-footnotes>
 <ol>
