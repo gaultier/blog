@@ -111,6 +111,8 @@ The final speed-up when running all tests using SQLite is **2.2x**. It's not qui
 
 I think it's overall pretty good, given that there is no cost (we simply do less work) and the diff is relatively short. It took quite a bit of experimentation and research, for example I spent way too much time inspecting performance profiles and wondering why we spent so much time acquiring and releasing locks inside SQLite, turns out it was just a symptom of doing way to many schema changes, which in SQLite require locking the whole database or whole table. And there are still a few things we could optimize, but I'm happy with the approach, it has been rock solid for a few months already, and I will definitely use it in future projects.
 
+The best part: it works with any programming language!
+
 
 And finally: this work is [open-source](https://github.com/ory) and also benefits the community hacking on the code. Which is a nice feeling.
 
