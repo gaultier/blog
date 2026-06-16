@@ -1,4 +1,4 @@
-Title: I sped up the test suite by 2x with one simple change
+Title: Don't run SQL migrations in tests: How I sped up the test suite by 2x
 Tags: Go, SQL, Optimization
 ---
 
