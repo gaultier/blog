@@ -2,6 +2,8 @@ Title: Don't run SQL migrations in tests: How I sped up the test suite by 2x
 Tags: Go, SQL, Optimization
 ---
 
+*Discussions: [/r/programming](https://reddit.com/r/programming/comments/1u77h7h/dont_run_sql_migrations_in_tests_how_i_sped_up) .*
+
 We have a giant test suite at work, mostly in Go. The test coverage is great, but it means that it's not *that* fast to run, and it only will get slower over time as new tests are added. Almost every test needs a pristine database. We are spending a ton of CPU time just applying again and again the same SQL migrations at the start of each test.
 
 As mentioned in a [previous article](/blog/an_optimization_and_debugging_story_go_dtrace.html), thousands (!) of SQL migrations have accumulated over the years, and I had to fix a performance issue where we spent a lot of time simply gathering all migration files (not even applying them).
@@ -103,6 +105,18 @@ Since many tests run in parallel possibly in different processes, and we do not 
 A seemingly simpler approach is to squash all SQL migrations into one file called `current_schema.sql` and apply that, meaning there is only one migration, the current schema. However that also requires maintaining this file by hand each time a new SQL migration is added, and in our case there is not one current schema but many: we have a surprisingly large matrix of 'current schemas': **4 databases engines** (SQLite, MySQL, PostgreSQL, CockroachDB, each with their own specific migrations) **x 6 applications x 2 variants** (OSS and enterprise), at least. 
 
 The golden database file is essentially the current schema, using content addressing, in an already optimized binary form instead of SQL, automatically managed by the code instead of by hand.
+
+
+
+## Why not use ... ?
+
+Some people use database transactions to run the test code in, and rollback at the end of the test, so that we can back to a pristine state.
+
+This works, but I don't like it because in various SQL engines, there are many differences between code running inside a transaction and outside of it. See [this article](https://www.datadoghq.com/blog/engineering/debugging-postgres-performance/) for a deep-dive with Postgres. Performance is different, the WAL looks diferent, etc.
+
+---
+
+Some people use a 'template' database that they clone in each test. This is essentially what we do here, it's just that our 'template' is itself a plain database. Postgres is to my knowledge the only engine where a 'template' database is a concept, and for this database, it's a great approach I think. I prototyped it a little bit but never shipped it.
 
 
 ## Conclusion

@@ -71,7 +71,7 @@ Do not edit it by hand.
 <div class="article-prelude">
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
-<p class="publication-date">Published on 2026-06-12. Last modified on 2026-06-15.</p>
+<p class="publication-date">Published on 2026-06-12. Last modified on 2026-06-16.</p>
 </div>
 <div class="article-title">
   <h1>Don't run SQL migrations in tests: How I sped up the test suite by 2x</h1>
@@ -97,11 +97,16 @@ Do not edit it by hand.
 </li>
 
   <li>
+    <a href="#why-not-use">Why not use ... ?</a>
+</li>
+
+  <li>
     <a href="#conclusion">Conclusion</a>
 </li>
 </ul>
 </details>
 
+<p><em>Discussions: <a href="https://reddit.com/r/programming/comments/1u77h7h/dont_run_sql_migrations_in_tests_how_i_sped_up">/r/programming</a> .</em></p>
 <p>We have a giant test suite at work, mostly in Go. The test coverage is great, but it means that it's not <em>that</em> fast to run, and it only will get slower over time as new tests are added. Almost every test needs a pristine database. We are spending a ton of CPU time just applying again and again the same SQL migrations at the start of each test.</p>
 <p>As mentioned in a <a href="/blog/an_optimization_and_debugging_story_go_dtrace.html">previous article</a>, thousands (!) of SQL migrations have accumulated over the years, and I had to fix a performance issue where we spent a lot of time simply gathering all migration files (not even applying them).</p>
 <p>With that fix done, the next bottleneck was applying these migrations. A few reasons make this part very appealing to optimize:</p>
@@ -179,6 +184,14 @@ Do not edit it by hand.
 </h2>
 <p>A seemingly simpler approach is to squash all SQL migrations into one file called <code>current_schema.sql</code> and apply that, meaning there is only one migration, the current schema. However that also requires maintaining this file by hand each time a new SQL migration is added, and in our case there is not one current schema but many: we have a surprisingly large matrix of 'current schemas': <strong>4 databases engines</strong> (SQLite, MySQL, PostgreSQL, CockroachDB, each with their own specific migrations) <strong>x 6 applications x 2 variants</strong> (OSS and enterprise), at least.</p>
 <p>The golden database file is essentially the current schema, using content addressing, in an already optimized binary form instead of SQL, automatically managed by the code instead of by hand.</p>
+<h2 id="why-not-use">
+  <a class="title" href="#why-not-use">Why not use ... ?</a>
+  <a class="hash-anchor" href="#why-not-use" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>Some people use database transactions to run the test code in, and rollback at the end of the test, so that we can back to a pristine state.</p>
+<p>This works, but I don't like it because in various SQL engines, there are many differences between code running inside a transaction and outside of it. See <a href="https://www.datadoghq.com/blog/engineering/debugging-postgres-performance/">this article</a> for a deep-dive with Postgres. Performance is different, the WAL looks diferent, etc.</p>
+<hr />
+<p>Some people use a 'template' database that they clone in each test. This is essentially what we do here, it's just that our 'template' is itself a plain database. Postgres is to my knowledge the only engine where a 'template' database is a concept, and for this database, it's a great approach I think. I prototyped it a little bit but never shipped it.</p>
 <h2 id="conclusion">
   <a class="title" href="#conclusion">Conclusion</a>
   <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
