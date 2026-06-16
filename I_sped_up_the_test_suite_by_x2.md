@@ -59,7 +59,7 @@ The approach is, if I dare say so, quite elegant:
     3. Create a new database file with a random name e.g. `/tmp/123456`
     4. Apply all SQL migrations to this new database file.
     5. Rename this file to `/tmp/<SHA256 hash>`. We now have our golden database! This is using content addressing: a test can simply try to find the file using the SHA256 hash and be assured that the file has had all SQL migrations applied. The name is a hash of the content.
-    6. Clone [^2] this golden database to a new, uniquely named file and return that name. The calling test can now use it, and all other subsequent tests will find the golden database and use it. This is the same as step 2.
+    6. Clone [^3] this golden database to a new, uniquely named file and return that name. The calling test can now use it, and all other subsequent tests will find the golden database and use it. This is the same as step 2.
 
 
 
@@ -67,7 +67,7 @@ A few points are critical to make it correct:
 
 - SQL migrations are not applied to the golden database file (`/tmp/<SHA256 hash>`) directly: they are applied to a temporary file (in step 3.3 and 3.4), which is then renamed to be the golden database file (in step 3.5). This is crucial to avoid concurrent tests seeing a partially-written golden database file, where the file exists but not all SQL migrations have been applied yet. The golden database file either exists in its full-fledged form, or it doesn't, but it never exists in a partial form.
 - The golden database file uses content-addressing (its name is the SHA256 hash) so that when a new SQL migration is added, the whole process works out of the box: the SHA256 hash will be different, and a new golden database file will be created, as if the old one never existed. There is no cache invalidation strategy whatsoever by construction.
-- This content-addressing approach has a very nice property: different projects in the monorepo use different SQL migrations, yielding a different hash. That means that the code works out of the box with all the projects without any special case: each application will use a differently-named golden database file automatically.
+- This content-addressing approach has a very nice property: different projects in the monorepo use different SQL migrations, yielding a different hash. That means that the code works out of the box with all the projects without any special case: each application will use a differently named golden database file automatically.
 - Related, most of our applications have an open-source and an enterprise version, which has some added features. These features typically require additional SQL migrations. Again, with this approach, different variants of the same application automatically use different golden database files, with the same minimal code.
 - No clean-up of old golden files is needed since they only exist in the temporary directory. They might get cleaned up by the OS upon restart, and then the next time we run the tests, the golden file will be re-created automatically (at the cost of a longer test suite runtime, once).
 - There is no setup required, no extra command to run: the next time the other developers pull the main branch and run the tests, they will automatically create and use a golden database file behind the scenes, and the tests will be faster. Pretty nice!
@@ -135,3 +135,4 @@ And finally: this work is [open-source](https://github.com/ory) and also benefit
 
 [^2]: Using `cp` here is not quite enough, a better way is to use the [backup API](https://sqlite.org/backup.html), see [Edge cases and dead-ends](#edge-cases-and-dead-ends) to understand why.
 
+[^3]: Using `cp` here is not quite enough, a better way is to use the [backup API](https://sqlite.org/backup.html), see [Edge cases and dead-ends](#edge-cases-and-dead-ends) to understand why.

@@ -150,7 +150,7 @@ Do not edit it by hand.
 <li>Create a new database file with a random name e.g. <code>/tmp/123456</code></li>
 <li>Apply all SQL migrations to this new database file.</li>
 <li>Rename this file to <code>/tmp/&lt;SHA256 hash&gt;</code>. We now have our golden database! This is using content addressing: a test can simply try to find the file using the SHA256 hash and be assured that the file has had all SQL migrations applied. The name is a hash of the content.</li>
-<li>Clone <sup class="footnote-ref"><a href="#fn-2" id="fnref-2" data-footnote-ref>2</a></sup>
+<li>Clone <sup class="footnote-ref"><a href="#fn-3" id="fnref-3" data-footnote-ref>3</a></sup>
  this golden database to a new, uniquely named file and return that name. The calling test can now use it, and all other subsequent tests will find the golden database and use it. This is the same as step 2.</li>
 </ol>
 </li>
@@ -159,7 +159,7 @@ Do not edit it by hand.
 <ul>
 <li>SQL migrations are not applied to the golden database file (<code>/tmp/&lt;SHA256 hash&gt;</code>) directly: they are applied to a temporary file (in step 3.3 and 3.4), which is then renamed to be the golden database file (in step 3.5). This is crucial to avoid concurrent tests seeing a partially-written golden database file, where the file exists but not all SQL migrations have been applied yet. The golden database file either exists in its full-fledged form, or it doesn't, but it never exists in a partial form.</li>
 <li>The golden database file uses content-addressing (its name is the SHA256 hash) so that when a new SQL migration is added, the whole process works out of the box: the SHA256 hash will be different, and a new golden database file will be created, as if the old one never existed. There is no cache invalidation strategy whatsoever by construction.</li>
-<li>This content-addressing approach has a very nice property: different projects in the monorepo use different SQL migrations, yielding a different hash. That means that the code works out of the box with all the projects without any special case: each application will use a differently-named golden database file automatically.</li>
+<li>This content-addressing approach has a very nice property: different projects in the monorepo use different SQL migrations, yielding a different hash. That means that the code works out of the box with all the projects without any special case: each application will use a differently named golden database file automatically.</li>
 <li>Related, most of our applications have an open-source and an enterprise version, which has some added features. These features typically require additional SQL migrations. Again, with this approach, different variants of the same application automatically use different golden database files, with the same minimal code.</li>
 <li>No clean-up of old golden files is needed since they only exist in the temporary directory. They might get cleaned up by the OS upon restart, and then the next time we run the tests, the golden file will be re-created automatically (at the cost of a longer test suite runtime, once).</li>
 <li>There is no setup required, no extra command to run: the next time the other developers pull the main branch and run the tests, they will automatically create and use a golden database file behind the scenes, and the tests will be faster. Pretty nice!</li>
@@ -210,6 +210,11 @@ We could add <code>TestMain</code> everywhere but that would be a lot of work an
 <li id="fn-2">
 <p>
 Using <code>cp</code> here is not quite enough, a better way is to use the <a href="https://sqlite.org/backup.html">backup API</a>, see <a href="#edge-cases-and-dead-ends">Edge cases and dead-ends</a> to understand why.<a href="#fnref-2" class="footnote-backref" data-footnote-backref data-footnote-backref-idx="2" aria-label="Back to reference 2">↩</a>
+</p>
+</li>
+<li id="fn-3">
+<p>
+Using <code>cp</code> here is not quite enough, a better way is to use the <a href="https://sqlite.org/backup.html">backup API</a>, see <a href="#edge-cases-and-dead-ends">Edge cases and dead-ends</a> to understand why.<a href="#fnref-3" class="footnote-backref" data-footnote-backref data-footnote-backref-idx="3" aria-label="Back to reference 3">↩</a>
 </p>
 </li>
 </ol>
