@@ -112,7 +112,7 @@ The golden database file is essentially the current schema, using content addres
 
 Some people use database transactions to run the test code in, and rollback at the end of the test, so that we can back to a pristine state.
 
-This works, but I don't like it because in various SQL engines, there are many differences between code running inside a transaction and outside of it. See [this article](https://www.datadoghq.com/blog/engineering/debugging-postgres-performance/) for a deep-dive with Postgres. Performance is different, the WAL looks diferent, etc.
+This works, but I don't like it because in various SQL engines, there are many differences between code running inside a transaction and outside of it. See [this article](https://www.datadoghq.com/blog/engineering/debugging-postgres-performance/) for a deep-dive with Postgres. Performance is different, the WAL looks different, etc.
 
 ---
 

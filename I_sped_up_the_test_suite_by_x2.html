@@ -189,7 +189,7 @@ Do not edit it by hand.
   <a class="hash-anchor" href="#why-not-use" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Some people use database transactions to run the test code in, and rollback at the end of the test, so that we can back to a pristine state.</p>
-<p>This works, but I don't like it because in various SQL engines, there are many differences between code running inside a transaction and outside of it. See <a href="https://www.datadoghq.com/blog/engineering/debugging-postgres-performance/">this article</a> for a deep-dive with Postgres. Performance is different, the WAL looks diferent, etc.</p>
+<p>This works, but I don't like it because in various SQL engines, there are many differences between code running inside a transaction and outside of it. See <a href="https://www.datadoghq.com/blog/engineering/debugging-postgres-performance/">this article</a> for a deep-dive with Postgres. Performance is different, the WAL looks different, etc.</p>
 <hr />
 <p>Some people use a 'template' database that they clone in each test. This is essentially what we do here, it's just that our 'template' is itself a plain database. Postgres is to my knowledge the only engine where a 'template' database is a concept, and for this database, it's a great approach I think. I prototyped it a little bit but never shipped it.</p>
 <h2 id="conclusion">
