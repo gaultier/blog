@@ -310,10 +310,14 @@ Do not edit it by hand.
   <a class="title" href="#why">Why?</a>
   <a class="hash-anchor" href="#why" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
-<p>The big problem: We are <em>not</em> doing a point lookup with the index. What is that you ask? Well, in CockroachDB, indexes are a tuple, e.g. <code>(id, name, birth_date)</code>. To use the index the most efficient way, we have to specify in our query each field of this tuple, e.g.: <code>WHERE id = ? and name = ? and birth_date = ?</code>. This way, only 1 row is scanned.
-If we fail to specify one of the field in the index, the index will be used sub-optimally. That means a scan of many rows.</p>
-<p>Conceptually, this is how the index looks like for CockroachDB:</p>
+<p>In CockroachDB, indexes are a tuple, e.g. <code>(nid, via, value)</code>. Conceptually, this is how the index looks like:</p>
 <p><img src="crdb_index.svg" alt="Index" /></p>
+<p>To use it the most efficiently, we specify all the fields, e.g.: <code>WHERE nid = '1' AND via = 'email' AND value = zzz@accounting.com</code>. The database can then do a 'point lookup', meaning trace a path from the root of the index to a leaf (i.e. a row):</p>
+<p><img src="crdb_index2.svg" alt="Point lookup" /></p>
+<p>Only one row is scanned, this is optimal.</p>
+<p>What happens then when only the first field in the tuple is provided, for example, only the <code>nid</code>? Well, the path in the index is very short, and all nodes underneath (the whole subtree) must be scanned and inspected:</p>
+<p><img src="crdb_index4.svg" alt="Only one tuple field provided" /></p>
+<p>This is what happens to use, and it is very wasteful.</p>
 <p>But wait, there's more: the order of the fields in the tuple also matters. CockroachDB recommends for performance to have the most discriminating fields first .</p>
 <p>Here, <code>nid</code> is the first field of the tuple, meaning: the tenant id. This is fine, because by providing the tenant id, we automatically avoid scanning rows from other tenants. Then, the second field of the index is <code>via</code>, which an enum of two values: <code>email</code> (in case the address is an email address) or <code>sms</code> (a phone number). This column is unfortunately not very discriminating: if each user has signed up with both an email and a phone number, simply providing <code>email</code> only eliminates 50% of the rows - ok, not great.</p>
 <p>And finally the last field of the index is <code>value</code>, which is the address itself. It is very discriminating: by providing the address, we eliminate every row in the table, except one.</p>

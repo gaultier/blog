@@ -154,14 +154,25 @@ This explains the high latency and CPU usage!
 ### Why?
 
 
-
-The big problem: We are *not* doing a point lookup with the index. What is that you ask? Well, in CockroachDB, indexes are a tuple, e.g. `(id, name, birth_date)`. To use the index the most efficient way, we have to specify in our query each field of this tuple, e.g.: `WHERE id = ? and name = ? and birth_date = ?`. This way, only 1 row is scanned. 
-If we fail to specify one of the field in the index, the index will be used sub-optimally. That means a scan of many rows. 
-
-Conceptually, this is how the index looks like for CockroachDB:
+In CockroachDB, indexes are a tuple, e.g. `(nid, via, value)`. Conceptually, this is how the index looks like:
 
 
 ![Index](crdb_index.svg)
+
+
+To use it the most efficiently, we specify all the fields, e.g.: `WHERE nid = '1' AND via = 'email' AND value = zzz@accounting.com`. The database can then do a 'point lookup', meaning trace a path from the root of the index to a leaf (i.e. a row):
+
+
+![Point lookup](crdb_index2.svg)
+
+
+Only one row is scanned, this is optimal. 
+
+What happens then when only the first field in the tuple is provided, for example, only the `nid`? Well, the path in the index is very short, and all nodes underneath (the whole subtree) must be scanned and inspected:
+
+![Only one tuple field provided](crdb_index4.svg)
+
+This is what happens to use, and it is very wasteful.
 
 But wait, there's more: the order of the fields in the tuple also matters. CockroachDB recommends for performance to have the most discriminating fields first .
 
