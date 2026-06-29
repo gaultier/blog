@@ -46,12 +46,12 @@ SELECT *
     AND a.nid = ?
 ```
 
-*Kratos supports multi-tenancy, so each tenant as an id called `nid`, each row stores `nid`, and each query clause contains `WHERE nid = ?` to isolate each tenant. But you can ignore that for this article.*
+*Kratos supports multi-tenancy, so each tenant as an id called `nid`, each row stores `nid`, and each query clause contains `WHERE nid = ?` to isolate each tenant. But this is a non factor: we know the tenant id from the start since each tenant has its own subdomain(s), so for this query, the `nid` is effectively a constant.*
 
 The approach is relatively straightforward with a self-join:
 
-- Given the provided address, for example `foo@bar.com`, find the identity (i.e. the user account) for it.
-- Now that we have the identity id, find all addresses for that identity with that query:
+- Given the tenant id (`nid`) and the provided address, for example `foo@bar.com`, find the identity (i.e. the user account) for it.
+- Now that we have the identity id, find all addresses for that identity (`ON a.identity_id = b.identity_id`):
   ```sql
     SELECT *
      FROM identity_recovery_addresses AS a
@@ -61,7 +61,7 @@ The approach is relatively straightforward with a self-join:
        WHERE b.value = 'foo@bar.com'
         AND a.nid = '000e377a-062c-45b1-961c-1b28d682df6a'
   ```
-- Return the list of addresses for that identity (up to 10, we do not expect a user to have more than a handful).
+- Return the list of addresses for that identity , up to 10, because we do not expect a user to have more than a handful.
 
 Now, Kratos can show the list of masked addresses e.g. `+15234****56` if it's a phone number, or `foo@****.com` if it's an email address. The masking logic is pretty smart so accidental information disclosure is avoided. Kratos also pretends to send the recovery link/code to a non-existing address, so that it's not possible for an attacker to probe a website for certain addresses. The last point can actually have real life consequences in certain countries for certain websites, e.g. LGBT ones. 
 
@@ -288,6 +288,48 @@ Latency for this query went from a consistent 1-2s to always < 0.5s.
 
 More importantly, it completely disappeared from the top 10000 queries in terms of CPU time or rows scanned.
 
+
+## Things I have tried to little effect
+
+I initially tried to restructure the self-join into a CTE that does not specify `via`:
+
+```sql
+WITH target AS (
+  SELECT identity_id
+  FROM identity_recovery_addresses
+  WHERE nid = ?
+    AND value = ?
+  LIMIT 1
+  )
+SELECT A.value
+FROM identity_recovery_addresses A, target
+WHERE A.nid = ?
+AND A.identity_id = target.identity_id
+LIMIT 10;
+```
+
+It worked and performed a bit better than the self-join (without `via`), due to query planner quirks, but as soon as I understood that the query really needed to specify `via`, the CTE with `via` resulted in the exact same plan as the self-join with `via`.
+
+---
+
+I tried to split the query into two queries, thinking it would be easier for the query planner to understand. It did not help.
+
+
+---
+
+The real query does not use `value = ?` in the `WHERE` clause, it uses `WHERE value in (?, ?)`: we pass the user-provided address as well as the normalized version of the address, and match any of the two.
+
+I initially thought that `IN` was the culprit, and tried to rewrite it into `WHERE value = ? OR value = ?`, or simply `WHERE value = ?` when the unnormalized and normalized address are identical, but it made no difference. 
+
+
+--- 
+
+When experimenting with the CTE, I observed that the performance was somehow different depending on the region the query is run in, and the region the identity is stored in (that some regions perform better). This was as simple case of CockroachDB being smart when `crdb_region` is not provided, and cancelling the fan-out to each region when matching data has been found in the local region first. This is called 'Locality Optimized Search', per the CockroachDB developers:
+
+> When using a LIMIT 1 clause (e.g. in your CTE above) the optimizer is able to take advantage of Locality Optimized Search - as soon as it finds the single row it is looking for, it stops searching for remote rows.
+
+Pretty nice optimization, that was superseded by explicitly providing `crdb_region`.
+
 ## What about other databases?
 
 [TODO]
@@ -298,12 +340,14 @@ More importantly, it completely disappeared from the top 10000 queries in terms 
 A surface level lesson would be: all SQL performance problems are due to not using the right index. Which is not false! But there's much more here to take away.
 
 
+Relational databases are very complex beasts and CockroachDB is one of the most powerful and complex ones out there, especially in its multi-region setup. Know your database, read the docs, ask the developers if that's an option. There is no such thing as 'a SQL database' - every SQL database behaves wildly differently from the others.
 
-Relational databases are very complex beasts and CockroachDB is one of the most powerful and complex ones out there, especially in its multi-region setup.
-
-Many metrics matter, not only query latency: rows scanned (especially in a cloud environment, IOps are precious!), database CPU time, memory, max latency, cross-regions round-trips, contention time, etc. Keep a watchful eye on queries that rank the worst for these metrics. Regularly revisit these findings: they change over time. I command CockroachDB there because it exposes all of these metrics in a pretty dashboard. The only downside is that using it, you know which queries are problematic, and for which metric, but you're still far away from a good explanation, and remedy.
+Many metrics matter, not only query latency: rows scanned (especially in a cloud environment, IOps are precious!), database CPU time, memory, max latency, cross-regions round-trips, contention time, etc. Keep a watchful eye on queries that rank the worst for these metrics, but also keep in mind that some metrics affect others - e.g. in our case, contention time and subsequent retries were artificially inflated by the suboptimal plan scanning too many rows. Regularly revisit these findings: they change over time. I command CockroachDB there because it exposes all of these metrics in a pretty dashboard. The only downside is that using it, you know which queries are problematic, and for which metric, but you're still far away from a good explanation, and remedy.
 
 We also know that each index has to bear its weight, because it slows down every write, and might even end up unused by the query planner, thus being dead weight.
+
+
+"Just provide in the `WHERE` clause of the query all the values you know up front" is *not* good advice: It worked here with `via` because of the tuple nature of indexes in CockroachDB and because `via` was the middle field in this tuple. But over-specifying the `WHERE` clause in the query can and will lead the query planner to worst plans, because the optimal index might not contain the extra fields you just added to the clause.
 
 
 A query that performs ok now, might become a big problem later, when the table grows, or the data characteristics change, or the query planner decides to do something completly different today. Actually, I initially tested my optimizations in staging, and I see completely different plans and latencies from production, due to the data being much smaller or simply differently varied.

@@ -119,6 +119,10 @@ Do not edit it by hand.
 </li>
 
   <li>
+    <a href="#things-i-have-tried-to-little-effect">Things I have tried to little effect</a>
+</li>
+
+  <li>
     <a href="#what-about-other-databases">What about other databases?</a>
 </li>
 
@@ -166,11 +170,11 @@ Do not edit it by hand.
 <span class="line-number"></span><span class="code-hl">   WHERE b.value = ?</span>
 <span class="line-number"></span><span class="code-hl">    AND a.nid = ?</span>
 </code></pre>
-<p><em>Kratos supports multi-tenancy, so each tenant as an id called <code>nid</code>, each row stores <code>nid</code>, and each query clause contains <code>WHERE nid = ?</code> to isolate each tenant. But you can ignore that for this article.</em></p>
+<p><em>Kratos supports multi-tenancy, so each tenant as an id called <code>nid</code>, each row stores <code>nid</code>, and each query clause contains <code>WHERE nid = ?</code> to isolate each tenant. But this is a non factor: we know the tenant id from the start since each tenant has its own subdomain(s), so for this query, the <code>nid</code> is effectively a constant.</em></p>
 <p>The approach is relatively straightforward with a self-join:</p>
 <ul>
-<li>Given the provided address, for example <code>foo@bar.com</code>, find the identity (i.e. the user account) for it.</li>
-<li><p>Now that we have the identity id, find all addresses for that identity with that query:</p>
+<li>Given the tenant id (<code>nid</code>) and the provided address, for example <code>foo@bar.com</code>, find the identity (i.e. the user account) for it.</li>
+<li><p>Now that we have the identity id, find all addresses for that identity (<code>ON a.identity_id = b.identity_id</code>):</p>
 <pre>
   <div class="code-header">
     <span>Sql</span>
@@ -185,7 +189,7 @@ Do not edit it by hand.
 <span class="line-number"></span><span class="code-hl">      AND a.nid = '000e377a-062c-45b1-961c-1b28d682df6a'</span>
 </code></pre>
 </li>
-<li>Return the list of addresses for that identity (up to 10, we do not expect a user to have more than a handful).</li>
+<li>Return the list of addresses for that identity , up to 10, because we do not expect a user to have more than a handful.</li>
 </ul>
 <p>Now, Kratos can show the list of masked addresses e.g. <code>+15234****56</code> if it's a phone number, or <code>foo@****.com</code> if it's an email address. The masking logic is pretty smart so accidental information disclosure is avoided. Kratos also pretends to send the recovery link/code to a non-existing address, so that it's not possible for an attacker to probe a website for certain addresses. The last point can actually have real life consequences in certain countries for certain websites, e.g. LGBT ones.</p>
 <p>(Always remember that your code can impact lives).</p>
@@ -445,6 +449,41 @@ This is a big gain in terms of latency: at around 250ms network latency between 
 <p><img src="crdb_recovery_addresses_3.png" alt="Results" /></p>
 <p>Latency for this query went from a consistent 1-2s to always &lt; 0.5s.</p>
 <p>More importantly, it completely disappeared from the top 10000 queries in terms of CPU time or rows scanned.</p>
+<h2 id="things-i-have-tried-to-little-effect">
+  <a class="title" href="#things-i-have-tried-to-little-effect">Things I have tried to little effect</a>
+  <a class="hash-anchor" href="#things-i-have-tried-to-little-effect" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>I initially tried to restructure the self-join into a CTE that does not specify <code>via</code>:</p>
+<pre>
+  <div class="code-header">
+    <span>Sql</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-sql"><span class="line-number"></span><span class="code-hl">WITH target AS (</span>
+<span class="line-number"></span><span class="code-hl">  SELECT identity_id</span>
+<span class="line-number"></span><span class="code-hl">  FROM identity_recovery_addresses</span>
+<span class="line-number"></span><span class="code-hl">  WHERE nid = ?</span>
+<span class="line-number"></span><span class="code-hl">    AND value = ?</span>
+<span class="line-number"></span><span class="code-hl">  LIMIT 1</span>
+<span class="line-number"></span><span class="code-hl">  )</span>
+<span class="line-number"></span><span class="code-hl">SELECT A.value</span>
+<span class="line-number"></span><span class="code-hl">FROM identity_recovery_addresses A, target</span>
+<span class="line-number"></span><span class="code-hl">WHERE A.nid = ?</span>
+<span class="line-number"></span><span class="code-hl">AND A.identity_id = target.identity_id</span>
+<span class="line-number"></span><span class="code-hl">LIMIT 10;</span>
+</code></pre>
+<p>It worked and performed a bit better than the self-join (without <code>via</code>), due to query planner quirks, but as soon as I understood that the query really needed to specify <code>via</code>, the CTE with <code>via</code> resulted in the exact same plan as the self-join with <code>via</code>.</p>
+<hr />
+<p>I tried to split the query into two queries, thinking it would be easier for the query planner to understand. It did not help.</p>
+<hr />
+<p>The real query does not use <code>value = ?</code> in the <code>WHERE</code> clause, it uses <code>WHERE value in (?, ?)</code>: we pass the user-provided address as well as the normalized version of the address, and match any of the two.</p>
+<p>I initially thought that <code>IN</code> was the culprit, and tried to rewrite it into <code>WHERE value = ? OR value = ?</code>, or simply <code>WHERE value = ?</code> when the unnormalized and normalized address are identical, but it made no difference.</p>
+<hr />
+<p>When experimenting with the CTE, I observed that the performance was somehow different depending on the region the query is run in, and the region the identity is stored in (that some regions perform better). This was as simple case of CockroachDB being smart when <code>crdb_region</code> is not provided, and cancelling the fan-out to each region when matching data has been found in the local region first. This is called 'Locality Optimized Search', per the CockroachDB developers:</p>
+<blockquote>
+<p>When using a LIMIT 1 clause (e.g. in your CTE above) the optimizer is able to take advantage of Locality Optimized Search - as soon as it finds the single row it is looking for, it stops searching for remote rows.</p>
+</blockquote>
+<p>Pretty nice optimization, that was superseded by explicitly providing <code>crdb_region</code>.</p>
 <h2 id="what-about-other-databases">
   <a class="title" href="#what-about-other-databases">What about other databases?</a>
   <a class="hash-anchor" href="#what-about-other-databases" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -455,9 +494,10 @@ This is a big gain in terms of latency: at around 250ms network latency between 
   <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>A surface level lesson would be: all SQL performance problems are due to not using the right index. Which is not false! But there's much more here to take away.</p>
-<p>Relational databases are very complex beasts and CockroachDB is one of the most powerful and complex ones out there, especially in its multi-region setup.</p>
-<p>Many metrics matter, not only query latency: rows scanned (especially in a cloud environment, IOps are precious!), database CPU time, memory, max latency, cross-regions round-trips, contention time, etc. Keep a watchful eye on queries that rank the worst for these metrics. Regularly revisit these findings: they change over time. I command CockroachDB there because it exposes all of these metrics in a pretty dashboard. The only downside is that using it, you know which queries are problematic, and for which metric, but you're still far away from a good explanation, and remedy.</p>
+<p>Relational databases are very complex beasts and CockroachDB is one of the most powerful and complex ones out there, especially in its multi-region setup. Know your database, read the docs, ask the developers if that's an option. There is no such thing as 'a SQL database' - every SQL database behaves wildly differently from the others.</p>
+<p>Many metrics matter, not only query latency: rows scanned (especially in a cloud environment, IOps are precious!), database CPU time, memory, max latency, cross-regions round-trips, contention time, etc. Keep a watchful eye on queries that rank the worst for these metrics, but also keep in mind that some metrics affect others - e.g. in our case, contention time and subsequent retries were artificially inflated by the suboptimal plan scanning too many rows. Regularly revisit these findings: they change over time. I command CockroachDB there because it exposes all of these metrics in a pretty dashboard. The only downside is that using it, you know which queries are problematic, and for which metric, but you're still far away from a good explanation, and remedy.</p>
 <p>We also know that each index has to bear its weight, because it slows down every write, and might even end up unused by the query planner, thus being dead weight.</p>
+<p>&quot;Just provide in the <code>WHERE</code> clause of the query all the values you know up front&quot; is <em>not</em> good advice: It worked here with <code>via</code> because of the tuple nature of indexes in CockroachDB and because <code>via</code> was the middle field in this tuple. But over-specifying the <code>WHERE</code> clause in the query can and will lead the query planner to worst plans, because the optimal index might not contain the extra fields you just added to the clause.</p>
 <p>A query that performs ok now, might become a big problem later, when the table grows, or the data characteristics change, or the query planner decides to do something completly different today. Actually, I initially tested my optimizations in staging, and I see completely different plans and latencies from production, due to the data being much smaller or simply differently varied.</p>
 <p>After a potential optimization has been applied, always follow-up to see if it made things better, worse, or the same. You'd be surprised. If it's worse or the same, it's still useful data to refine your understanding of the situation. If things improved, make it an announcement, it's good for morale!</p>
 <p>Finally, when starting with any kind of optimization, you have to establish three main things:</p>
