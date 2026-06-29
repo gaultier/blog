@@ -2,6 +2,8 @@ Title: Optimization tales with CockroachDB, part 1
 Tags: SQL, Optimization, CockroachDB
 ---
 
+*This is part 1, there will be more SQL optimization stories in the same vein.*
+
 It all started one morning, I opened Slack as usual to start my working day, only to find a message from the CTO:
 
 > Hello this query reads like 700k rows
@@ -41,7 +43,7 @@ SELECT *
     ON a.identity_id = b.identity_id
     AND a.nid = b.nid
    WHERE b.value = ?
-    AND a.nid = _
+    AND a.nid = ?
 ```
 
 *Kratos supports multi-tenancy, so each tenant as an id called `nid`, each row stores `nid`, and each query clause contains `WHERE nid = ?` to isolate each tenant. But you can ignore that for this article.*
@@ -49,7 +51,16 @@ SELECT *
 The approach is relatively straightforward with a self-join:
 
 - Given the provided address, for example `foo@bar.com`, find the identity (i.e. the user account) for it.
-- Now that we have the identity id, find all addresses for that identity.
+- Now that we have the identity id, find all addresses for that identity with that query:
+  ```sql
+    SELECT *
+     FROM identity_recovery_addresses AS a
+       JOIN identity_recovery_addresses AS b
+        ON a.identity_id = b.identity_id
+        AND a.nid = b.nid
+       WHERE b.value = 'foo@bar.com'
+        AND a.nid = '000e377a-062c-45b1-961c-1b28d682df6a'
+  ```
 - Return the list of addresses for that identity (up to 10, we do not expect a user to have more than a handful).
 
 Now, Kratos can show the list of masked addresses e.g. `+15234****56` if it's a phone number, or `foo@****.com` if it's an email address. The masking logic is pretty smart so accidental information disclosure is avoided. Kratos also pretends to send the recovery link/code to a non-existing address, so that it's not possible for an attacker to probe a website for certain addresses. The last point can actually have real life consequences in certain countries for certain websites, e.g. LGBT ones. 
@@ -144,7 +155,7 @@ I'll explain the plan is layman terms. This is what the query planner is doing, 
 1. Fan out to each region (this is fine and required). In each region:
   1. Find the row with the address `foo@bar.com`. It is linked to an identity (`identity_id`) and a tenant (`nid`).
   1. Load all rows for this tenant in memory
-  1. Filter these rows where the identity_id is the one found in step 1.1. Throw out the rest.
+  1. Filter these rows where the `identity_id` is the one found in step 1.1. Throw out the rest.
 
 So each time a user wants to reset their password, we load all recovery addresses of all users for this tenant, in memory. That is really not great and becomes worse and worse over time. 
 
@@ -168,22 +179,136 @@ To use it the most efficiently, we specify all the fields, e.g.: `WHERE nid = '1
 
 Only one row is scanned, this is optimal. 
 
-What happens then when only the first field in the tuple is provided, for example, only the `nid`? Well, the path in the index is very short, and all nodes underneath (the whole subtree) must be scanned and inspected:
+What happens then when only the first field in the tuple is provided, for example, only the `nid`? Well, the path in the index is very short, and all nodes underneath (the whole subtree, shown here in red) must be scanned and inspected:
 
 ![Only one tuple field provided](crdb_index4.svg)
 
-This is what happens to use, and it is very wasteful.
-
-But wait, there's more: the order of the fields in the tuple also matters. CockroachDB recommends for performance to have the most discriminating fields first .
+This is what happens to us, and it is very wasteful.
 
 
-Here, `nid` is the first field of the tuple, meaning: the tenant id. This is fine, because by providing the tenant id, we automatically avoid scanning rows from other tenants. Then, the second field of the index is `via`, which an enum of two values: `email` (in case the address is an email address) or `sms` (a phone number). This column is unfortunately not very discriminating: if each user has signed up with both an email and a phone number, simply providing `email` only eliminates 50% of the rows - ok, not great.
+But wait, we *do* provide more than the `nid`: we provide the address! In fact, that's the only thing the user provides! So how come it was not used, and all rows for the tenant we loaded? Well, there's more: the order of the fields in the tuple also matters. So for a tuple `(A, B, C)`, if we only provide `A` and `C`, it is as if we only provided `A`, and then we load every element underneath `A`. 
 
-And finally the last field of the index is `value`, which is the address itself. It is very discriminating: by providing the address, we eliminate every row in the table, except one.
 
-One reason: we did not provide one of the fields in the tuple of the index: `via`.
+
+
+
+So here it is, the root cause: we did provide the first and third field in the tuple, but not the second one, `via`. 
 
 So the query planner decided to use this index, this tuple of `(nid ASC, via ASC, value ASC)`, but it only knows the first value, `nid` (the tenant). So it can only eliminate rows from other tenants. For a tenant with many many users, performance is really bad. It's not quite a full table scan, but it's a full *tenant* table scan!
 
+
+### First optimization: provide 'via'
+
+`via` is actually a derived value: given the user provided address `foo@bar.com` or `+49123456789`, we can trivially identify whether it is an email address or a phone number: if it contains the character `@`, it's an email address!
+
+
+So let's add the `via` clause in the query:
+
+
+
+```sql
+SELECT *
+ FROM identity_recovery_addresses AS a
+   JOIN identity_recovery_addresses AS b
+    ON a.identity_id = b.identity_id
+    AND a.nid = b.nid
+   WHERE b.value = 'foo@bar.com'
+    AND b.via = 'email'  -- <= First optimization: Add `via`.
+    AND a.nid = '000e377a-062c-45b1-961c-1b28d682df6a'
+```
+
+And now the plan looks *much* better, using the same index as before:
+
+
+```plaintext
+table: identity_recovery_addresses@identity_recovery_addresses_status_via_uq_idx
+spans: [/'gcp-europe-west3'/'000e377a-062c-45b1-961c-1b28d682df6a'/'email'/'foo@bar.com' - /'gcp-europe-west3'/'000e377a-062c-45b1-961c-1b28d682df6a'/'email'/'foo@bar.com'] [/'gcp-us-east4'/'000e377a-062c-45b1-961c-1b28d682df6a'/'email'/'foo@bar.com' - /'gcp-us-east4'/'000e377a-062c-45b1-961c-1b28d682df6a'/'email'/'foo@bar.com'] [/'gcp-us-west2'/'000e377a-062c-45b1-961c-1b28d682df6a'/'email'/'foo@bar.com' - /'gcp-us-west2'/'000e377a-062c-45b1-961c-1b28d682df6a'/'email'/'foo@bar.com']
+```
+
+It's now a point lookup! And the plan even says for this first step: `actual row count: 1`. Perfect! Such a simple fix... If you know how indexes work in CockroachDB.
+
+
+### Second optimization: single region
+
+
+The self join can be understood as two queries: first, find the identity with the user-provided address. Second, find all addresses for this identity.
+
+Only the first query truly needs to do a fan-out to all regions. Once we know the identity id, we know in which region it is. Since all the data for an identity is stored in one region, the second query does not need to talk to other regions at all! 
+This is a big gain in terms of latency: at around 250ms network latency between distant regions, we can cut out one unneeded round-trip.
+
+In CockroachDB, this is done by adding `WHERE crdb_region = ?` to the query. Let's do that:
+
+```sql
+SELECT *
+ FROM identity_recovery_addresses AS a
+   JOIN identity_recovery_addresses AS b
+    ON a.identity_id = b.identity_id
+    AND a.nid = b.nid
+    AND A.crdb_region = B.crdb_region -- <= Second optimization: Add `crdb_region`.
+   WHERE b.value = 'foo@bar.com'
+    AND b.via = 'email'  -- <= First optimization: Add `via`.
+    AND a.nid = '000e377a-062c-45b1-961c-1b28d682df6a'
+```
+
+From the plan, we now see that the only time we fan-out to all regions is in the first step, afterwards, we stay within the same region. We also see that latency was cut but ~200 ms, as expected.
+
+
+### Third optimization: only query needed columns
+
+
+In the original query we fetched all table columns. But I then realized that we only ever need to fetch and return the `address` column because this is what gets returned to the user browser to let them pick which address to receive the recovery link/code on.
+
+So this is a simple change:
+
+```diff
+- SELECT *
++ SELECT address
+  FROM ...
+```
+
+I was midly suprised to see no change in latency from that. After inspecting the plan and the table schema, this is for a simple reason: the index used in the second step of the query is the primary index which stores `(identity_id ASC, id ASC)`. `address` is not part of this index, so the whole row has to be fetched from the table. We could change this index to make it store this column: `CREATE INDEX ... STORING (address)` to avoid that extra fetch. But modifying the primary index of a big table in production is slightly risky, so it would need some careful consideration.
+
+
+Still, with this optimization, we:
+
+- reduce the bytes sent over the network from the database to Kratos
+- reduce the bytes sent over the network from Kratos to the user browser
+- reduce slightly the marshalling/unmarshalling work
+- avoid the risk that a big column is added to this table, which slows this query down (by fetching this data, and immediately throwing it away)
+
+So even if it's a small win, it is still a win.
+
+
+## Final results
+
+
+![Results](crdb_recovery_addresses_3.png)
+
+Latency for this query went from a consistent 1-2s to always < 0.5s. 
+
+More importantly, it completely disappeared from the top 10000 queries in terms of CPU time or rows scanned.
+
+## What about other databases?
+
+[TODO]
+
+## Conclusion
+
+
+Relational databases are very complex beasts and CockroachDB is one of the most powerful and complex ones out there, especially in its multi-region setup.
+
+Many metrics matter, not only query latency: rows scanned (especially in a cloud environment, IOps are precious!), database CPU time, cross-regions round-trips, contention time, etc. Keep a watchful eye on queries that rank the worst for these metrics. Regularly revisit these findings: they change over time.
+
+We also know that each index has to bear its weight, because it slows down every write, and might even end up unused by the query planner, thus being dead weight.
+
+
+A query that performs ok now, might become a big problem later, when the table grows, or the data characteristics change, or the query planner decides to do something completly different today. Actually, I initially tested my optimizations in staging, and I see completely different plans and latencies from production, due to the data being much smaller or simply differently varied.
+
+Finally, when doing any kind of optimization, you have to establish two main things: 
+
+- What am I optimizing for? (CPU, latency, memory, contention time, number of retries, throughput, etc)
+- When am I done? (What is an acceptable performance budget?)
+
+For the recovery flow, latency (or throughput for that matter) do not *really* matter: whether it takes 1ms or 5s is *fine*. I say this as a performance ~junkie~ advocate! I hate slow software! But for user driven, rarely performed actions, a handful of seconds is ok! What is not ok is creating humongous load on the database for no reason, which impacts every action in the system. That was my goal: reduce rows scanned to <10 and CPU time to <10ms. Reducing latency is a nice side-effect.
 
 

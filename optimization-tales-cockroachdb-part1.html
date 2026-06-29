@@ -99,11 +99,36 @@ Do not edit it by hand.
   <li>
     <a href="#why">Why?</a>
 </li>
+
+  <li>
+    <a href="#first-optimization-provide-via">First optimization: provide 'via'</a>
+</li>
+
+  <li>
+    <a href="#second-optimization-single-region">Second optimization: single region</a>
+</li>
+
+  <li>
+    <a href="#third-optimization-only-query-needed-columns">Third optimization: only query needed columns</a>
+</li>
 </ul>
+</li>
+
+  <li>
+    <a href="#final-results">Final results</a>
+</li>
+
+  <li>
+    <a href="#what-about-other-databases">What about other databases?</a>
+</li>
+
+  <li>
+    <a href="#conclusion">Conclusion</a>
 </li>
 </ul>
 </details>
 
+<p><em>This is part 1, there will be more SQL optimization stories in the same vein.</em></p>
 <p>It all started one morning, I opened Slack as usual to start my working day, only to find a message from the CTO:</p>
 <blockquote>
 <p>Hello this query reads like 700k rows</p>
@@ -139,13 +164,27 @@ Do not edit it by hand.
 <span class="line-number"></span><span class="code-hl">    ON a.identity_id = b.identity_id</span>
 <span class="line-number"></span><span class="code-hl">    AND a.nid = b.nid</span>
 <span class="line-number"></span><span class="code-hl">   WHERE b.value = ?</span>
-<span class="line-number"></span><span class="code-hl">    AND a.nid = _</span>
+<span class="line-number"></span><span class="code-hl">    AND a.nid = ?</span>
 </code></pre>
 <p><em>Kratos supports multi-tenancy, so each tenant as an id called <code>nid</code>, each row stores <code>nid</code>, and each query clause contains <code>WHERE nid = ?</code> to isolate each tenant. But you can ignore that for this article.</em></p>
 <p>The approach is relatively straightforward with a self-join:</p>
 <ul>
 <li>Given the provided address, for example <code>foo@bar.com</code>, find the identity (i.e. the user account) for it.</li>
-<li>Now that we have the identity id, find all addresses for that identity.</li>
+<li><p>Now that we have the identity id, find all addresses for that identity with that query:</p>
+<pre>
+  <div class="code-header">
+    <span>Sql</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-sql"><span class="line-number"></span><span class="code-hl">  SELECT *</span>
+<span class="line-number"></span><span class="code-hl">   FROM identity_recovery_addresses AS a</span>
+<span class="line-number"></span><span class="code-hl">     JOIN identity_recovery_addresses AS b</span>
+<span class="line-number"></span><span class="code-hl">      ON a.identity_id = b.identity_id</span>
+<span class="line-number"></span><span class="code-hl">      AND a.nid = b.nid</span>
+<span class="line-number"></span><span class="code-hl">     WHERE b.value = 'foo@bar.com'</span>
+<span class="line-number"></span><span class="code-hl">      AND a.nid = '000e377a-062c-45b1-961c-1b28d682df6a'</span>
+</code></pre>
+</li>
 <li>Return the list of addresses for that identity (up to 10, we do not expect a user to have more than a handful).</li>
 </ul>
 <p>Now, Kratos can show the list of masked addresses e.g. <code>+15234****56</code> if it's a phone number, or <code>foo@****.com</code> if it's an email address. The masking logic is pretty smart so accidental information disclosure is avoided. Kratos also pretends to send the recovery link/code to a non-existing address, so that it's not possible for an attacker to probe a website for certain addresses. The last point can actually have real life consequences in certain countries for certain websites, e.g. LGBT ones.</p>
@@ -302,7 +341,7 @@ Do not edit it by hand.
 <li>Fan out to each region (this is fine and required). In each region:</li>
 <li>Find the row with the address <code>foo@bar.com</code>. It is linked to an identity (<code>identity_id</code>) and a tenant (<code>nid</code>).</li>
 <li>Load all rows for this tenant in memory</li>
-<li>Filter these rows where the identity_id is the one found in step 1.1. Throw out the rest.</li>
+<li>Filter these rows where the <code>identity_id</code> is the one found in step 1.1. Throw out the rest.</li>
 </ol>
 <p>So each time a user wants to reset their password, we load all recovery addresses of all users for this tenant, in memory. That is really not great and becomes worse and worse over time.</p>
 <p>This explains the high latency and CPU usage!</p>
@@ -315,14 +354,116 @@ Do not edit it by hand.
 <p>To use it the most efficiently, we specify all the fields, e.g.: <code>WHERE nid = '1' AND via = 'email' AND value = zzz@accounting.com</code>. The database can then do a 'point lookup', meaning trace a path from the root of the index to a leaf (i.e. a row):</p>
 <p><img src="crdb_index2.svg" alt="Point lookup" /></p>
 <p>Only one row is scanned, this is optimal.</p>
-<p>What happens then when only the first field in the tuple is provided, for example, only the <code>nid</code>? Well, the path in the index is very short, and all nodes underneath (the whole subtree) must be scanned and inspected:</p>
+<p>What happens then when only the first field in the tuple is provided, for example, only the <code>nid</code>? Well, the path in the index is very short, and all nodes underneath (the whole subtree, shown here in red) must be scanned and inspected:</p>
 <p><img src="crdb_index4.svg" alt="Only one tuple field provided" /></p>
-<p>This is what happens to use, and it is very wasteful.</p>
-<p>But wait, there's more: the order of the fields in the tuple also matters. CockroachDB recommends for performance to have the most discriminating fields first .</p>
-<p>Here, <code>nid</code> is the first field of the tuple, meaning: the tenant id. This is fine, because by providing the tenant id, we automatically avoid scanning rows from other tenants. Then, the second field of the index is <code>via</code>, which an enum of two values: <code>email</code> (in case the address is an email address) or <code>sms</code> (a phone number). This column is unfortunately not very discriminating: if each user has signed up with both an email and a phone number, simply providing <code>email</code> only eliminates 50% of the rows - ok, not great.</p>
-<p>And finally the last field of the index is <code>value</code>, which is the address itself. It is very discriminating: by providing the address, we eliminate every row in the table, except one.</p>
-<p>One reason: we did not provide one of the fields in the tuple of the index: <code>via</code>.</p>
+<p>This is what happens to us, and it is very wasteful.</p>
+<p>But wait, we <em>do</em> provide more than the <code>nid</code>: we provide the address! In fact, that's the only thing the user provides! So how come it was not used, and all rows for the tenant we loaded? Well, there's more: the order of the fields in the tuple also matters. So for a tuple <code>(A, B, C)</code>, if we only provide <code>A</code> and <code>C</code>, it is as if we only provided <code>A</code>, and then we load every element underneath <code>A</code>.</p>
+<p>So here it is, the root cause: we did provide the first and third field in the tuple, but not the second one, <code>via</code>.</p>
 <p>So the query planner decided to use this index, this tuple of <code>(nid ASC, via ASC, value ASC)</code>, but it only knows the first value, <code>nid</code> (the tenant). So it can only eliminate rows from other tenants. For a tenant with many many users, performance is really bad. It's not quite a full table scan, but it's a full <em>tenant</em> table scan!</p>
+<h3 id="first-optimization-provide-via">
+  <a class="title" href="#first-optimization-provide-via">First optimization: provide 'via'</a>
+  <a class="hash-anchor" href="#first-optimization-provide-via" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h3>
+<p><code>via</code> is actually a derived value: given the user provided address <code>foo@bar.com</code> or <code>+49123456789</code>, we can trivially identify whether it is an email address or a phone number: if it contains the character <code>@</code>, it's an email address!</p>
+<p>So let's add the <code>via</code> clause in the query:</p>
+<pre>
+  <div class="code-header">
+    <span>Sql</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-sql"><span class="line-number"></span><span class="code-hl">SELECT *</span>
+<span class="line-number"></span><span class="code-hl"> FROM identity_recovery_addresses AS a</span>
+<span class="line-number"></span><span class="code-hl">   JOIN identity_recovery_addresses AS b</span>
+<span class="line-number"></span><span class="code-hl">    ON a.identity_id = b.identity_id</span>
+<span class="line-number"></span><span class="code-hl">    AND a.nid = b.nid</span>
+<span class="line-number"></span><span class="code-hl">   WHERE b.value = 'foo@bar.com'</span>
+<span class="line-number"></span><span class="code-hl">    AND b.via = 'email'  -- &lt;= First optimization: Add `via`.</span>
+<span class="line-number"></span><span class="code-hl">    AND a.nid = '000e377a-062c-45b1-961c-1b28d682df6a'</span>
+</code></pre>
+<p>And now the plan looks <em>much</em> better, using the same index as before:</p>
+<pre>
+  <div class="code-header">
+    <span>Plaintext</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-plaintext"><span class="line-number"></span><span class="code-hl">table: identity_recovery_addresses@identity_recovery_addresses_status_via_uq_idx</span>
+<span class="line-number"></span><span class="code-hl">spans: [/'gcp-europe-west3'/'000e377a-062c-45b1-961c-1b28d682df6a'/'email'/'foo@bar.com' - /'gcp-europe-west3'/'000e377a-062c-45b1-961c-1b28d682df6a'/'email'/'foo@bar.com'] [/'gcp-us-east4'/'000e377a-062c-45b1-961c-1b28d682df6a'/'email'/'foo@bar.com' - /'gcp-us-east4'/'000e377a-062c-45b1-961c-1b28d682df6a'/'email'/'foo@bar.com'] [/'gcp-us-west2'/'000e377a-062c-45b1-961c-1b28d682df6a'/'email'/'foo@bar.com' - /'gcp-us-west2'/'000e377a-062c-45b1-961c-1b28d682df6a'/'email'/'foo@bar.com']</span>
+</code></pre>
+<p>It's now a point lookup! And the plan even says for this first step: <code>actual row count: 1</code>. Perfect! Such a simple fix... If you know how indexes work in CockroachDB.</p>
+<h3 id="second-optimization-single-region">
+  <a class="title" href="#second-optimization-single-region">Second optimization: single region</a>
+  <a class="hash-anchor" href="#second-optimization-single-region" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h3>
+<p>The self join can be understood as two queries: first, find the identity with the user-provided address. Second, find all addresses for this identity.</p>
+<p>Only the first query truly needs to do a fan-out to all regions. Once we know the identity id, we know in which region it is. Since all the data for an identity is stored in one region, the second query does not need to talk to other regions at all!
+This is a big gain in terms of latency: at around 250ms network latency between distant regions, we can cut out one unneeded round-trip.</p>
+<p>In CockroachDB, this is done by adding <code>WHERE crdb_region = ?</code> to the query. Let's do that:</p>
+<pre>
+  <div class="code-header">
+    <span>Sql</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-sql"><span class="line-number"></span><span class="code-hl">SELECT *</span>
+<span class="line-number"></span><span class="code-hl"> FROM identity_recovery_addresses AS a</span>
+<span class="line-number"></span><span class="code-hl">   JOIN identity_recovery_addresses AS b</span>
+<span class="line-number"></span><span class="code-hl">    ON a.identity_id = b.identity_id</span>
+<span class="line-number"></span><span class="code-hl">    AND a.nid = b.nid</span>
+<span class="line-number"></span><span class="code-hl">    AND A.crdb_region = B.crdb_region -- &lt;= Second optimization: Add `crdb_region`.</span>
+<span class="line-number"></span><span class="code-hl">   WHERE b.value = 'foo@bar.com'</span>
+<span class="line-number"></span><span class="code-hl">    AND b.via = 'email'  -- &lt;= First optimization: Add `via`.</span>
+<span class="line-number"></span><span class="code-hl">    AND a.nid = '000e377a-062c-45b1-961c-1b28d682df6a'</span>
+</code></pre>
+<p>From the plan, we now see that the only time we fan-out to all regions is in the first step, afterwards, we stay within the same region. We also see that latency was cut but ~200 ms, as expected.</p>
+<h3 id="third-optimization-only-query-needed-columns">
+  <a class="title" href="#third-optimization-only-query-needed-columns">Third optimization: only query needed columns</a>
+  <a class="hash-anchor" href="#third-optimization-only-query-needed-columns" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h3>
+<p>In the original query we fetched all table columns. But I then realized that we only ever need to fetch and return the <code>address</code> column because this is what gets returned to the user browser to let them pick which address to receive the recovery link/code on.</p>
+<p>So this is a simple change:</p>
+<pre>
+  <div class="code-header">
+    <span>Diff</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-diff"><span class="line-number"></span><span class="code-hl">- SELECT *</span>
+<span class="line-number"></span><span class="code-hl">+ SELECT address</span>
+<span class="line-number"></span><span class="code-hl">  FROM ...</span>
+</code></pre>
+<p>I was midly suprised to see no change in latency from that. After inspecting the plan and the table schema, this is for a simple reason: the index used in the second step of the query is the primary index which stores <code>(identity_id ASC, id ASC)</code>. <code>address</code> is not part of this index, so the whole row has to be fetched from the table. We could change this index to make it store this column: <code>CREATE INDEX ... STORING (address)</code> to avoid that extra fetch. But modifying the primary index of a big table in production is slightly risky, so it would need some careful consideration.</p>
+<p>Still, with this optimization, we:</p>
+<ul>
+<li>reduce the bytes sent over the network from the database to Kratos</li>
+<li>reduce the bytes sent over the network from Kratos to the user browser</li>
+<li>reduce slightly the marshalling/unmarshalling work</li>
+<li>avoid the risk that a big column is added to this table, which slows this query down (by fetching this data, and immediately throwing it away)</li>
+</ul>
+<p>So even if it's a small win, it is still a win.</p>
+<h2 id="final-results">
+  <a class="title" href="#final-results">Final results</a>
+  <a class="hash-anchor" href="#final-results" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p><img src="crdb_recovery_addresses_3.png" alt="Results" /></p>
+<p>Latency for this query went from a consistent 1-2s to always &lt; 0.5s.</p>
+<p>More importantly, it completely disappeared from the top 10000 queries in terms of CPU time or rows scanned.</p>
+<h2 id="what-about-other-databases">
+  <a class="title" href="#what-about-other-databases">What about other databases?</a>
+  <a class="hash-anchor" href="#what-about-other-databases" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>[TODO]</p>
+<h2 id="conclusion">
+  <a class="title" href="#conclusion">Conclusion</a>
+  <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>Relational databases are very complex beasts and CockroachDB is one of the most powerful and complex ones out there, especially in its multi-region setup.</p>
+<p>Many metrics matter, not only query latency: rows scanned (especially in a cloud environment, IOps are precious!), database CPU time, cross-regions round-trips, contention time, etc. Keep a watchful eye on queries that rank the worst for these metrics. Regularly revisit these findings: they change over time.</p>
+<p>We also know that each index has to bear its weight, because it slows down every write, and might even end up unused by the query planner, thus being dead weight.</p>
+<p>A query that performs ok now, might become a big problem later, when the table grows, or the data characteristics change, or the query planner decides to do something completly different today. Actually, I initially tested my optimizations in staging, and I see completely different plans and latencies from production, due to the data being much smaller or simply differently varied.</p>
+<p>Finally, when doing any kind of optimization, you have to establish two main things:</p>
+<ul>
+<li>What am I optimizing for? (CPU, latency, memory, contention time, number of retries, throughput, etc)</li>
+<li>When am I done? (What is an acceptable performance budget?)</li>
+</ul>
+<p>For the recovery flow, latency (or throughput for that matter) do not <em>really</em> matter: whether it takes 1ms or 5s is <em>fine</em>. I say this as a performance <del>junkie</del> advocate! I hate slow software! But for user driven, rarely performed actions, a handful of seconds is ok! What is not ok is creating humongous load on the database for no reason, which impacts every action in the system. That was my goal: reduce rows scanned to &lt;10 and CPU time to &lt;10ms. Reducing latency is a nice side-effect.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <div id="donate">

@@ -367,7 +367,7 @@ fn md_collect_titles(
         Node::Heading(heading) => {
             let depth = heading.depth;
             // TODO: Handle markdown title!
-            assert_eq!(1, heading.children.len());
+            assert_eq!(1, heading.children.len(), "{:#?}", heading.children);
             let child = heading
                 .children
                 .first()
