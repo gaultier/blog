@@ -86,6 +86,20 @@ Do not edit it by hand.
 
   <li>
     <a href="#investigation">Investigation</a>
+<ul>
+
+  <li>
+    <a href="#statistics">Statistics</a>
+</li>
+
+  <li>
+    <a href="#plan">Plan</a>
+</li>
+
+  <li>
+    <a href="#why">Why?</a>
+</li>
+</ul>
 </li>
 </ul>
 </details>
@@ -113,7 +127,7 @@ Do not edit it by hand.
 </h2>
 <p>The software is <a href="https://github.com/ory/kratos">Kratos</a>, a widely used authentication and identity management service. Users of this software are humans. Humans often register with an email and password (Kratos also supports passwordless schemes such as passkeys, webauthn, etc, but the proverbial email+password approach remains very much in use). Humans also tend to forget their password. That's why Kratos like any identity management service worth its salt, supports password recovery.</p>
 <p>The user enter one of their addresses (email, phone number, etc), and if this address is in the system, a list of masked addresses is shown to them, they pick one, and a recovery link or code is sent to them on that address. Using that link or code, they can setup a new password. Pretty standard.</p>
-<p>This is done with one SQL query (slightly simplified because the real one has to deal with multi-tenancy):</p>
+<p>This is done with one SQL query (slightly simplified from the real one):</p>
 <pre>
   <div class="code-header">
     <span>Sql</span>
@@ -123,9 +137,11 @@ Do not edit it by hand.
 <span class="line-number"></span><span class="code-hl"> FROM identity_recovery_addresses AS a</span>
 <span class="line-number"></span><span class="code-hl">   JOIN identity_recovery_addresses AS b</span>
 <span class="line-number"></span><span class="code-hl">    ON a.identity_id = b.identity_id</span>
-<span class="line-number"></span><span class="code-hl">   WHERE b.value IN ?</span>
-<span class="line-number"></span><span class="code-hl"> LIMIT 10</span>
+<span class="line-number"></span><span class="code-hl">    AND a.nid = b.nid</span>
+<span class="line-number"></span><span class="code-hl">   WHERE b.value = ?</span>
+<span class="line-number"></span><span class="code-hl">    AND a.nid = _</span>
 </code></pre>
+<p><em>Kratos supports multi-tenancy, so each tenant as an id called <code>nid</code>, each row stores <code>nid</code>, and each query clause contains <code>WHERE nid = ?</code> to isolate each tenant. But you can ignore that for this article.</em></p>
 <p>The approach is relatively straightforward with a self-join:</p>
 <ul>
 <li>Given the provided address, for example <code>foo@bar.com</code>, find the identity (i.e. the user account) for it.</li>
@@ -146,6 +162,10 @@ Do not edit it by hand.
   <a class="title" href="#investigation">Investigation</a>
   <a class="hash-anchor" href="#investigation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
+<h3 id="statistics">
+  <a class="title" href="#statistics">Statistics</a>
+  <a class="hash-anchor" href="#statistics" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h3>
 <p>The CTO actually linked in its original message a link to the statement in the CockroachDB dashboard, which shows very surprising statistics:</p>
 <p><img src="crdb_recovery_addresses_1.png" alt="Statement statistics" /></p>
 <table>
@@ -260,6 +280,45 @@ Do not edit it by hand.
 <li>Rows read: millions. This is simply not tenable, as mentioned, we expect ~10.</li>
 <li>SQL CPU time: 144ms: Normal queries take &lt;1ms in CPU. This shows that a lot of rows are loaded in memory and processed somehow. This is also not scalable.</li>
 </ul>
+<p>The other metrics are interesting but less important at the moment. For example, there is a relatively large number of retries and contention time. They probably are a by-product of the millons of rows scanned. Since looking for all recovery addresses of one identity (i.e. user) scans (but does not return) unrelated rows, it creates unintentional, and unneeded, contention on these rows.</p>
+<p>The next step is to inspect the plan being used in production using <code>EXPLAIN ANALYZE &lt;query&gt;</code>, or for even more details: <code>EXPLAIN ANALYZE (debug) &lt;query&gt;</code>.</p>
+<h3 id="plan">
+  <a class="title" href="#plan">Plan</a>
+  <a class="hash-anchor" href="#plan" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h3>
+<p>The first thing the plan does is this:</p>
+<pre>
+  <div class="code-header">
+    <span>Plaintext</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-plaintext"><span class="line-number"></span><span class="code-hl"> table: identity_recovery_addresses@identity_recovery_addresses_status_via_uq_idx  </span>
+<span class="line-number"></span><span class="code-hl"> spans: [/'gcp-asia-northeast1'/'000e377a-062c-45b1-961c-1b28d682df6a' - /'gcp-asia-northeast1'/'000e377a-062c-45b1-961c-1b28d682df6a'] [/'gcp-europe-west3'/'000e377a-062c-45b1-961c-1b28d682df6a' - /'gcp-europe-west3'/'000e377a-062c-45b1-961c-1b28d682df6a'] [/'gcp-us-east4'/'000e377a-062c-45b1-961c-1b28d682df6a' - /'gcp-us-east4'/'000e377a-062c-45b1-961c-1b28d682df6a'] [/'gcp-us-west2'/'000e377a-062c-45b1-961c-1b28d682df6a' - /'gcp-us-west2'/'000e377a-062c-45b1-961c-1b28d682df6a']</span>
+</code></pre>
+<p>We see that it is using the right index <code>identity_recovery_addresses_status_via_uq_idx (nid ASC, via ASC, value ASC)</code>. We see that it fans-out to every region: asia, europe, us, etc. This is expected: we originally do not know in which region the identity is stored, so we have to do that.</p>
+<p>But there is a problem. Can you spot it? Unless you are an advanced CockroachDB user, I'd be surprised if you do. I know I did not spot anything at first.</p>
+<p>I'll explain the plan is layman terms. This is what the query planner is doing, when a user enters <code>foo@bar.com</code> in the recovery screen:</p>
+<ol>
+<li>Fan out to each region (this is fine and required). In each region:</li>
+<li>Find the row with the address <code>foo@bar.com</code>. It is linked to an identity (<code>identity_id</code>) and a tenant (<code>nid</code>).</li>
+<li>Load all rows for this tenant in memory</li>
+<li>Filter these rows where the identity_id is the one found in step 1.1. Throw out the rest.</li>
+</ol>
+<p>So each time a user wants to reset their password, we load all recovery addresses of all users for this tenant, in memory. That is really not great and becomes worse and worse over time.</p>
+<p>This explains the high latency and CPU usage!</p>
+<h3 id="why">
+  <a class="title" href="#why">Why?</a>
+  <a class="hash-anchor" href="#why" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h3>
+<p>The big problem: We are <em>not</em> doing a point lookup with the index. What is that you ask? Well, in CockroachDB, indexes are a tuple, e.g. <code>(id, name, birth_date)</code>. To use the index the most efficient way, we have to specify in our query each field of this tuple, e.g.: <code>WHERE id = ? and name = ? and birth_date = ?</code>. This way, only 1 row is scanned.
+If we fail to specify one of the field in the index, the index will be used sub-optimally. That means a scan of many rows.</p>
+<p>Conceptually, this is how the index looks like for CockroachDB:</p>
+<p><img src="crdb_index.svg" alt="Index" /></p>
+<p>But wait, there's more: the order of the fields in the tuple also matters. CockroachDB recommends for performance to have the most discriminating fields first .</p>
+<p>Here, <code>nid</code> is the first field of the tuple, meaning: the tenant id. This is fine, because by providing the tenant id, we automatically avoid scanning rows from other tenants. Then, the second field of the index is <code>via</code>, which an enum of two values: <code>email</code> (in case the address is an email address) or <code>sms</code> (a phone number). This column is unfortunately not very discriminating: if each user has signed up with both an email and a phone number, simply providing <code>email</code> only eliminates 50% of the rows - ok, not great.</p>
+<p>And finally the last field of the index is <code>value</code>, which is the address itself. It is very discriminating: by providing the address, we eliminate every row in the table, except one.</p>
+<p>One reason: we did not provide one of the fields in the tuple of the index: <code>via</code>.</p>
+<p>So the query planner decided to use this index, this tuple of <code>(nid ASC, via ASC, value ASC)</code>, but it only knows the first value, <code>nid</code> (the tenant). So it can only eliminate rows from other tenants. For a tenant with many many users, performance is really bad. It's not quite a full table scan, but it's a full <em>tenant</em> table scan!</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <div id="donate">

@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 <title>Philippe Gaultier's blog</title>
 <link href="https://gaultier.github.io/blog"/>
-<updated>2026-06-29T16:09:58+02:00</updated>
+<updated>2026-06-29T16:49:37+02:00</updated>
 <author>
   <name>Philippe Gaultier</name>
 </author>
@@ -405,7 +405,7 @@
 <title>Don&#39;t run SQL migrations in tests: How I sped up the test suite by 2x</title>
 <link href="https://gaultier.github.io/blog/I_sped_up_the_test_suite_by_x2.html"/>
 <id>urn:uuid:1eac0fc6-6d82-5893-855b-2417cea6f9c2</id>
-<updated>2026-06-16T16:01:53+02:00</updated>
+<updated>2026-06-16T16:03:51+02:00</updated>
 <published>2026-06-12T11:37:45+02:00</published>
 </entry>
     
@@ -413,7 +413,7 @@
 <title>Optimization tales with CockroachDB, part 1</title>
 <link href="https://gaultier.github.io/blog/optimization-tales-cockroachdb-part1.html"/>
 <id>urn:uuid:c9bd96a5-08ac-59bf-8a08-34cee4d38073</id>
-<updated>2026-06-29T16:09:58+02:00</updated>
+<updated>2026-06-29T16:49:37+02:00</updated>
 <published>2026-06-29T16:09:53+02:00</published>
 </entry>
     </feed>

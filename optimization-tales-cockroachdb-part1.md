@@ -31,7 +31,7 @@ The software is [Kratos](https://github.com/ory/kratos), a widely used authentic
 The user enter one of their addresses (email, phone number, etc), and if this address is in the system, a list of masked addresses is shown to them, they pick one, and a recovery link or code is sent to them on that address. Using that link or code, they can setup a new password. Pretty standard.
 
 
-This is done with one SQL query (slightly simplified because the real one has to deal with multi-tenancy):
+This is done with one SQL query (slightly simplified from the real one):
 
 
 ```sql
@@ -39,9 +39,12 @@ SELECT *
  FROM identity_recovery_addresses AS a
    JOIN identity_recovery_addresses AS b
     ON a.identity_id = b.identity_id
-   WHERE b.value IN ?
- LIMIT 10
+    AND a.nid = b.nid
+   WHERE b.value = ?
+    AND a.nid = _
 ```
+
+*Kratos supports multi-tenancy, so each tenant as an id called `nid`, each row stores `nid`, and each query clause contains `WHERE nid = ?` to isolate each tenant. But you can ignore that for this article.*
 
 The approach is relatively straightforward with a self-join:
 
@@ -66,6 +69,8 @@ In any event: time to fix it.
 
 
 ## Investigation
+
+### Statistics 
 
 The CTO actually linked in its original message a link to the statement in the CockroachDB dashboard, which shows very surprising statistics:
 
@@ -108,3 +113,66 @@ Immediately the metrics that jump out to me (and to my CTO) are:
 
 - Rows read: millions. This is simply not tenable, as mentioned, we expect ~10.
 - SQL CPU time: 144ms: Normal queries take <1ms in CPU. This shows that a lot of rows are loaded in memory and processed somehow. This is also not scalable.
+
+The other metrics are interesting but less important at the moment. For example, there is a relatively large number of retries and contention time. They probably are a by-product of the millons of rows scanned. Since looking for all recovery addresses of one identity (i.e. user) scans (but does not return) unrelated rows, it creates unintentional, and unneeded, contention on these rows.
+
+
+
+
+
+
+The next step is to inspect the plan being used in production using `EXPLAIN ANALYZE <query>`, or for even more details: `EXPLAIN ANALYZE (debug) <query>`.
+
+### Plan
+
+The first thing the plan does is this:
+
+```plaintext
+ table: identity_recovery_addresses@identity_recovery_addresses_status_via_uq_idx  
+ spans: [/'gcp-asia-northeast1'/'000e377a-062c-45b1-961c-1b28d682df6a' - /'gcp-asia-northeast1'/'000e377a-062c-45b1-961c-1b28d682df6a'] [/'gcp-europe-west3'/'000e377a-062c-45b1-961c-1b28d682df6a' - /'gcp-europe-west3'/'000e377a-062c-45b1-961c-1b28d682df6a'] [/'gcp-us-east4'/'000e377a-062c-45b1-961c-1b28d682df6a' - /'gcp-us-east4'/'000e377a-062c-45b1-961c-1b28d682df6a'] [/'gcp-us-west2'/'000e377a-062c-45b1-961c-1b28d682df6a' - /'gcp-us-west2'/'000e377a-062c-45b1-961c-1b28d682df6a']
+```
+
+We see that it is using the right index `identity_recovery_addresses_status_via_uq_idx (nid ASC, via ASC, value ASC)`. We see that it fans-out to every region: asia, europe, us, etc. This is expected: we originally do not know in which region the identity is stored, so we have to do that.
+
+
+But there is a problem. Can you spot it? Unless you are an advanced CockroachDB user, I'd be surprised if you do. I know I did not spot anything at first.
+
+
+
+I'll explain the plan is layman terms. This is what the query planner is doing, when a user enters `foo@bar.com` in the recovery screen:
+
+1. Fan out to each region (this is fine and required). In each region:
+  1. Find the row with the address `foo@bar.com`. It is linked to an identity (`identity_id`) and a tenant (`nid`).
+  1. Load all rows for this tenant in memory
+  1. Filter these rows where the identity_id is the one found in step 1.1. Throw out the rest.
+
+So each time a user wants to reset their password, we load all recovery addresses of all users for this tenant, in memory. That is really not great and becomes worse and worse over time. 
+
+This explains the high latency and CPU usage!
+
+
+### Why?
+
+
+
+The big problem: We are *not* doing a point lookup with the index. What is that you ask? Well, in CockroachDB, indexes are a tuple, e.g. `(id, name, birth_date)`. To use the index the most efficient way, we have to specify in our query each field of this tuple, e.g.: `WHERE id = ? and name = ? and birth_date = ?`. This way, only 1 row is scanned. 
+If we fail to specify one of the field in the index, the index will be used sub-optimally. That means a scan of many rows. 
+
+Conceptually, this is how the index looks like for CockroachDB:
+
+
+![Index](crdb_index.svg)
+
+But wait, there's more: the order of the fields in the tuple also matters. CockroachDB recommends for performance to have the most discriminating fields first .
+
+
+Here, `nid` is the first field of the tuple, meaning: the tenant id. This is fine, because by providing the tenant id, we automatically avoid scanning rows from other tenants. Then, the second field of the index is `via`, which an enum of two values: `email` (in case the address is an email address) or `sms` (a phone number). This column is unfortunately not very discriminating: if each user has signed up with both an email and a phone number, simply providing `email` only eliminates 50% of the rows - ok, not great.
+
+And finally the last field of the index is `value`, which is the address itself. It is very discriminating: by providing the address, we eliminate every row in the table, except one.
+
+One reason: we did not provide one of the fields in the tuple of the index: `via`.
+
+So the query planner decided to use this index, this tuple of `(nid ASC, via ASC, value ASC)`, but it only knows the first value, `nid` (the tenant). So it can only eliminate rows from other tenants. For a tenant with many many users, performance is really bad. It's not quite a full table scan, but it's a full *tenant* table scan!
+
+
+
