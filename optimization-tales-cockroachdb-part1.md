@@ -295,18 +295,27 @@ More importantly, it completely disappeared from the top 10000 queries in terms 
 ## Conclusion
 
 
+A surface level lesson would be: all SQL performance problems are due to not using the right index. Which is not false! But there's much more here to take away.
+
+
+
 Relational databases are very complex beasts and CockroachDB is one of the most powerful and complex ones out there, especially in its multi-region setup.
 
-Many metrics matter, not only query latency: rows scanned (especially in a cloud environment, IOps are precious!), database CPU time, cross-regions round-trips, contention time, etc. Keep a watchful eye on queries that rank the worst for these metrics. Regularly revisit these findings: they change over time.
+Many metrics matter, not only query latency: rows scanned (especially in a cloud environment, IOps are precious!), database CPU time, memory, max latency, cross-regions round-trips, contention time, etc. Keep a watchful eye on queries that rank the worst for these metrics. Regularly revisit these findings: they change over time. I command CockroachDB there because it exposes all of these metrics in a pretty dashboard. The only downside is that using it, you know which queries are problematic, and for which metric, but you're still far away from a good explanation, and remedy.
 
 We also know that each index has to bear its weight, because it slows down every write, and might even end up unused by the query planner, thus being dead weight.
 
 
 A query that performs ok now, might become a big problem later, when the table grows, or the data characteristics change, or the query planner decides to do something completly different today. Actually, I initially tested my optimizations in staging, and I see completely different plans and latencies from production, due to the data being much smaller or simply differently varied.
 
-Finally, when doing any kind of optimization, you have to establish two main things: 
 
-- What am I optimizing for? (CPU, latency, memory, contention time, number of retries, throughput, etc)
+After a potential optimization has been applied, always follow-up to see if it made things better, worse, or the same. You'd be surprised. If it's worse or the same, it's still useful data to refine your understanding of the situation. If things improved, make it an announcement, it's good for morale!
+
+
+Finally, when starting with any kind of optimization, you have to establish three main things: 
+
+- Is it a problem now, and will it worsen over time? (In our case, yes, and yes)
+- What am I optimizing for? (CPU, latency, memory, contention time, number of retries, throughput, etc).
 - When am I done? (What is an acceptable performance budget?)
 
 For the recovery flow, latency (or throughput for that matter) do not *really* matter: whether it takes 1ms or 5s is *fine*. I say this as a performance ~junkie~ advocate! I hate slow software! But for user driven, rarely performed actions, a handful of seconds is ok! What is not ok is creating humongous load on the database for no reason, which impacts every action in the system. That was my goal: reduce rows scanned to <10 and CPU time to <10ms. Reducing latency is a nice side-effect.
