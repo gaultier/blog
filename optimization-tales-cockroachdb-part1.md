@@ -326,7 +326,6 @@ cumulative time spent in KV: 911ms
 maximum memory usage: 140 KiB
 sql cpu time: 337µs
 
-
 Time: 1.180s total (execution 0.914s / network 0.265s)
 ```
 
