@@ -4,7 +4,7 @@ Tags: SQL, Optimization, CockroachDB
 
 Quick question: What do you do when there is downtime at work? Read the news, tidy your inbox... Hunt for slow SQL queries?
 
-I'm in the last bucket. Emboldened by my last success of speeding up the [password reset flow](/blog/optimization-tales-cockroachdb-part1.html), where too many rows were scanned, I stumbled upon a query that looked so simple, yet was very slow and did *thousands* of retries, for an endpoint that very heavily used... This peaked my interest.
+I'm in the last bucket. Emboldened by my recent success in speeding up the [password reset flow](/blog/optimization-tales-cockroachdb-part1.html), where too many rows were scanned, I stumbled upon a query that looked so simple, yet was very slow and did *thousands* of retries, for an endpoint that is very heavily used... This piqued my interest.
 
 As always, the work is [open-source](https://github.com/ory/kratos/commit/277d7697125df31f6ea3dc4f773548218fdbfa79)!
 
@@ -21,7 +21,7 @@ As always, the work is [open-source](https://github.com/ory/kratos/commit/277d76
 Contrary to part 1, this time, rows scanned and CPU time are completely fine. But there are way too many retries. 
 
 
-This query (and many variations of it, all suffering from the same issue), are executed when logging out a user. The session tokens are stored in the `sessions` table by setting `active` to false:
+This query (and many variations of it, all suffering from the same issue), are executed when logging out a user. A user is logged out by setting `active` to false on their session row in the `sessions` table:
 
 ```sql
 UPDATE sessions SET active = false WHERE token = ?
@@ -84,7 +84,7 @@ There is no semantic change, and yet, this means way fewer writes (up to 1, now)
 >
 > Write-read, when a read encounters an existing write intent with a timestamp less than its own. 
 
-We now avoid the write-write scenario, yay! We still have the other case (write-read) than can happen: 
+We now avoid the write-write scenario, yay! We still have the other case (write-read) that can happen: 
 
 1. Transaction A starts
 1. Transaction B starts
@@ -106,7 +106,7 @@ Let's see what these anomalies are:
 
 - Non-repeatable reads: "Non-repeatable reads return different row values because a concurrent transaction updated the values in between reads". Since we do not do more than one read, we are not affected by that.
 - Phantom reads: "Phantom reads return different rows because a concurrent transaction changed the set of rows that satisfy the row search": we do not write to any of the columns included in the `WHERE` criteria, these are constant (e.g. the session token). So we are not affected by that either.
-- Lost update anomaly: "The READ COMMITTED conditions that permit non-repeatable reads and phantom reads also permit lost update anomalies, where an update from a transaction appears to be "lost" because it is overwritten by a concurrent transaction". We do not care of that because as long as one write `active = false` on the row succeeds, all subsequent writes are irrelevant. In fact, this is our goal: to avoid redundant updates.
+- Lost update anomaly: "The READ COMMITTED conditions that permit non-repeatable reads and phantom reads also permit lost update anomalies, where an update from a transaction appears to be "lost" because it is overwritten by a concurrent transaction". We do not care about that because as long as one write `active = false` on the row succeeds, all subsequent writes are irrelevant. In fact, this is our goal: to avoid redundant updates.
 - Write skew anomaly: "two concurrent transactions each read values that the other subsequently updates". We also are fine with that: in the worst case, our transaction will read `active` as `true` when another concurrent transaction has already set it to `false`, and our transaction will do one redundant write. Completely fine.
 
 Ok, so let's do it:
@@ -174,13 +174,13 @@ There are two interesting things on this histogram:
 Also, contention and CPU time of the query (and all variations thereof) went to essentially 0 in the CockroachDB dashboard.
 
 
-I am not yet satisfied about these absolute numbers, I believe there is still room for improvement, but I am still happy about the impact of this change.
+I am not yet satisfied with these absolute numbers, I believe there is still room for improvement, but I am still happy about the impact of this change.
 
 ## Conclusion
 
 Having the highest isolation level by default is I think the right call from the CockroachDB developers. But it can create some performance hotspots.
 
-As always: thoroughly read the docs of your database(s). Each own is its own thing. Do not assume that database A behaves like database B you know.
+As always: thoroughly read the docs of your database(s). Each one is its own thing. Do not assume that database A behaves like database B you know.
 
 As with most optimizations, it's not about making the work faster, it's about avoiding unnecessary work.
 
