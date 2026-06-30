@@ -168,7 +168,7 @@ figure > figcaption {
 
 img, video {
   width: 100%;
-  max-width: 1200px;
+  max-width: 90%;
   display: block;
   margin: 0 auto;
   margin-top: 2rem;

@@ -8,3 +8,8 @@ I'm in the last bucket. Embolded by my last success of speeding up the [password
 
 
 ## The context
+
+150K retries, 500 ms statement time:
+
+![Statement statistics](crdb_slow_logout2.png)
+
