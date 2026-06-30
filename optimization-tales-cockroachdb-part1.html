@@ -127,6 +127,10 @@ Do not edit it by hand.
 </li>
 
   <li>
+    <a href="#future-avenues">Future avenues</a>
+</li>
+
+  <li>
     <a href="#conclusion">Conclusion</a>
 </li>
 </ul>
@@ -512,7 +516,37 @@ This is a big gain in terms of latency: at around 250ms network latency between 
   <a class="title" href="#what-about-other-databases">What about other databases?</a>
   <a class="hash-anchor" href="#what-about-other-databases" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>[TODO]</p>
+<p>To my knowledge, most relational databases work the same, meaning that for multi-column indexes <code>(A, B, C)</code>, the efficient way is to provide as many left-leading columns as possible. Quoting <a href="https://www.postgresql.org/docs/17/indexes-multicolumn.html">PostgreSQL 17</a> docs:</p>
+<blockquote>
+<p>A multicolumn B-tree index can be used with query conditions that involve any subset of the index's columns, but the index is most efficient when there are constraints on the leading (leftmost) columns. The exact rule is that equality constraints on leading columns, plus any inequality constraints on the first column that does not have an equality constraint, will be used to limit the portion of the index that is scanned. Constraints on columns to the right of these columns are checked in the index, so they save visits to the table proper, but they do not reduce the portion of the index that has to be scanned. For example, given an index on (a, b, c) and a query condition WHERE a = 5 AND b &gt;= 42 AND c &lt; 77, the index would have to be scanned from the first entry with a = 5 and b = 42 up through the last entry with a = 5. Index entries with c &gt;= 77 would be skipped, but they'd still have to be scanned through. This index could in principle be used for queries that have constraints on b and/or c with no constraint on a — but the entire index would have to be scanned, so in most cases the planner would prefer a sequential table scan over using the index.</p>
+</blockquote>
+<p><a href="https://dev.mysql.com/doc/refman/8.4/en/multiple-column-indexes.html">MySQL</a> does the same:</p>
+<blockquote>
+<p>MySQL can use multiple-column indexes for queries that test all the columns in the index, or queries that test just the first column, the first two columns, the first three columns, and so on. [...] If the table has a multiple-column index, any leftmost prefix of the index can be used by the optimizer to look up rows. For example, if you have a three-column index on (col1, col2, col3), you have indexed search capabilities on (col1), (col1, col2), and (col1, col2, col3).</p>
+</blockquote>
+<p><a href="https://sqlite.org/queryplanner.html">SQLite</a> as well:</p>
+<blockquote>
+<p>A multi-column index follows the same pattern as a single-column index; the indexed columns are added in front of the rowid. The only difference is that now multiple columns are added. The left-most column is the primary key used for ordering the rows in the index. The second column is used to break ties in the left-most column. If there were a third column, it would be used to break ties for the first two columns. And so forth for all columns in the index.</p>
+</blockquote>
+<p>However, <a href="https://www.postgresql.org/docs/current/indexes-multicolumn.html">PostgreSQL 18</a> added some support for efficiently using a multi column index <code>(A, B, C)</code> even if <code>B</code> is not provided by the query:</p>
+<blockquote>
+<p>For example, given an index on (x, y), and a query condition WHERE y = 7700, a B-tree index scan might be able to apply the skip scan optimization. This generally happens when the query planner expects that repeated WHERE x = N AND y = 7700 searches for every possible value of N (or for every x value that is actually stored in the index) is the fastest possible approach, given the available indexes on the table. This approach is generally only taken when there are so few distinct x values that the planner expects the scan to skip over most of the index (because most of its leaf pages cannot possibly contain relevant tuples). If there are many distinct x values, then the entire index will have to be scanned, so in most cases the planner will prefer a sequential table scan over using the index.</p>
+</blockquote>
+<p>So in this particular case, I think PostgreSQL 18 would perform better than other databases with the original query.</p>
+<h2 id="future-avenues">
+  <a class="title" href="#future-avenues">Future avenues</a>
+  <a class="hash-anchor" href="#future-avenues" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>More optimizations are definitely possible but were not done due to lack of time:</p>
+<ul>
+<li><code>via</code> is derived from <code>value</code>, so it could be a computed column, or be completely removed.</li>
+<li><p>The order of the fields in the index should perhaps be re-arranged, because CockroachDB recommends that:</p>
+<blockquote>
+<p>Columns with a higher cardinality (higher number of distinct values) should be placed in the index before columns with a lower cardinality.</p>
+</blockquote>
+<p>Since <code>via</code> has the lowest cardinality (only 2 distinct values), it should come last, and the index should be: <code>(nid, value, via)</code>.</p>
+</li>
+</ul>
 <h2 id="conclusion">
   <a class="title" href="#conclusion">Conclusion</a>
   <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>

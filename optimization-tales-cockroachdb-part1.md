@@ -357,7 +357,37 @@ Pretty nice optimization, that was superseded by explicitly providing `crdb_regi
 
 ## What about other databases?
 
-[TODO]
+To my knowledge, most relational databases work the same, meaning that for multi-column indexes `(A, B, C)`, the efficient way is to provide as many left-leading columns as possible. Quoting [PostgreSQL 17](https://www.postgresql.org/docs/17/indexes-multicolumn.html) docs:
+
+> A multicolumn B-tree index can be used with query conditions that involve any subset of the index's columns, but the index is most efficient when there are constraints on the leading (leftmost) columns. The exact rule is that equality constraints on leading columns, plus any inequality constraints on the first column that does not have an equality constraint, will be used to limit the portion of the index that is scanned. Constraints on columns to the right of these columns are checked in the index, so they save visits to the table proper, but they do not reduce the portion of the index that has to be scanned. For example, given an index on (a, b, c) and a query condition WHERE a = 5 AND b >= 42 AND c < 77, the index would have to be scanned from the first entry with a = 5 and b = 42 up through the last entry with a = 5. Index entries with c >= 77 would be skipped, but they'd still have to be scanned through. This index could in principle be used for queries that have constraints on b and/or c with no constraint on a — but the entire index would have to be scanned, so in most cases the planner would prefer a sequential table scan over using the index.
+
+
+[MySQL](https://dev.mysql.com/doc/refman/8.4/en/multiple-column-indexes.html) does the same:
+
+> MySQL can use multiple-column indexes for queries that test all the columns in the index, or queries that test just the first column, the first two columns, the first three columns, and so on. [...] If the table has a multiple-column index, any leftmost prefix of the index can be used by the optimizer to look up rows. For example, if you have a three-column index on (col1, col2, col3), you have indexed search capabilities on (col1), (col1, col2), and (col1, col2, col3).
+
+
+[SQLite](https://sqlite.org/queryplanner.html) as well:
+
+> A multi-column index follows the same pattern as a single-column index; the indexed columns are added in front of the rowid. The only difference is that now multiple columns are added. The left-most column is the primary key used for ordering the rows in the index. The second column is used to break ties in the left-most column. If there were a third column, it would be used to break ties for the first two columns. And so forth for all columns in the index.
+
+However, [PostgreSQL 18](https://www.postgresql.org/docs/current/indexes-multicolumn.html) added some support for efficiently using a multi column index `(A, B, C)` even if `B` is not provided by the query:
+
+> For example, given an index on (x, y), and a query condition WHERE y = 7700, a B-tree index scan might be able to apply the skip scan optimization. This generally happens when the query planner expects that repeated WHERE x = N AND y = 7700 searches for every possible value of N (or for every x value that is actually stored in the index) is the fastest possible approach, given the available indexes on the table. This approach is generally only taken when there are so few distinct x values that the planner expects the scan to skip over most of the index (because most of its leaf pages cannot possibly contain relevant tuples). If there are many distinct x values, then the entire index will have to be scanned, so in most cases the planner will prefer a sequential table scan over using the index.
+
+
+So in this particular case, I think PostgreSQL 18 would perform better than other databases with the original query.
+
+
+## Future avenues
+
+More optimizations are definitely possible but were not done due to lack of time:
+
+- `via` is derived from `value`, so it could be a computed column, or be completely removed.
+- The order of the fields in the index should perhaps be re-arranged, because CockroachDB recommends that:
+    > Columns with a higher cardinality (higher number of distinct values) should be placed in the index before columns with a lower cardinality.
+
+  Since `via` has the lowest cardinality (only 2 distinct values), it should come last, and the index should be: `(nid, value, via)`.
 
 ## Conclusion
 
