@@ -136,15 +136,14 @@ Do not edit it by hand.
 </ul>
 </details>
 
-<p><em>This is part 1, there will be more SQL optimization stories in the same vein.</em></p>
-<p>It all started one morning, I opened Slack as usual to start my working day, only to find a message from the CTO:</p>
+<p>It all started one morning. I opened Slack as usual to start my working day, only to find a message from the CTO:</p>
 <blockquote>
 <p>Hello this query reads like 700k rows</p>
 </blockquote>
 <p>To which engineers replied:</p>
 <blockquote>
 <p>The plan looks ok IMHO, indices are being used:
-<plan>
+<copy pasted production plan>
 </p>
 </blockquote>
 <p>And the CTO answering:</p>
@@ -154,6 +153,7 @@ Do not edit it by hand.
 <p>And spoiler alert, he was dead right. I started to look into it and this turned out much more interesting than just 'it was a full table scan, I added the right index and moved on'.</p>
 <p>As always, the code, and fix, are <a href="https://github.com/ory/kratos/commit/c445e40e077ef5aeeedd6642830aba4fc6e36845">open-source</a>!</p>
 <p>This query actually runs against all 4 databases we support (SQLite, PostgreSQL, MySQL, CockroachDB), but here I will focus on CockroachDB because that is the database that we run in production and because it has important differences, which make this investigation interesting.</p>
+<p><em>This is part 1, there will be more SQL optimization stories in the same vein.</em></p>
 <h2 id="the-context">
   <a class="title" href="#the-context">The context</a>
   <a class="hash-anchor" href="#the-context" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>

@@ -2,16 +2,15 @@ Title: Optimization tales with CockroachDB, part 1
 Tags: SQL, Optimization, CockroachDB
 ---
 
-*This is part 1, there will be more SQL optimization stories in the same vein.*
 
-It all started one morning, I opened Slack as usual to start my working day, only to find a message from the CTO:
+It all started one morning. I opened Slack as usual to start my working day, only to find a message from the CTO:
 
 > Hello this query reads like 700k rows
 
 To which engineers replied:
 
 > The plan looks ok IMHO, indices are being used:
-> <plan>
+> <copy pasted production plan>
 
 And the CTO answering:
 
@@ -25,6 +24,8 @@ As always, the code, and fix, are [open-source](https://github.com/ory/kratos/co
 
 This query actually runs against all 4 databases we support (SQLite, PostgreSQL, MySQL, CockroachDB), but here I will focus on CockroachDB because that is the database that we run in production and because it has important differences, which make this investigation interesting.
 
+
+*This is part 1, there will be more SQL optimization stories in the same vein.*
 
 ## The context
 
