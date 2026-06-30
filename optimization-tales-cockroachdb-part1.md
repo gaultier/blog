@@ -423,7 +423,7 @@ More optimizations are definitely possible but were not done due to lack of time
 - The order of the fields in the index should perhaps be re-arranged, because CockroachDB recommends that:
     > Columns with a higher cardinality (higher number of distinct values) should be placed in the index before columns with a lower cardinality.
 
-  Since `via` has the lowest cardinality (only 2 distinct values), it should come last, and the index should be: `(nid, value, via)`.
+  Since `via` has the lowest cardinality (only 2 distinct values), it should come last, and the index should be: `(nid, value, via)`. Which incidentally would make the original query perform well. But revamping indexes can create a big load in the database and is generally a higher risk than simply tweaking the query itself.
 
 ## Conclusion
 

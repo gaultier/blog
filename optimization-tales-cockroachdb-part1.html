@@ -580,7 +580,7 @@ This is a big gain in terms of latency: at around 250ms network latency between 
 <blockquote>
 <p>Columns with a higher cardinality (higher number of distinct values) should be placed in the index before columns with a lower cardinality.</p>
 </blockquote>
-<p>Since <code>via</code> has the lowest cardinality (only 2 distinct values), it should come last, and the index should be: <code>(nid, value, via)</code>.</p>
+<p>Since <code>via</code> has the lowest cardinality (only 2 distinct values), it should come last, and the index should be: <code>(nid, value, via)</code>. Which incidentally would make the original query perform well. But revamping indexes can create a big load in the database and is generally a higher risk than simply tweaking the query itself.</p>
 </li>
 </ul>
 <h2 id="conclusion">
