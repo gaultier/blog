@@ -82,7 +82,7 @@ The approach is relatively straightforward with a self-join, that can be underst
     AND a.nid = '000e377a-062c-45b1-961c-1b28d682df6a'
   LIMIT 10
   ```
-3. Return the list of addresses for that identity , up to 10, because we do not expect a user to have more than a handful.
+3. Return the list of addresses for that identity, up to 10, because we do not expect a user to have more than a handful.
 
 Now, Kratos can show the list of masked addresses e.g. `+15234****56` if it's a phone number, or `foo@****.com` if it's an email address. The masking logic is pretty smart so accidental information disclosure is avoided. Kratos also pretends to send the recovery link/code to a non-existing address, so that it's not possible for an attacker to probe a website for certain addresses. The last point can actually have real life consequences in certain countries for certain websites, e.g. LGBT ones. 
 
@@ -171,7 +171,7 @@ But there is a problem. Can you spot it? Unless you are an advanced CockroachDB 
 
 
 
-I'll explain the plan is layman terms. This is what the query planner is doing, when a user enters `foo@bar.com` in the recovery screen:
+I'll explain the plan in layman's terms. This is what the query planner is doing, when a user enters `foo@bar.com` in the recovery screen:
 
 1. Fan out to each region (this is fine and required). In each region:
     1. Find the row with the address `foo@bar.com`. It is linked to an identity (`identity_id`) and a tenant (`nid`).
@@ -307,7 +307,7 @@ So even if it's a small win, it is still a win.
 
 ![Results](crdb_recovery_addresses_3.png)
 
-Latency for this query went from a consistent 1-2s to always < 0.5s. All of the time is spent waiting on the network (due to cross-region latency).
+Latency for this query went from a consistent 1-2s to typically < 0.5s. All of the time is spent waiting on the network (due to cross-region latency).
 
 More importantly, it completely disappeared from the top 10000 queries in terms of CPU time or rows scanned.
 
@@ -329,6 +329,8 @@ sql cpu time: 337µs
 Time: 1.180s total (execution 0.914s / network 0.265s)
 ```
 
+Notice that nearly all of the time is now spent waiting for the network: 911ms out of 912ms. It's purely cross-region round-trips.
+
 When we are in the favorable case of the same region, latency is really good:
 
 ```plaintext
@@ -343,6 +345,11 @@ Time: 26ms total (execution 5ms / network 20ms)
 ```
 
 
+
+Before vs after:
+
+- Rows scanned: multiple millions vs 4
+- SQL CPU time: 100+ms vs < 1ms
 
 ## Things I have tried to little effect
 
@@ -432,7 +439,7 @@ Many metrics matter, not only query latency: rows scanned (especially in a cloud
 We also know that each index has to bear its weight, because it slows down every write, and might even end up unused by the query planner, thus being dead weight.
 
 
-"Just provide in the `WHERE` clause of the query all the values you know up front" is *not* good advice: It worked here with `via` because of the tuple nature of indexes in CockroachDB and because `via` was the middle field in this tuple. But over-specifying the `WHERE` clause in the query can and will lead the query planner to worst plans, because the optimal index might not contain the extra fields you just added to the clause.
+"Just provide in the `WHERE` clause of the query all the values you know up front" is *not* good advice: It worked here with `via` because of the tuple nature of indexes in CockroachDB and because `via` was the middle field in this tuple. But over-specifying the `WHERE` clause in the query can and will lead the query planner to worse plans, because the optimal index might not contain the extra fields you just added to the clause.
 
 
 A query that performs ok now, might become a big problem later, when the table grows, or the data characteristics change, or the query planner decides to do something completely different today. Actually, I initially tested my optimizations in staging, and I see completely different plans and latencies from production, due to the data being much smaller or simply differently varied.

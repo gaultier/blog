@@ -215,7 +215,7 @@ Do not edit it by hand.
 <span class="line-number"></span><span class="code-hl">LIMIT 10</span>
 </code></pre>
 <ol start="3">
-<li>Return the list of addresses for that identity , up to 10, because we do not expect a user to have more than a handful.</li>
+<li>Return the list of addresses for that identity, up to 10, because we do not expect a user to have more than a handful.</li>
 </ol>
 <p>Now, Kratos can show the list of masked addresses e.g. <code>+15234****56</code> if it's a phone number, or <code>foo@****.com</code> if it's an email address. The masking logic is pretty smart so accidental information disclosure is avoided. Kratos also pretends to send the recovery link/code to a non-existing address, so that it's not possible for an attacker to probe a website for certain addresses. The last point can actually have real life consequences in certain countries for certain websites, e.g. LGBT ones.</p>
 <p>(Always remember that your code can impact lives).</p>
@@ -363,7 +363,7 @@ Do not edit it by hand.
 </code></pre>
 <p>We see that it is using the right index <code>identity_recovery_addresses_status_via_uq_idx (nid ASC, via ASC, value ASC)</code>. We see that it fans-out to every region: Asia, Europe, US, etc. This is expected: we originally do not know in which region the identity is stored, so we have to ask every region in parallel.</p>
 <p>But there is a problem. Can you spot it? Unless you are an advanced CockroachDB user, I'd be surprised if you do. I know I did not spot anything at first.</p>
-<p>I'll explain the plan is layman terms. This is what the query planner is doing, when a user enters <code>foo@bar.com</code> in the recovery screen:</p>
+<p>I'll explain the plan in layman's terms. This is what the query planner is doing, when a user enters <code>foo@bar.com</code> in the recovery screen:</p>
 <ol>
 <li><p>Fan out to each region (this is fine and required). In each region:</p>
 <ol>
@@ -474,7 +474,7 @@ This is a big gain in terms of latency: at around 250ms network latency between 
   <a class="hash-anchor" href="#final-results" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p><img src="crdb_recovery_addresses_3.png" alt="Results" /></p>
-<p>Latency for this query went from a consistent 1-2s to always &lt; 0.5s. All of the time is spent waiting on the network (due to cross-region latency).</p>
+<p>Latency for this query went from a consistent 1-2s to typically &lt; 0.5s. All of the time is spent waiting on the network (due to cross-region latency).</p>
 <p>More importantly, it completely disappeared from the top 10000 queries in terms of CPU time or rows scanned.</p>
 <p>By revamping the indexes and being very multi-region aware, we could reduce the latency further, but it's already 'good enough'. See the conclusion for a discussion about what 'good enough' means.</p>
 <p>Let's measure the final query in production in the worst case: a tenant that has 47 million recovery addresses, and we query from a different region (so that we have to pay for the cross-region latency):</p>
@@ -493,6 +493,7 @@ This is a big gain in terms of latency: at around 250ms network latency between 
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">Time: 1.180s total (execution 0.914s / network 0.265s)</span>
 </code></pre>
+<p>Notice that nearly all of the time is now spent waiting for the network: 911ms out of 912ms. It's purely cross-region round-trips.</p>
 <p>When we are in the favorable case of the same region, latency is really good:</p>
 <pre>
   <div class="code-header">
@@ -508,6 +509,11 @@ This is a big gain in terms of latency: at around 250ms network latency between 
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">Time: 26ms total (execution 5ms / network 20ms)</span>
 </code></pre>
+<p>Before vs after:</p>
+<ul>
+<li>Rows scanned: multiple millions vs 4</li>
+<li>SQL CPU time: 100+ms vs &lt; 1ms</li>
+</ul>
 <h2 id="things-i-have-tried-to-little-effect">
   <a class="title" href="#things-i-have-tried-to-little-effect">Things I have tried to little effect</a>
   <a class="hash-anchor" href="#things-i-have-tried-to-little-effect" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -586,7 +592,7 @@ This is a big gain in terms of latency: at around 250ms network latency between 
 <p>Relational databases are very complex beasts and CockroachDB is one of the most powerful and complex ones out there, especially in its multi-region setup. Know your database, read the docs, ask the developers if that's an option. There is no such thing as 'a SQL database' - every SQL database behaves wildly differently from the others.</p>
 <p>Many metrics matter, not only query latency: rows scanned (especially in a cloud environment, IOps are precious!), database CPU time, memory, max latency, cross-regions round-trips, contention time, etc. Keep a watchful eye on queries that rank the worst for these metrics, but also keep in mind that some metrics affect others - e.g. in our case, contention time and subsequent retries were artificially inflated by the suboptimal plan scanning too many rows. Regularly revisit these findings: they change over time. I commend CockroachDB there because it exposes all of these metrics in a pretty dashboard. The only downside is that using it, you know which queries are problematic, and for which metric, but you're still far away from a good explanation, and remedy.</p>
 <p>We also know that each index has to bear its weight, because it slows down every write, and might even end up unused by the query planner, thus being dead weight.</p>
-<p>&quot;Just provide in the <code>WHERE</code> clause of the query all the values you know up front&quot; is <em>not</em> good advice: It worked here with <code>via</code> because of the tuple nature of indexes in CockroachDB and because <code>via</code> was the middle field in this tuple. But over-specifying the <code>WHERE</code> clause in the query can and will lead the query planner to worst plans, because the optimal index might not contain the extra fields you just added to the clause.</p>
+<p>&quot;Just provide in the <code>WHERE</code> clause of the query all the values you know up front&quot; is <em>not</em> good advice: It worked here with <code>via</code> because of the tuple nature of indexes in CockroachDB and because <code>via</code> was the middle field in this tuple. But over-specifying the <code>WHERE</code> clause in the query can and will lead the query planner to worse plans, because the optimal index might not contain the extra fields you just added to the clause.</p>
 <p>A query that performs ok now, might become a big problem later, when the table grows, or the data characteristics change, or the query planner decides to do something completely different today. Actually, I initially tested my optimizations in staging, and I see completely different plans and latencies from production, due to the data being much smaller or simply differently varied.</p>
 <p>After a potential optimization has been applied, always follow-up to see if it made things better, worse, or the same. You'd be surprised. If it's worse or the same, it's still useful data to refine your understanding of the situation. If things improved, make it an announcement, it's good for morale!</p>
 <p>Finally, when starting with any kind of optimization, you have to establish three main things:</p>
