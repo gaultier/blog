@@ -285,7 +285,7 @@ So this is a simple change:
 
 ```diff
 - SELECT *
-+ SELECT value
++ SELECT a.value
   FROM ...
 ```
 
