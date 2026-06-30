@@ -538,7 +538,7 @@ This is a big gain in terms of latency: at around 250ms network latency between 
 </code></pre>
 <p>It worked and performed a bit better than the original self-join (without <code>via</code>), due to query planner quirks, but as soon as I understood that the query really needed to specify <code>via</code>, the CTE with <code>via</code> resulted in the exact same plan as the self-join with <code>via</code>.</p>
 <hr />
-<p>I tried to split the query into two <code>SELECT</code> queries, thinking it would be easier for the query planner to understand. It did not help performance, and it creates a consistency issue, that we have to either accept, or have to fix by adding a transaction wrapping the two queries. Strictly worse.</p>
+<p>I tried to split the query into two <code>SELECT</code> queries, thinking it would be easier for the query planner to understand. It did not help performance, and it creates a consistency issue, that we have to either accept, or fix by wrapping the two queries in a transaction. Strictly worse.</p>
 <hr />
 <p>The real query does not use <code>value = ?</code> in the <code>WHERE</code> clause, it uses <code>WHERE value in (?, ?)</code>: we pass the user-provided address as well as the normalized version of the address, and match any of the two.</p>
 <p>I initially thought that <code>IN</code> was the culprit, and tried to rewrite it into <code>WHERE value = ? OR value = ?</code>, or simply <code>WHERE value = ?</code> when the unnormalized and normalized address are identical, but it made no difference.</p>
@@ -548,7 +548,7 @@ This is a big gain in terms of latency: at around 250ms network latency between 
 <p>When using a LIMIT 1 clause (e.g. in your CTE above) the optimizer is able to take advantage of Locality Optimized Search - as soon as it finds the single row it is looking for, it stops searching for remote rows.</p>
 </blockquote>
 <p>Pretty nice optimization, that was superseded by explicitly providing <code>crdb_region</code>.</p>
-<p>This optimization by the way kicked in, in the <a href="#results">Results</a> section, when querying for an address in the local region.</p>
+<p>This optimization by the way kicked in in the <a href="#results">Results</a> section, when querying for an address in the local region.</p>
 <h2 id="what-about-other-databases">
   <a class="title" href="#what-about-other-databases">What about other databases?</a>
   <a class="hash-anchor" href="#what-about-other-databases" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>

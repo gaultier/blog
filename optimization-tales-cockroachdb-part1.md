@@ -377,7 +377,7 @@ It worked and performed a bit better than the original self-join (without `via`)
 
 ---
 
-I tried to split the query into two `SELECT` queries, thinking it would be easier for the query planner to understand. It did not help performance, and it creates a consistency issue, that we have to either accept, or have to fix by adding a transaction wrapping the two queries. Strictly worse.
+I tried to split the query into two `SELECT` queries, thinking it would be easier for the query planner to understand. It did not help performance, and it creates a consistency issue, that we have to either accept, or fix by wrapping the two queries in a transaction. Strictly worse.
 
 
 ---
@@ -395,7 +395,7 @@ When experimenting with the CTE, I observed that the performance was somehow dif
 
 Pretty nice optimization, that was superseded by explicitly providing `crdb_region`.
 
-This optimization by the way kicked in, in the [Results](#results) section, when querying for an address in the local region.
+This optimization by the way kicked in in the [Results](#results) section, when querying for an address in the local region.
 
 ## What about other databases?
 
