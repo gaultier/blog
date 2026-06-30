@@ -193,13 +193,13 @@ In CockroachDB, standard indexes are a tuple, e.g. `(nid, via, value)`. Conceptu
 ![Index](crdb_index.svg)
 
 
-To use it the most efficiently, we specify all the fields, e.g.: `WHERE nid = '1' AND via = 'email' AND value = 'zzz@accounting.com'` (the order of the fields in the query actually does not matter, the optimizer will reorder them nicely). The database can then do a 'point lookup', meaning trace a path from the root of the index to a leaf (i.e. a row):
+To use it the most efficiently, we specify all the fields, e.g.: `WHERE nid = '1' AND via = 'email' AND value = 'zzz@accounting.com'` (the order of the fields in the query actually does not matter, the optimizer will reorder them nicely). The database can then do a 'point lookup', meaning trace a path from the root of the index to a leaf (which points to a single row):
 
 
 ![Point lookup](crdb_index2.svg)
 
 
-Only one row is scanned, this is optimal. To be more precise: if the fields needed by the query are all stored in the index, no row is scanned, only the index data is used. Otherwise, the index is used to find the row id, and then the row data is scanned in the table, using the primary index. 
+Only one row maximum is scanned, this is optimal. To be more precise: if the fields needed by the query are all stored in the index, no row is scanned, only the index data is used. Otherwise, the index is used to find the row id, and then the row data is scanned in the table, using the primary index. 
 
 What happens then when only the first field in the tuple is provided, for example, only the `nid`? Well, the path in the index is very short, and all nodes underneath (the whole subtree, shown here in red) must be scanned and inspected:
 
@@ -249,7 +249,7 @@ table: identity_recovery_addresses@identity_recovery_addresses_status_via_uq_idx
 spans: [/'gcp-europe-west3'/'000e377a-062c-45b1-961c-1b28d682df6a'/'email'/'foo@bar.com' - /'gcp-europe-west3'/'000e377a-062c-45b1-961c-1b28d682df6a'/'email'/'foo@bar.com'] [/'gcp-us-east4'/'000e377a-062c-45b1-961c-1b28d682df6a'/'email'/'foo@bar.com' - /'gcp-us-east4'/'000e377a-062c-45b1-961c-1b28d682df6a'/'email'/'foo@bar.com'] [/'gcp-us-west2'/'000e377a-062c-45b1-961c-1b28d682df6a'/'email'/'foo@bar.com' - /'gcp-us-west2'/'000e377a-062c-45b1-961c-1b28d682df6a'/'email'/'foo@bar.com']
 ```
 
-It's now a point lookup! We clearly see the path: `/'gcp-us-west2'/'000e377a-062c-45b1-961c-1b28d682df6a'/'email'/'foo@bar.com'`, meaning for each region, we traverse the index using `nid` -> `via` -> `value`. And the plan even says for this first step: `actual row count: 1`. Perfect! Such a simple fix... If you know how indexes work in CockroachDB.
+It's now a point lookup! We clearly see the full path from root to leaf: `/'gcp-us-west2'/'000e377a-062c-45b1-961c-1b28d682df6a'/'email'/'foo@bar.com'`, meaning for each region, we traverse the index using `nid` -> `via` -> `value`. And the plan even says for this first step: `actual row count: 1`. Perfect! Such a simple fix... If you know how multi-column indexes work in CockroachDB.
 
 
 ### Second optimization: single region
@@ -268,7 +268,7 @@ SELECT *
    JOIN identity_recovery_addresses AS b
     ON a.identity_id = b.identity_id
     AND a.nid = b.nid
-    AND A.crdb_region = B.crdb_region -- <= Second optimization: Add `crdb_region`.
+    AND a.crdb_region = b.crdb_region -- <= Second optimization: Add `crdb_region`.
    WHERE b.value = 'foo@bar.com'
     AND b.via = 'email'  -- <= First optimization: Add `via`.
     AND a.nid = '000e377a-062c-45b1-961c-1b28d682df6a'

@@ -379,9 +379,9 @@ Do not edit it by hand.
 </h3>
 <p>In CockroachDB, standard indexes are a tuple, e.g. <code>(nid, via, value)</code>. Conceptually, this is how the index looks like, with two tenants, <code>1</code> and <code>2</code>:</p>
 <p><img src="crdb_index.svg" alt="Index" /></p>
-<p>To use it the most efficiently, we specify all the fields, e.g.: <code>WHERE nid = '1' AND via = 'email' AND value = 'zzz@accounting.com'</code> (the order of the fields in the query actually does not matter, the optimizer will reorder them nicely). The database can then do a 'point lookup', meaning trace a path from the root of the index to a leaf (i.e. a row):</p>
+<p>To use it the most efficiently, we specify all the fields, e.g.: <code>WHERE nid = '1' AND via = 'email' AND value = 'zzz@accounting.com'</code> (the order of the fields in the query actually does not matter, the optimizer will reorder them nicely). The database can then do a 'point lookup', meaning trace a path from the root of the index to a leaf (which points to a single row):</p>
 <p><img src="crdb_index2.svg" alt="Point lookup" /></p>
-<p>Only one row is scanned, this is optimal. To be more precise: if the fields needed by the query are all stored in the index, no row is scanned, only the index data is used. Otherwise, the index is used to find the row id, and then the row data is scanned in the table, using the primary index.</p>
+<p>Only one row maximum is scanned, this is optimal. To be more precise: if the fields needed by the query are all stored in the index, no row is scanned, only the index data is used. Otherwise, the index is used to find the row id, and then the row data is scanned in the table, using the primary index.</p>
 <p>What happens then when only the first field in the tuple is provided, for example, only the <code>nid</code>? Well, the path in the index is very short, and all nodes underneath (the whole subtree, shown here in red) must be scanned and inspected:</p>
 <p><img src="crdb_index4.svg" alt="Only one tuple field provided" /></p>
 <p>This is what happens to us, and it is very wasteful.</p>
@@ -418,7 +418,7 @@ Do not edit it by hand.
   <code class="language-plaintext"><span class="line-number"></span><span class="code-hl">table: identity_recovery_addresses@identity_recovery_addresses_status_via_uq_idx</span>
 <span class="line-number"></span><span class="code-hl">spans: [/'gcp-europe-west3'/'000e377a-062c-45b1-961c-1b28d682df6a'/'email'/'foo@bar.com' - /'gcp-europe-west3'/'000e377a-062c-45b1-961c-1b28d682df6a'/'email'/'foo@bar.com'] [/'gcp-us-east4'/'000e377a-062c-45b1-961c-1b28d682df6a'/'email'/'foo@bar.com' - /'gcp-us-east4'/'000e377a-062c-45b1-961c-1b28d682df6a'/'email'/'foo@bar.com'] [/'gcp-us-west2'/'000e377a-062c-45b1-961c-1b28d682df6a'/'email'/'foo@bar.com' - /'gcp-us-west2'/'000e377a-062c-45b1-961c-1b28d682df6a'/'email'/'foo@bar.com']</span>
 </code></pre>
-<p>It's now a point lookup! We clearly see the path: <code>/'gcp-us-west2'/'000e377a-062c-45b1-961c-1b28d682df6a'/'email'/'foo@bar.com'</code>, meaning for each region, we traverse the index using <code>nid</code> -&gt; <code>via</code> -&gt; <code>value</code>. And the plan even says for this first step: <code>actual row count: 1</code>. Perfect! Such a simple fix... If you know how indexes work in CockroachDB.</p>
+<p>It's now a point lookup! We clearly see the full path from root to leaf: <code>/'gcp-us-west2'/'000e377a-062c-45b1-961c-1b28d682df6a'/'email'/'foo@bar.com'</code>, meaning for each region, we traverse the index using <code>nid</code> -&gt; <code>via</code> -&gt; <code>value</code>. And the plan even says for this first step: <code>actual row count: 1</code>. Perfect! Such a simple fix... If you know how multi-column indexes work in CockroachDB.</p>
 <h3 id="second-optimization-single-region">
   <a class="title" href="#second-optimization-single-region">Second optimization: single region</a>
   <a class="hash-anchor" href="#second-optimization-single-region" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -437,7 +437,7 @@ This is a big gain in terms of latency: at around 250ms network latency between 
 <span class="line-number"></span><span class="code-hl">   JOIN identity_recovery_addresses AS b</span>
 <span class="line-number"></span><span class="code-hl">    ON a.identity_id = b.identity_id</span>
 <span class="line-number"></span><span class="code-hl">    AND a.nid = b.nid</span>
-<span class="line-number"></span><span class="code-hl">    AND A.crdb_region = B.crdb_region -- &lt;= Second optimization: Add `crdb_region`.</span>
+<span class="line-number"></span><span class="code-hl">    AND a.crdb_region = b.crdb_region -- &lt;= Second optimization: Add `crdb_region`.</span>
 <span class="line-number"></span><span class="code-hl">   WHERE b.value = 'foo@bar.com'</span>
 <span class="line-number"></span><span class="code-hl">    AND b.via = 'email'  -- &lt;= First optimization: Add `via`.</span>
 <span class="line-number"></span><span class="code-hl">    AND a.nid = '000e377a-062c-45b1-961c-1b28d682df6a'</span>
