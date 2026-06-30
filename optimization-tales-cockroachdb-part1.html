@@ -156,6 +156,24 @@ Do not edit it by hand.
 </h2>
 <p>The software is <a href="https://github.com/ory/kratos">Kratos</a>, a widely used authentication and identity management service. Users of this software are humans. Humans often register with an email and password (Kratos also supports passwordless schemes such as passkeys, webauthn, etc, but the proverbial email+password approach remains very much in use). Humans also tend to forget their password. That's why Kratos like any identity management service worth its salt, supports password recovery.</p>
 <p>The user enter one of their addresses (email, phone number, etc), and if this address is in the system, a list of masked addresses is shown to them, they pick one, and a recovery link or code is sent to them on that address. Using that link or code, they can setup a new password. Pretty standard.</p>
+<p>The table looks like this (showing only relevant fields):</p>
+<pre>
+  <div class="code-header">
+    <span>Sql</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-sql"><span class="line-number"></span><span class="code-hl">CREATE TABLE public.identity_recovery_addresses (</span>
+<span class="line-number"></span><span class="code-hl">    id UUID NOT NULL,</span>
+<span class="line-number"></span><span class="code-hl">    via VARCHAR(16) NOT NULL,        -- 'email' or 'sms'</span>
+<span class="line-number"></span><span class="code-hl">    value VARCHAR(400) NOT NULL,     -- 'foo@bar.com' or '+49123456789'</span>
+<span class="line-number"></span><span class="code-hl">    identity_id UUID NOT NULL,       -- the identity (i.e. account) id</span>
+<span class="line-number"></span><span class="code-hl">    nid UUID NULL,                   -- the tenant id</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">    CONSTRAINT identity_recovery_addresses_pkey PRIMARY KEY (identity_id ASC, id ASC),</span>
+<span class="line-number"></span><span class="code-hl">    UNIQUE INDEX identity_recovery_addresses_status_via_uq_idx (nid ASC, via ASC, value ASC),</span>
+<span class="line-number"></span><span class="code-hl">    UNIQUE INDEX identity_recovery_addresses_id_key (id ASC),</span>
+<span class="line-number"></span><span class="code-hl">);</span>
+</code></pre>
 <p>This is done with one SQL query (slightly simplified from the real one):</p>
 <pre>
   <div class="code-header">
@@ -163,34 +181,37 @@ Do not edit it by hand.
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
   <code class="language-sql"><span class="line-number"></span><span class="code-hl">SELECT *</span>
-<span class="line-number"></span><span class="code-hl"> FROM identity_recovery_addresses AS a</span>
-<span class="line-number"></span><span class="code-hl">   JOIN identity_recovery_addresses AS b</span>
-<span class="line-number"></span><span class="code-hl">    ON a.identity_id = b.identity_id</span>
-<span class="line-number"></span><span class="code-hl">    AND a.nid = b.nid</span>
-<span class="line-number"></span><span class="code-hl">   WHERE b.value = ?</span>
-<span class="line-number"></span><span class="code-hl">    AND a.nid = ?</span>
+<span class="line-number"></span><span class="code-hl">FROM identity_recovery_addresses AS a</span>
+<span class="line-number"></span><span class="code-hl">JOIN identity_recovery_addresses AS b</span>
+<span class="line-number"></span><span class="code-hl">ON a.identity_id = b.identity_id</span>
+<span class="line-number"></span><span class="code-hl">  AND a.nid = b.nid</span>
+<span class="line-number"></span><span class="code-hl">WHERE b.value = ?</span>
+<span class="line-number"></span><span class="code-hl">  AND a.nid = ?</span>
+<span class="line-number"></span><span class="code-hl">LIMIT 10</span>
 </code></pre>
 <p><em>Kratos supports multi-tenancy, so each tenant as an id called <code>nid</code>, each row stores <code>nid</code>, and each query clause contains <code>WHERE nid = ?</code> to isolate each tenant. But this is a non factor: we know the tenant id from the start since each tenant has its own subdomain(s), so for this query, the <code>nid</code> is effectively a constant.</em></p>
-<p>The approach is relatively straightforward with a self-join:</p>
-<ul>
+<p>The approach is relatively straightforward with a self-join, that can be understood as two queries:</p>
+<ol>
 <li>Given the tenant id (<code>nid</code>) and the provided address, for example <code>foo@bar.com</code>, find the identity (i.e. the user account) for it.</li>
-<li><p>Now that we have the identity id, find all addresses for that identity (<code>ON a.identity_id = b.identity_id</code>):</p>
+<li>Now that we have the identity id, find all addresses for that identity (<code>ON a.identity_id = b.identity_id</code>):</li>
+</ol>
 <pre>
   <div class="code-header">
     <span>Sql</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-sql"><span class="line-number"></span><span class="code-hl">  SELECT *</span>
-<span class="line-number"></span><span class="code-hl">   FROM identity_recovery_addresses AS a</span>
-<span class="line-number"></span><span class="code-hl">     JOIN identity_recovery_addresses AS b</span>
-<span class="line-number"></span><span class="code-hl">      ON a.identity_id = b.identity_id</span>
-<span class="line-number"></span><span class="code-hl">      AND a.nid = b.nid</span>
-<span class="line-number"></span><span class="code-hl">     WHERE b.value = 'foo@bar.com'</span>
-<span class="line-number"></span><span class="code-hl">      AND a.nid = '000e377a-062c-45b1-961c-1b28d682df6a'</span>
+  <code class="language-sql"><span class="line-number"></span><span class="code-hl">SELECT *</span>
+<span class="line-number"></span><span class="code-hl">FROM identity_recovery_addresses AS a</span>
+<span class="line-number"></span><span class="code-hl">JOIN identity_recovery_addresses AS b</span>
+<span class="line-number"></span><span class="code-hl">  ON a.identity_id = b.identity_id</span>
+<span class="line-number"></span><span class="code-hl">  AND a.nid = b.nid</span>
+<span class="line-number"></span><span class="code-hl">WHERE b.value = 'foo@bar.com'</span>
+<span class="line-number"></span><span class="code-hl">  AND a.nid = '000e377a-062c-45b1-961c-1b28d682df6a'</span>
+<span class="line-number"></span><span class="code-hl">LIMIT 10</span>
 </code></pre>
-</li>
+<ol start="3">
 <li>Return the list of addresses for that identity , up to 10, because we do not expect a user to have more than a handful.</li>
-</ul>
+</ol>
 <p>Now, Kratos can show the list of masked addresses e.g. <code>+15234****56</code> if it's a phone number, or <code>foo@****.com</code> if it's an email address. The masking logic is pretty smart so accidental information disclosure is avoided. Kratos also pretends to send the recovery link/code to a non-existing address, so that it's not possible for an attacker to probe a website for certain addresses. The last point can actually have real life consequences in certain countries for certain websites, e.g. LGBT ones.</p>
 <p>(Always remember that your code can impact lives).</p>
 <p>Anyways, I am the one who actually wrote this query some months ago and I remember confirming in production that the query plan was sensical.</p>
@@ -318,13 +339,13 @@ Do not edit it by hand.
 </table>
 
 
-<p>Immediately the metrics that jump out to me (and to my CTO) are:</p>
+<p>Immediately the metrics that jump out to me (and did to my CTO) are:</p>
 <ul>
-<li>Rows read: millions. This is simply not tenable, as mentioned, we expect ~10.</li>
-<li>SQL CPU time: 144ms: Normal queries take &lt;1ms in CPU. This shows that a lot of rows are loaded in memory and processed somehow. This is also not scalable.</li>
+<li>Rows read: millions. This is simply not tenable, as mentioned, we expect ~10. Due to the <code>LIMIT 10</code>, we are immediately throwing out 99.99% of the read rows, this is pure waste.</li>
+<li>SQL CPU time: 144ms: Normal queries take &lt;1ms in CPU. This shows that a lot of rows are loaded in memory and processed somehow. This is also not scalable and impacts all other queries in this database.</li>
 </ul>
 <p>The other metrics are interesting but less important at the moment. For example, there is a relatively large number of retries and contention time. They probably are a by-product of the millons of rows scanned. Since looking for all recovery addresses of one identity (i.e. user) scans (but does not return) unrelated rows, it creates unintentional, and unneeded, contention on these rows.</p>
-<p>The next step is to inspect the plan being used in production using <code>EXPLAIN ANALYZE &lt;query&gt;</code>, or for even more details: <code>EXPLAIN ANALYZE (debug) &lt;query&gt;</code>.</p>
+<p>The next step is to inspect the plan being used in production using <code>EXPLAIN ANALYZE &lt;query&gt;</code>, or for even more details (specific to CockroachDB): <code>EXPLAIN ANALYZE (debug) &lt;query&gt;</code>.</p>
 <h3 id="plan">
   <a class="title" href="#plan">Plan</a>
   <a class="hash-anchor" href="#plan" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>

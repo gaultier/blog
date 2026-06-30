@@ -33,35 +33,54 @@ The software is [Kratos](https://github.com/ory/kratos), a widely used authentic
 The user enter one of their addresses (email, phone number, etc), and if this address is in the system, a list of masked addresses is shown to them, they pick one, and a recovery link or code is sent to them on that address. Using that link or code, they can setup a new password. Pretty standard.
 
 
+The table looks like this (showing only relevant fields):
+
+```sql
+CREATE TABLE public.identity_recovery_addresses (
+    id UUID NOT NULL,
+    via VARCHAR(16) NOT NULL,        -- 'email' or 'sms'
+    value VARCHAR(400) NOT NULL,     -- 'foo@bar.com' or '+49123456789'
+    identity_id UUID NOT NULL,       -- the identity (i.e. account) id
+    nid UUID NULL,                   -- the tenant id
+
+    CONSTRAINT identity_recovery_addresses_pkey PRIMARY KEY (identity_id ASC, id ASC),
+    UNIQUE INDEX identity_recovery_addresses_status_via_uq_idx (nid ASC, via ASC, value ASC),
+    UNIQUE INDEX identity_recovery_addresses_id_key (id ASC),
+);
+```
+
+
 This is done with one SQL query (slightly simplified from the real one):
 
 
 ```sql
 SELECT *
- FROM identity_recovery_addresses AS a
-   JOIN identity_recovery_addresses AS b
-    ON a.identity_id = b.identity_id
-    AND a.nid = b.nid
-   WHERE b.value = ?
-    AND a.nid = ?
+FROM identity_recovery_addresses AS a
+JOIN identity_recovery_addresses AS b
+ON a.identity_id = b.identity_id
+  AND a.nid = b.nid
+WHERE b.value = ?
+  AND a.nid = ?
+LIMIT 10
 ```
 
 *Kratos supports multi-tenancy, so each tenant as an id called `nid`, each row stores `nid`, and each query clause contains `WHERE nid = ?` to isolate each tenant. But this is a non factor: we know the tenant id from the start since each tenant has its own subdomain(s), so for this query, the `nid` is effectively a constant.*
 
-The approach is relatively straightforward with a self-join:
+The approach is relatively straightforward with a self-join, that can be understood as two queries:
 
-- Given the tenant id (`nid`) and the provided address, for example `foo@bar.com`, find the identity (i.e. the user account) for it.
-- Now that we have the identity id, find all addresses for that identity (`ON a.identity_id = b.identity_id`):
+1. Given the tenant id (`nid`) and the provided address, for example `foo@bar.com`, find the identity (i.e. the user account) for it.
+2. Now that we have the identity id, find all addresses for that identity (`ON a.identity_id = b.identity_id`):
   ```sql
-    SELECT *
-     FROM identity_recovery_addresses AS a
-       JOIN identity_recovery_addresses AS b
-        ON a.identity_id = b.identity_id
-        AND a.nid = b.nid
-       WHERE b.value = 'foo@bar.com'
-        AND a.nid = '000e377a-062c-45b1-961c-1b28d682df6a'
+  SELECT *
+  FROM identity_recovery_addresses AS a
+  JOIN identity_recovery_addresses AS b
+    ON a.identity_id = b.identity_id
+    AND a.nid = b.nid
+  WHERE b.value = 'foo@bar.com'
+    AND a.nid = '000e377a-062c-45b1-961c-1b28d682df6a'
+  LIMIT 10
   ```
-- Return the list of addresses for that identity , up to 10, because we do not expect a user to have more than a handful.
+3. Return the list of addresses for that identity , up to 10, because we do not expect a user to have more than a handful.
 
 Now, Kratos can show the list of masked addresses e.g. `+15234****56` if it's a phone number, or `foo@****.com` if it's an email address. The masking logic is pretty smart so accidental information disclosure is avoided. Kratos also pretends to send the recovery link/code to a non-existing address, so that it's not possible for an attacker to probe a website for certain addresses. The last point can actually have real life consequences in certain countries for certain websites, e.g. LGBT ones. 
 
@@ -120,10 +139,10 @@ The CTO actually linked in its original message a link to the statement in the C
 | SQL CPU Time | CPU (s) | ~1.3 s (spike) | Baseline ~0.2–0.4 s |
 
 
-Immediately the metrics that jump out to me (and to my CTO) are:
+Immediately the metrics that jump out to me (and did to my CTO) are:
 
-- Rows read: millions. This is simply not tenable, as mentioned, we expect ~10.
-- SQL CPU time: 144ms: Normal queries take <1ms in CPU. This shows that a lot of rows are loaded in memory and processed somehow. This is also not scalable.
+- Rows read: millions. This is simply not tenable, as mentioned, we expect ~10. Due to the `LIMIT 10`, we are immediately throwing out 99.99% of the read rows, this is pure waste.
+- SQL CPU time: 144ms: Normal queries take <1ms in CPU. This shows that a lot of rows are loaded in memory and processed somehow. This is also not scalable and impacts all other queries in this database.
 
 The other metrics are interesting but less important at the moment. For example, there is a relatively large number of retries and contention time. They probably are a by-product of the millons of rows scanned. Since looking for all recovery addresses of one identity (i.e. user) scans (but does not return) unrelated rows, it creates unintentional, and unneeded, contention on these rows.
 
@@ -131,8 +150,7 @@ The other metrics are interesting but less important at the moment. For example,
 
 
 
-
-The next step is to inspect the plan being used in production using `EXPLAIN ANALYZE <query>`, or for even more details: `EXPLAIN ANALYZE (debug) <query>`.
+The next step is to inspect the plan being used in production using `EXPLAIN ANALYZE <query>`, or for even more details (specific to CockroachDB): `EXPLAIN ANALYZE (debug) <query>`.
 
 ### Plan
 
