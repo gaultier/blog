@@ -174,9 +174,8 @@ But there is a problem. Can you spot it? Unless you are an advanced CockroachDB 
 I'll explain the plan in layman's terms. This is what the query planner is doing, when a user enters `foo@bar.com` in the recovery screen:
 
 1. Fan out to each region (this is fine and required). In each region:
-    1. Find the row with the address `foo@bar.com`. It is linked to an identity (`identity_id`) and a tenant (`nid`).
-    1. Load all rows for this tenant in memory
-    1. Filter these rows in memory where the `identity_id` is the one found in step 1.1. Throw out the rest.
+    1. Find the row with the address `foo@bar.com` and tenant id `<nid>`. Due to how the index works, that actually means: Load all rows for this tenant in memory, then: Filter these rows in memory where the value is `foo@bar.com`. Throw out the rest.
+    1. Now that we have found a matching row, we know the identity id. Find all rows with this identity id. This part is actually fast due to the primary key.
 
 So each time a user wants to reset their password, we load all recovery addresses of all users for this tenant, in memory. That is really not great and becomes worse and worse over time. 
 
