@@ -206,7 +206,7 @@ What happens then when only the first field in the tuple is provided, for exampl
 This is what happens to us, and it is very wasteful.
 
 
-But wait, we *do* provide more than the `nid`: we provide the address! In fact, that's the only thing the user provides! So how come it was not used, and all rows for the tenant were loaded? Well, there's more: the order of the fields in the tuple also matters. So for a tuple `(A, B, C)`, if we only provide `A` and `C`, it is as if we only provided `A`, and then we load every element underneath `A`. 
+But wait, we *do* provide more than the `nid`: we provide the address! In fact, that's the only thing the user provides! So how come it was not used, and all rows for the tenant were loaded? Well, there's more: the order of the fields in the tuple also matters. So for a tuple `(A, B, C)`, if we only provide `A` and `C`, it is as if (to over-simplify) we only provided `A`, and then we load every element underneath `A`. 
 
 
 
@@ -438,7 +438,7 @@ Many metrics matter, not only query latency: rows scanned (especially in a cloud
 We also know that each index has to bear its weight, because it slows down every write, and might even end up unused by the query planner, thus being dead weight.
 
 
-"Just provide in the `WHERE` clause of the query all the values you know up front" is *not* good advice: It worked here with `via` because of the tuple nature of indexes in CockroachDB and because `via` was the middle field in this tuple. But over-specifying the `WHERE` clause in the query can and will lead the query planner to worse plans, because the optimal index might not contain the extra fields you just added to the clause.
+"Just provide in the `WHERE` clause of the query all the values you know up front" is *not* good advice: It worked here with `via` because of the tuple nature of indexes in CockroachDB and because `via` was the middle field in this tuple. But over-specifying the `WHERE` clause in the query can lead the query planner to pick a worse plan, because the optimal index might not contain the extra fields you just added to the clause. In the worst case, it will cause an extra cross-region round-trip (200ms latency)!
 
 
 A query that performs ok now, might become a big problem later, when the table grows, or the data characteristics change, or the query planner decides to do something completely different today. Actually, I initially tested my optimizations in staging, and I see completely different plans and latencies from production, due to the data being much smaller or simply differently varied.
