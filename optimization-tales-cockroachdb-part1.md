@@ -280,7 +280,7 @@ From the plan, we now see that the only time we fan-out to all regions is in the
 ### Third optimization: only query needed columns
 
 
-In the original query we fetched all table columns. But I then realized that we only ever need to fetch and return the `value` column (the address) because this is what gets returned to the user browser to let them pick which address to receive the recovery link/code on.
+In the original query we fetched all table columns. But I then realized that we only ever need to fetch and return the `value` column (the address) because this is what gets returned to the user browser to let them pick which address to receive the recovery link/code on. It's wasteful to query all columns and immediately throw them all away, except one.
 
 So this is a simple change:
 
@@ -295,7 +295,7 @@ I was mildly surprised to see no change in latency from that. After inspecting t
 However, some databases (e.g. PostgreSQL) work otherwise: the leaf in the primary index does *not* store the whole row, only the indexed columns, and selecting all columns *would* force an extra fetch, when a column is not part of the index. For these databases, we could add a new covering index to make it store the `value` column: `CREATE INDEX idx ON identity_recovery_addresses (identity_id) INCLUDE (value)` to avoid that final extra fetch.  This would make every `INSERT` a bit more costly because we have to store one extra field, so we would first need to judge if our workload is write-heavy or read-heavy to decide if the tradeoff is worth it.
 
 
-Still, with this optimization, we:
+Still, by only querying the column we do need, we:
 
 - reduce the bytes sent over the network from the database to Kratos
 - reduce the bytes sent over the network from Kratos to the user browser
@@ -307,7 +307,7 @@ So even if it's a small win, it is still a win.
 
 ## Final results
 
-Let's observe the latency of this query in production during the deployment of the fix:
+Let's observe the latency of this query in production during the deployment of the fix as a histogram:
 
 ![Results](crdb_recovery_addresses_3.png)
 
@@ -316,7 +316,7 @@ It went from a consistent 1-2s to typically < 0.5s. All of the time is spent wai
 More importantly, it completely disappeared from the top 10000 queries in terms of CPU time or rows scanned.
 
 
-By revamping the indexes and being very multi-region aware, we could reduce the latency further, but it's already 'good enough'. See the conclusion for a discussion about what 'good enough' means.
+By revamping the indexes and being very multi-region aware, we could reduce the latency further, but it's already 'good enough'. See the [conclusion](#conclusion) for a discussion about what 'good enough' means.
 
 
 Let's measure the final query in production in the worst case: a tenant that has 47 million recovery addresses, and we query from a different region (so that we have to pay for the cross-region latency): 
@@ -377,7 +377,7 @@ It worked and performed a bit better than the original self-join (without `via`)
 
 ---
 
-I tried to split the query into two queries, thinking it would be easier for the query planner to understand. It did not help.
+I tried to split the query into two `SELECT` queries, thinking it would be easier for the query planner to understand. It did not help performance, and it creates a consistency issue, that we have to either accept, or have to fix by adding a transaction wrapping the two queries. Strictly worse.
 
 
 ---
@@ -394,6 +394,8 @@ When experimenting with the CTE, I observed that the performance was somehow dif
 > When using a LIMIT 1 clause (e.g. in your CTE above) the optimizer is able to take advantage of Locality Optimized Search - as soon as it finds the single row it is looking for, it stops searching for remote rows.
 
 Pretty nice optimization, that was superseded by explicitly providing `crdb_region`.
+
+This optimization by the way kicked in, in the [Results](#results) section, when querying for an address in the local region.
 
 ## What about other databases?
 
@@ -416,7 +418,7 @@ However, [PostgreSQL 18](https://www.postgresql.org/docs/current/indexes-multico
 > For example, given an index on (x, y), and a query condition WHERE y = 7700, a B-tree index scan might be able to apply the skip scan optimization. This generally happens when the query planner expects that repeated WHERE x = N AND y = 7700 searches for every possible value of N (or for every x value that is actually stored in the index) is the fastest possible approach, given the available indexes on the table. This approach is generally only taken when there are so few distinct x values that the planner expects the scan to skip over most of the index (because most of its leaf pages cannot possibly contain relevant tuples). If there are many distinct x values, then the entire index will have to be scanned, so in most cases the planner will prefer a sequential table scan over using the index.
 
 
-So in this particular case, I think PostgreSQL 18 would perform better than other databases with the original query.
+So in this particular case, I think PostgreSQL 18 might perform better than other databases with the original query.
 
 
 ## Future avenues
@@ -437,27 +439,29 @@ A surface level lesson would be: all SQL performance problems are due to not usi
 
 Relational databases are very complex beasts and CockroachDB is one of the most powerful and complex ones out there, especially in its multi-region setup. Know your database, read the docs, ask the developers if that's an option. There is no such thing as 'a SQL database' - every SQL database behaves wildly differently from the others.
 
-Many metrics matter, not only query latency: rows scanned (especially in a cloud environment, IOps are precious!), database CPU time, memory, max latency, cross-regions round-trips, contention time, etc. Keep a watchful eye on queries that rank the worst for these metrics, but also keep in mind that some metrics affect others - e.g. in our case, contention time and subsequent retries were artificially inflated by the suboptimal plan scanning too many rows. Regularly revisit these findings: they change over time. I commend CockroachDB there because it exposes all of these metrics in a pretty dashboard. The only downside is that using it, you know which queries are problematic, and for which metric, but you're still far away from a good explanation, and remedy.
+Many metrics matter, not only query latency: rows scanned (especially in a cloud environment, IOps are precious and costly!), database CPU time, memory, max latency, cross-regions round-trips, contention time, etc. Keep a watchful eye on queries that rank the worst for these metrics, but also keep in mind that some metrics affect others - e.g. in our case, contention time and subsequent retries were likely artificially inflated by the suboptimal plan scanning too many rows. 
+
+Regularly revisit these findings: they change over time. I commend CockroachDB there because it exposes all of these metrics in a pretty dashboard, and even more in some internal tables. The only downside is that using this data, you know which queries are problematic, and which metric is out of line, but you're still far away from a good explanation and remedy.
 
 We also know that each index has to bear its weight, because it slows down every write, and might even end up unused by the query planner, thus being dead weight.
 
 Only looking at the plan (`EXPLAIN`) is not enough; observing the execution of the query (`EXPLAIN ANALYZE`) is better because it shows important runtime metrics (e.g. rows scanned).
 
 
-"Just provide in the `WHERE` clause of the query all the values you know up front" is *not* good advice: It worked here with `via` because of the tuple nature of indexes in CockroachDB and because `via` was the middle field in this tuple. But over-specifying the `WHERE` clause in the query can lead the query planner to pick a worse plan, because the optimal index might not contain the extra fields you just added to the clause. In the worst case, it will cause an extra cross-region round-trip (200ms latency)!
+"Just provide in the `WHERE` clause of the query all the values you know up front" is *not* good general advice: It worked here with `via` because of the way multi-column indexes work, and because `via` was the middle field in this index. But over-specifying the `WHERE` clause in the query can lead the query planner to pick a worse plan, because the optimal index might not contain the extra fields you just added to the clause. In the worst case, it will cause an extra cross-region round-trip (200ms latency)!
 
 
-A query that performs ok now, might become a big problem later, when the table grows, or the data characteristics change, or the query planner decides to do something completely different today. Actually, I initially tested my optimizations in staging, and I see completely different plans and latencies from production, due to the data being much smaller or simply differently varied.
+A query that performs ok now, might become a big problem later, when the table grows, or the data characteristics change, or the query planner decides to do something completely different today. Actually, I initially tested my optimizations in staging, and I saw completely different plans and latencies from production, due to the data being much smaller or simply differently varied (use `SHOW STATISTICS FOR TABLE <table>`).
 
 
 After a potential optimization has been applied, always follow-up to see if it made things better, worse, or the same. You'd be surprised. If it's worse or the same, it's still useful data to refine your understanding of the situation. If things improved, make it an announcement, it's good for morale!
 
 
-Finally, when starting with any kind of optimization, you have to establish three main things: 
+Finally, when starting with any kind of optimization, I think you have to establish three main things: 
 
-- Is it a problem now, and will it worsen over time? (In our case, yes, and yes)
-- What am I optimizing for? (CPU, latency, memory, contention time, number of retries, throughput, etc).
-- When am I done? (What is an acceptable performance budget?)
+- Is it a real problem now (or is it just nerd sniping), and will it worsen over time? In our case, yes, and yes.
+- What am I optimizing for? CPU, latency, memory, contention time, number of retries, throughput, etc. In our case: rows scanned, mainly.
+- When am I done? What is an acceptable performance budget? In our case: ~10 rows scanned.
 
 For the recovery flow, latency (or throughput for that matter) do not *really* matter: whether it takes 1ms or 5s is *fine*. I say this as a performance ~junkie~ advocate! I hate slow software! But for user driven, rarely performed actions, a handful of seconds is ok! What is not ok is creating humongous load on the database for no reason, which impacts every action in the system. That was my goal: reduce rows scanned to <10 and CPU time to <10ms. Reducing latency is a nice side-effect.
 
