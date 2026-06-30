@@ -477,6 +477,37 @@ This is a big gain in terms of latency: at around 250ms network latency between 
 <p>Latency for this query went from a consistent 1-2s to always &lt; 0.5s. All of the time is spent waiting on the network (due to cross-region latency).</p>
 <p>More importantly, it completely disappeared from the top 10000 queries in terms of CPU time or rows scanned.</p>
 <p>By revamping the indexes and being very multi-region aware, we could reduce the latency further, but it's already 'good enough'. See the conclusion for a discussion about what 'good enough' means.</p>
+<p>Let's measure the final query in production in the worst case: a tenant that has 47 million recovery addresses, and we query from a different region (so that we have to pay for the cross-region latency):</p>
+<pre>
+  <div class="code-header">
+    <span>Plaintext</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-plaintext"><span class="line-number"></span><span class="code-hl">planning time: 2ms</span>
+<span class="line-number"></span><span class="code-hl">execution time: 912ms</span>
+<span class="line-number"></span><span class="code-hl">rows decoded from KV: 4 (406 B, 5 gRPC calls)</span>
+<span class="line-number"></span><span class="code-hl">cumulative time spent in KV: 911ms</span>
+<span class="line-number"></span><span class="code-hl">maximum memory usage: 140 KiB</span>
+<span class="line-number"></span><span class="code-hl">sql cpu time: 337µs</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">Time: 1.180s total (execution 0.914s / network 0.265s)</span>
+</code></pre>
+<p>When we are in the favorable case of the same region, latency is really good:</p>
+<pre>
+  <div class="code-header">
+    <span>Plaintext</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-plaintext"><span class="line-number"></span><span class="code-hl">planning time: 2ms</span>
+<span class="line-number"></span><span class="code-hl">execution time: 3ms</span>
+<span class="line-number"></span><span class="code-hl">rows decoded from KV: 4 (406 B, 4 gRPC calls)</span>
+<span class="line-number"></span><span class="code-hl">cumulative time spent in KV: 3ms</span>
+<span class="line-number"></span><span class="code-hl">maximum memory usage: 160 KiB</span>
+<span class="line-number"></span><span class="code-hl">sql cpu time: 211µs</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">Time: 26ms total (execution 5ms / network 20ms)</span>
+</code></pre>
 <h2 id="things-i-have-tried-to-little-effect">
   <a class="title" href="#things-i-have-tried-to-little-effect">Things I have tried to little effect</a>
   <a class="hash-anchor" href="#things-i-have-tried-to-little-effect" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>

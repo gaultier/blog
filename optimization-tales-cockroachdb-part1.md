@@ -314,6 +314,36 @@ More importantly, it completely disappeared from the top 10000 queries in terms 
 
 By revamping the indexes and being very multi-region aware, we could reduce the latency further, but it's already 'good enough'. See the conclusion for a discussion about what 'good enough' means.
 
+
+Let's measure the final query in production in the worst case: a tenant that has 47 million recovery addresses, and we query from a different region (so that we have to pay for the cross-region latency): 
+
+```plaintext
+planning time: 2ms
+execution time: 912ms
+rows decoded from KV: 4 (406 B, 5 gRPC calls)
+cumulative time spent in KV: 911ms
+maximum memory usage: 140 KiB
+sql cpu time: 337µs
+
+
+Time: 1.180s total (execution 0.914s / network 0.265s)
+```
+
+When we are in the favorable case of the same region, latency is really good:
+
+```plaintext
+planning time: 2ms
+execution time: 3ms
+rows decoded from KV: 4 (406 B, 4 gRPC calls)
+cumulative time spent in KV: 3ms
+maximum memory usage: 160 KiB
+sql cpu time: 211µs
+
+Time: 26ms total (execution 5ms / network 20ms)
+```
+
+
+
 ## Things I have tried to little effect
 
 I initially tried to restructure the original self-join into a CTE that does not specify `via`:
