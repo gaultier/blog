@@ -10,7 +10,8 @@ It all started one morning. I opened Slack as usual to start my working day, onl
 To which engineers replied:
 
 > The plan looks ok IMHO, indices are being used:
-> <copy pasted production plan>
+>
+> [copy pasted production plan]
 
 And the CTO answering:
 
@@ -31,7 +32,7 @@ This query actually runs against all 4 databases we support (SQLite, PostgreSQL,
 
 The software is [Kratos](https://github.com/ory/kratos), a widely used authentication and identity management service. Users of this software are humans. Humans often register with an email and password (Kratos also supports passwordless schemes such as passkeys, WebAuthn, etc, but the proverbial email+password approach remains very much in use). Humans also tend to forget their password. That's why Kratos like any identity management service worth its salt, supports password recovery. 
 
-The user enters one of their addresses (email, phone number, etc), and if this address is in the system, a list of masked addresses is shown to them, they pick one, and a recovery link or code is sent to them on that address. Using that link or code, they can setup a new password. Pretty standard:
+The user enters one of their addresses (email, phone number, etc), a list of their masked addresses is shown to them, they pick one, and a recovery link or code is sent to them on that address. Using that link or code, they can setup a new password. Pretty standard:
 
 ![Account recovery](recovery.png)
 
@@ -53,7 +54,7 @@ CREATE TABLE public.identity_recovery_addresses (
 ```
 
 
-This is done with one SQL query (slightly simplified from the real one):
+This is done with one SQL query (slightly simplified from the [real one](https://github.com/ory/kratos/commit/c445e40e077ef5aeeedd6642830aba4fc6e36845)):
 
 
 ```sql
@@ -165,7 +166,7 @@ The first thing the query does is this:
  spans: [/'gcp-asia-northeast1'/'000e377a-062c-45b1-961c-1b28d682df6a' - /'gcp-asia-northeast1'/'000e377a-062c-45b1-961c-1b28d682df6a'] [/'gcp-europe-west3'/'000e377a-062c-45b1-961c-1b28d682df6a' - /'gcp-europe-west3'/'000e377a-062c-45b1-961c-1b28d682df6a'] [/'gcp-us-east4'/'000e377a-062c-45b1-961c-1b28d682df6a' - /'gcp-us-east4'/'000e377a-062c-45b1-961c-1b28d682df6a'] [/'gcp-us-west2'/'000e377a-062c-45b1-961c-1b28d682df6a' - /'gcp-us-west2'/'000e377a-062c-45b1-961c-1b28d682df6a']
 ```
 
-We see that it is using the right index `identity_recovery_addresses_status_via_uq_idx (nid ASC, via ASC, value ASC)`. We see that it fans-out to every region: Asia, Europe, US, etc. This is expected: we originally do not know in which region the identity is stored, so we have to ask every region in parallel.
+We see that it is using the right index `identity_recovery_addresses_status_via_uq_idx (nid ASC, via ASC, value ASC)`. We notice that it fans-out to every region: Asia, Europe, US, etc. This is expected: we originally do not know in which region the identity is stored, so we have to ask every region in parallel.
 
 
 But there is a problem. Can you spot it? Unless you are an advanced CockroachDB user, I'd be surprised if you do. I know I did not spot anything at first.
@@ -186,13 +187,13 @@ This explains the high latency and CPU usage!
 ### Why?
 
 
-In CockroachDB, indexes are a tuple, e.g. `(nid, via, value)`. Conceptually, this is how the index looks like, with two tenants, `1` and `2`:
+In CockroachDB, standard indexes are a tuple, e.g. `(nid, via, value)`. Conceptually, this is how the index looks like, with two tenants, `1` and `2`:
 
 
 ![Index](crdb_index.svg)
 
 
-To use it the most efficiently, we specify all the fields, e.g.: `WHERE nid = '1' AND via = 'email' AND value = zzz@accounting.com`. The database can then do a 'point lookup', meaning trace a path from the root of the index to a leaf (i.e. a row):
+To use it the most efficiently, we specify all the fields, e.g.: `WHERE nid = '1' AND via = 'email' AND value = 'zzz@accounting.com'` (the order of the fields in the query actually does not matter, the optimizer will reorder them nicely). The database can then do a 'point lookup', meaning trace a path from the root of the index to a leaf (i.e. a row):
 
 
 ![Point lookup](crdb_index2.svg)
@@ -439,6 +440,8 @@ Relational databases are very complex beasts and CockroachDB is one of the most 
 Many metrics matter, not only query latency: rows scanned (especially in a cloud environment, IOps are precious!), database CPU time, memory, max latency, cross-regions round-trips, contention time, etc. Keep a watchful eye on queries that rank the worst for these metrics, but also keep in mind that some metrics affect others - e.g. in our case, contention time and subsequent retries were artificially inflated by the suboptimal plan scanning too many rows. Regularly revisit these findings: they change over time. I commend CockroachDB there because it exposes all of these metrics in a pretty dashboard. The only downside is that using it, you know which queries are problematic, and for which metric, but you're still far away from a good explanation, and remedy.
 
 We also know that each index has to bear its weight, because it slows down every write, and might even end up unused by the query planner, thus being dead weight.
+
+Only looking at the plan (`EXPLAIN`) is not enough; observing the execution of the query (`EXPLAIN ANALYZE`) is better because it shows important runtime metrics (e.g. rows scanned).
 
 
 "Just provide in the `WHERE` clause of the query all the values you know up front" is *not* good advice: It worked here with `via` because of the tuple nature of indexes in CockroachDB and because `via` was the middle field in this tuple. But over-specifying the `WHERE` clause in the query can lead the query planner to pick a worse plan, because the optimal index might not contain the extra fields you just added to the clause. In the worst case, it will cause an extra cross-region round-trip (200ms latency)!

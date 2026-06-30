@@ -171,6 +171,8 @@ img, video {
   max-width: 1200px;
   display: block;
   margin: 0 auto;
+  margin-top: 2rem;
+  margin-bottom: 2rem;
 }
 
 hr {
