@@ -28,7 +28,7 @@ This query actually runs against all 4 databases we support (SQLite, PostgreSQL,
 
 ## The context
 
-The software is [Kratos](https://github.com/ory/kratos), a widely used authentication and identity management service. Users of this software are humans. Humans often register with an email and password (Kratos also supports passwordless schemes such as passkeys, webauthn, etc, but the proverbial email+password approach remains very much in use). Humans also tend to forget their password. That's why Kratos like any identity management service worth its salt, supports password recovery. 
+The software is [Kratos](https://github.com/ory/kratos), a widely used authentication and identity management service. Users of this software are humans. Humans often register with an email and password (Kratos also supports passwordless schemes such as passkeys, WebAuthn, etc, but the proverbial email+password approach remains very much in use). Humans also tend to forget their password. That's why Kratos like any identity management service worth its salt, supports password recovery. 
 
 The user enter one of their addresses (email, phone number, etc), and if this address is in the system, a list of masked addresses is shown to them, they pick one, and a recovery link or code is sent to them on that address. Using that link or code, they can setup a new password. Pretty standard:
 
@@ -145,7 +145,7 @@ Immediately the metrics that jump out to me (and did to my CTO) are:
 - Rows read: 2 millions. This is simply not tenable, as mentioned, we expect ~10. Due to the `LIMIT 10`, we are immediately throwing out 99.99% of the read rows, this is pure waste.
 - SQL CPU time: 144ms. Normal queries take <1ms in CPU. This shows that a lot of rows are loaded in memory and processed somehow within the database. This is also not scalable and impacts all other queries in this database. The database should do very little CPU work!
 
-The other metrics are interesting but less important at the moment. For example, there is a relatively large number of retries and contention time. They probably are a by-product of the millons of rows scanned. Since looking for all recovery addresses of one identity (i.e. user) scans (but does not return) unrelated rows, it creates unintentional, and unneeded, contention on these rows.
+The other metrics are interesting but less important at the moment. For example, there is a relatively large number of retries and contention time. They probably are a by-product of the millions of rows scanned. Since looking for all recovery addresses of one identity (i.e. user) scans (but does not return) unrelated rows, it creates unintentional, and unneeded, contention on these rows.
 
 
 
@@ -164,7 +164,7 @@ The first thing the query does is this:
  spans: [/'gcp-asia-northeast1'/'000e377a-062c-45b1-961c-1b28d682df6a' - /'gcp-asia-northeast1'/'000e377a-062c-45b1-961c-1b28d682df6a'] [/'gcp-europe-west3'/'000e377a-062c-45b1-961c-1b28d682df6a' - /'gcp-europe-west3'/'000e377a-062c-45b1-961c-1b28d682df6a'] [/'gcp-us-east4'/'000e377a-062c-45b1-961c-1b28d682df6a' - /'gcp-us-east4'/'000e377a-062c-45b1-961c-1b28d682df6a'] [/'gcp-us-west2'/'000e377a-062c-45b1-961c-1b28d682df6a' - /'gcp-us-west2'/'000e377a-062c-45b1-961c-1b28d682df6a']
 ```
 
-We see that it is using the right index `identity_recovery_addresses_status_via_uq_idx (nid ASC, via ASC, value ASC)`. We see that it fans-out to every region: asia, europe, us, etc. This is expected: we originally do not know in which region the identity is stored, so we have to ask every region in parallel.
+We see that it is using the right index `identity_recovery_addresses_status_via_uq_idx (nid ASC, via ASC, value ASC)`. We see that it fans-out to every region: Asia, Europe, US, etc. This is expected: we originally do not know in which region the identity is stored, so we have to ask every region in parallel.
 
 
 But there is a problem. Can you spot it? Unless you are an advanced CockroachDB user, I'd be surprised if you do. I know I did not spot anything at first.
@@ -289,7 +289,7 @@ So this is a simple change:
   FROM ...
 ```
 
-I was midly suprised to see no change in latency from that. After inspecting the plan and the table schema, this is for a simple reason: the index used in the second step of the query is the primary index which stores `(identity_id ASC, id ASC)`. `address` is not part of this index, so the whole row has to be fetched from the table. We could change this index to make it store this column: `CREATE INDEX ... STORING (address)` to avoid that extra fetch. But modifying the primary index of a big table in production is slightly risky, so it would need some careful consideration.
+I was mildly surprised to see no change in latency from that. After inspecting the plan and the table schema, this is for a simple reason: the index used in the second step of the query is the primary index which stores `(identity_id ASC, id ASC)`. `address` is not part of this index, so the whole row has to be fetched from the table. We could change this index to make it store this column: `CREATE INDEX ... STORING (address)` to avoid that extra fetch. But modifying the primary index of a big table in production is slightly risky, so it would need some careful consideration.
 
 
 Still, with this optimization, we:
@@ -405,7 +405,7 @@ We also know that each index has to bear its weight, because it slows down every
 "Just provide in the `WHERE` clause of the query all the values you know up front" is *not* good advice: It worked here with `via` because of the tuple nature of indexes in CockroachDB and because `via` was the middle field in this tuple. But over-specifying the `WHERE` clause in the query can and will lead the query planner to worst plans, because the optimal index might not contain the extra fields you just added to the clause.
 
 
-A query that performs ok now, might become a big problem later, when the table grows, or the data characteristics change, or the query planner decides to do something completly different today. Actually, I initially tested my optimizations in staging, and I see completely different plans and latencies from production, due to the data being much smaller or simply differently varied.
+A query that performs ok now, might become a big problem later, when the table grows, or the data characteristics change, or the query planner decides to do something completely different today. Actually, I initially tested my optimizations in staging, and I see completely different plans and latencies from production, due to the data being much smaller or simply differently varied.
 
 
 After a potential optimization has been applied, always follow-up to see if it made things better, worse, or the same. You'd be surprised. If it's worse or the same, it's still useful data to refine your understanding of the situation. If things improved, make it an announcement, it's good for morale!
