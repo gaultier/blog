@@ -289,7 +289,9 @@ So this is a simple change:
   FROM ...
 ```
 
-I was mildly surprised to see no change in latency from that. After inspecting the plan and the table schema, this is for a simple reason: the index used in the second step of the query is the primary index which stores `(identity_id ASC, id ASC)`. `value` is not part of this index, so the whole row has to be fetched from the table. We could change this index to make it store this column: `CREATE INDEX ... STORING (value)` to avoid that extra fetch. But modifying the primary index of a big table in production is slightly risky, so it would need some careful consideration.
+I was mildly surprised to see no change in latency from that. After inspecting the plan and the table schema, this is for a simple reason: the index used in the last step of the query is the primary index. In CockroachDB (and some other databases: e.g. MySQL/InnoDB), the leaf in the primary index stores the whole row. So columns mentioned in the `SELECT` do not force an extra fetch.
+
+However, some databases (e.g. PostgreSQL) work otherwise: the leaf in the primary index does *not* store the whole row, only the mentioned fields, and selecting all columns *would* force an extra fetch, when a column is not part of the index. For these databases, we could add a new covering index to make it store the `value` column: `CREATE INDEX ... ON identity_recovery_addresses (identity_id) INCLUDE (value)` to avoid that final extra fetch.  This would make every `INSERT` a bit more costly because we have to store one extra field, so we would first need to judge if our workload is write-heavy or read-heavy to decide if the tradeoff is worth it.
 
 
 Still, with this optimization, we:
