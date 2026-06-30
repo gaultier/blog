@@ -1,4 +1,4 @@
-Title: Optimization tales with CockroachDB, part 1
+Title: Optimization tales with CockroachDB: the slow password reset flow
 Tags: SQL, Optimization, CockroachDB
 ---
 
