@@ -8,7 +8,7 @@ It all started one morning, I opened Slack as usual to start my working day, onl
 
 > Hello this query reads like 700k rows
 
-To engineers replying:
+To which engineers replied:
 
 > The plan looks ok IMHO, indices are being used:
 > <plan>
@@ -30,7 +30,7 @@ This query actually runs against all 4 databases we support (SQLite, PostgreSQL,
 
 The software is [Kratos](https://github.com/ory/kratos), a widely used authentication and identity management service. Users of this software are humans. Humans often register with an email and password (Kratos also supports passwordless schemes such as passkeys, WebAuthn, etc, but the proverbial email+password approach remains very much in use). Humans also tend to forget their password. That's why Kratos like any identity management service worth its salt, supports password recovery. 
 
-The user enter one of their addresses (email, phone number, etc), and if this address is in the system, a list of masked addresses is shown to them, they pick one, and a recovery link or code is sent to them on that address. Using that link or code, they can setup a new password. Pretty standard:
+The user enters one of their addresses (email, phone number, etc), and if this address is in the system, a list of masked addresses is shown to them, they pick one, and a recovery link or code is sent to them on that address. Using that link or code, they can setup a new password. Pretty standard:
 
 ![Account recovery](recovery.png)
 
@@ -47,7 +47,7 @@ CREATE TABLE public.identity_recovery_addresses (
 
     CONSTRAINT identity_recovery_addresses_pkey PRIMARY KEY (identity_id ASC, id ASC),
     UNIQUE INDEX identity_recovery_addresses_status_via_uq_idx (nid ASC, via ASC, value ASC),
-    UNIQUE INDEX identity_recovery_addresses_id_key (id ASC),
+    UNIQUE INDEX identity_recovery_addresses_id_key (id ASC)
 );
 ```
 
@@ -66,7 +66,7 @@ WHERE b.value = ?
 LIMIT 10
 ```
 
-*Kratos supports multi-tenancy, so each tenant as an id called `nid`, each row stores `nid`, and each query clause contains `WHERE nid = ?` to isolate each tenant. But this is a non factor: we know the tenant id from the start since each tenant has its own subdomain(s), so for this query, the `nid` is effectively a constant.*
+*Kratos supports multi-tenancy, so each tenant has an id called `nid`, each row stores `nid`, and each query clause contains `WHERE nid = ?` to isolate each tenant. But this is a non factor: we know the tenant id from the start since each tenant has its own subdomain(s), so for this query, the `nid` is effectively a constant.*
 
 The approach is relatively straightforward with a self-join, that can be understood as two queries:
 
@@ -104,7 +104,7 @@ In any event: time to fix it.
 
 ### Statistics 
 
-The CTO actually linked in its original message a link to the statement in the CockroachDB dashboard, which shows very surprising statistics:
+The CTO actually included in their original message a link to the SQL statement in the CockroachDB dashboard, which shows very surprising statistics:
 
 ![Statement statistics](crdb_recovery_addresses_1.png)
 
@@ -142,7 +142,7 @@ The CTO actually linked in its original message a link to the statement in the C
 
 Immediately the metrics that jump out to me (and did to my CTO) are:
 
-- Rows read: 2 millions. This is simply not tenable, as mentioned, we expect ~10. Due to the `LIMIT 10`, we are immediately throwing out 99.99% of the read rows, this is pure waste.
+- Rows read: 2 millions (peak). This is simply not tenable, as mentioned, we expect ~10. Due to the `LIMIT 10`, we are immediately throwing out 99.99% of the read rows, this is pure waste.
 - SQL CPU time: 144ms. Normal queries take <1ms in CPU. This shows that a lot of rows are loaded in memory and processed somehow within the database. This is also not scalable and impacts all other queries in this database. The database should do very little CPU work!
 
 The other metrics are interesting but less important at the moment. For example, there is a relatively large number of retries and contention time. They probably are a by-product of the millions of rows scanned. Since looking for all recovery addresses of one identity (i.e. user) scans (but does not return) unrelated rows, it creates unintentional, and unneeded, contention on these rows.
@@ -259,7 +259,7 @@ The self join can be understood as two queries: first, find the identity with th
 Only the first query truly needs to do a fan-out to all regions. Once we know the identity id, we know in which region it is. Since all the data for an identity is stored in one region, the second query does not need to talk to other regions at all! 
 This is a big gain in terms of latency: at around 250ms network latency between distant regions, we can cut out one unneeded round-trip.
 
-In CockroachDB, this is done by adding `WHERE crdb_region = ?` to the query. Let's do that:
+In CockroachDB, this is done by adding `crdb_region = ?` to the query `WHERE` or `JOIN` clause. Let's do that:
 
 ```sql
 SELECT *
@@ -273,23 +273,23 @@ SELECT *
     AND a.nid = '000e377a-062c-45b1-961c-1b28d682df6a'
 ```
 
-From the plan, we now see that the only time we fan-out to all regions is in the first step, afterwards, we stay within the same region. We also see that latency was cut but ~200 ms, as expected.
+From the plan, we now see that the only time we fan-out to all regions is in the first step, afterwards, we stay within the same region. We also see that latency was cut by ~200 ms, as expected.
 
 
 ### Third optimization: only query needed columns
 
 
-In the original query we fetched all table columns. But I then realized that we only ever need to fetch and return the `address` column because this is what gets returned to the user browser to let them pick which address to receive the recovery link/code on.
+In the original query we fetched all table columns. But I then realized that we only ever need to fetch and return the `value` column (the address) because this is what gets returned to the user browser to let them pick which address to receive the recovery link/code on.
 
 So this is a simple change:
 
 ```diff
 - SELECT *
-+ SELECT address
++ SELECT value
   FROM ...
 ```
 
-I was mildly surprised to see no change in latency from that. After inspecting the plan and the table schema, this is for a simple reason: the index used in the second step of the query is the primary index which stores `(identity_id ASC, id ASC)`. `address` is not part of this index, so the whole row has to be fetched from the table. We could change this index to make it store this column: `CREATE INDEX ... STORING (address)` to avoid that extra fetch. But modifying the primary index of a big table in production is slightly risky, so it would need some careful consideration.
+I was mildly surprised to see no change in latency from that. After inspecting the plan and the table schema, this is for a simple reason: the index used in the second step of the query is the primary index which stores `(identity_id ASC, id ASC)`. `value` is not part of this index, so the whole row has to be fetched from the table. We could change this index to make it store this column: `CREATE INDEX ... STORING (value)` to avoid that extra fetch. But modifying the primary index of a big table in production is slightly risky, so it would need some careful consideration.
 
 
 Still, with this optimization, we:
@@ -397,7 +397,7 @@ A surface level lesson would be: all SQL performance problems are due to not usi
 
 Relational databases are very complex beasts and CockroachDB is one of the most powerful and complex ones out there, especially in its multi-region setup. Know your database, read the docs, ask the developers if that's an option. There is no such thing as 'a SQL database' - every SQL database behaves wildly differently from the others.
 
-Many metrics matter, not only query latency: rows scanned (especially in a cloud environment, IOps are precious!), database CPU time, memory, max latency, cross-regions round-trips, contention time, etc. Keep a watchful eye on queries that rank the worst for these metrics, but also keep in mind that some metrics affect others - e.g. in our case, contention time and subsequent retries were artificially inflated by the suboptimal plan scanning too many rows. Regularly revisit these findings: they change over time. I command CockroachDB there because it exposes all of these metrics in a pretty dashboard. The only downside is that using it, you know which queries are problematic, and for which metric, but you're still far away from a good explanation, and remedy.
+Many metrics matter, not only query latency: rows scanned (especially in a cloud environment, IOps are precious!), database CPU time, memory, max latency, cross-regions round-trips, contention time, etc. Keep a watchful eye on queries that rank the worst for these metrics, but also keep in mind that some metrics affect others - e.g. in our case, contention time and subsequent retries were artificially inflated by the suboptimal plan scanning too many rows. Regularly revisit these findings: they change over time. I commend CockroachDB there because it exposes all of these metrics in a pretty dashboard. The only downside is that using it, you know which queries are problematic, and for which metric, but you're still far away from a good explanation, and remedy.
 
 We also know that each index has to bear its weight, because it slows down every write, and might even end up unused by the query planner, thus being dead weight.
 
