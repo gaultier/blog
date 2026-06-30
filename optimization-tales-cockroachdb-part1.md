@@ -30,7 +30,9 @@ This query actually runs against all 4 databases we support (SQLite, PostgreSQL,
 
 The software is [Kratos](https://github.com/ory/kratos), a widely used authentication and identity management service. Users of this software are humans. Humans often register with an email and password (Kratos also supports passwordless schemes such as passkeys, webauthn, etc, but the proverbial email+password approach remains very much in use). Humans also tend to forget their password. That's why Kratos like any identity management service worth its salt, supports password recovery. 
 
-The user enter one of their addresses (email, phone number, etc), and if this address is in the system, a list of masked addresses is shown to them, they pick one, and a recovery link or code is sent to them on that address. Using that link or code, they can setup a new password. Pretty standard.
+The user enter one of their addresses (email, phone number, etc), and if this address is in the system, a list of masked addresses is shown to them, they pick one, and a recovery link or code is sent to them on that address. Using that link or code, they can setup a new password. Pretty standard:
+
+![Account recovery](recovery.png)
 
 
 The table looks like this (showing only relevant fields):
@@ -119,7 +121,6 @@ The CTO actually linked in its original message a link to the statement in the C
 | Execution Count | 27.3 k |
 | Contention Time | 14.0 ms |
 | SQL CPU Time | 144.4 ms |
-| Client Wait Time | 0.0 ns |
 
 
 
@@ -141,8 +142,8 @@ The CTO actually linked in its original message a link to the statement in the C
 
 Immediately the metrics that jump out to me (and did to my CTO) are:
 
-- Rows read: millions. This is simply not tenable, as mentioned, we expect ~10. Due to the `LIMIT 10`, we are immediately throwing out 99.99% of the read rows, this is pure waste.
-- SQL CPU time: 144ms: Normal queries take <1ms in CPU. This shows that a lot of rows are loaded in memory and processed somehow. This is also not scalable and impacts all other queries in this database.
+- Rows read: 2 millions. This is simply not tenable, as mentioned, we expect ~10. Due to the `LIMIT 10`, we are immediately throwing out 99.99% of the read rows, this is pure waste.
+- SQL CPU time: 144ms. Normal queries take <1ms in CPU. This shows that a lot of rows are loaded in memory and processed somehow within the database. This is also not scalable and impacts all other queries in this database. The database should do very little CPU work!
 
 The other metrics are interesting but less important at the moment. For example, there is a relatively large number of retries and contention time. They probably are a by-product of the millons of rows scanned. Since looking for all recovery addresses of one identity (i.e. user) scans (but does not return) unrelated rows, it creates unintentional, and unneeded, contention on these rows.
 
@@ -152,16 +153,18 @@ The other metrics are interesting but less important at the moment. For example,
 
 The next step is to inspect the plan being used in production using `EXPLAIN ANALYZE <query>`, or for even more details (specific to CockroachDB): `EXPLAIN ANALYZE (debug) <query>`.
 
-### Plan
+### Query execution
 
-The first thing the plan does is this:
+*One thing to note first: this particular setup uses CockroachDB multi-region. That means the database has several nodes in multiple regions and rows are region aware, because the table is defined as `LOCALITY REGIONAL BY ROW`. However, the data for an identity is stored in one region.*
+
+The first thing the query does is this:
 
 ```plaintext
  table: identity_recovery_addresses@identity_recovery_addresses_status_via_uq_idx  
  spans: [/'gcp-asia-northeast1'/'000e377a-062c-45b1-961c-1b28d682df6a' - /'gcp-asia-northeast1'/'000e377a-062c-45b1-961c-1b28d682df6a'] [/'gcp-europe-west3'/'000e377a-062c-45b1-961c-1b28d682df6a' - /'gcp-europe-west3'/'000e377a-062c-45b1-961c-1b28d682df6a'] [/'gcp-us-east4'/'000e377a-062c-45b1-961c-1b28d682df6a' - /'gcp-us-east4'/'000e377a-062c-45b1-961c-1b28d682df6a'] [/'gcp-us-west2'/'000e377a-062c-45b1-961c-1b28d682df6a' - /'gcp-us-west2'/'000e377a-062c-45b1-961c-1b28d682df6a']
 ```
 
-We see that it is using the right index `identity_recovery_addresses_status_via_uq_idx (nid ASC, via ASC, value ASC)`. We see that it fans-out to every region: asia, europe, us, etc. This is expected: we originally do not know in which region the identity is stored, so we have to do that.
+We see that it is using the right index `identity_recovery_addresses_status_via_uq_idx (nid ASC, via ASC, value ASC)`. We see that it fans-out to every region: asia, europe, us, etc. This is expected: we originally do not know in which region the identity is stored, so we have to ask every region in parallel.
 
 
 But there is a problem. Can you spot it? Unless you are an advanced CockroachDB user, I'd be surprised if you do. I know I did not spot anything at first.
@@ -171,9 +174,9 @@ But there is a problem. Can you spot it? Unless you are an advanced CockroachDB 
 I'll explain the plan is layman terms. This is what the query planner is doing, when a user enters `foo@bar.com` in the recovery screen:
 
 1. Fan out to each region (this is fine and required). In each region:
-  1. Find the row with the address `foo@bar.com`. It is linked to an identity (`identity_id`) and a tenant (`nid`).
-  1. Load all rows for this tenant in memory
-  1. Filter these rows where the `identity_id` is the one found in step 1.1. Throw out the rest.
+    1. Find the row with the address `foo@bar.com`. It is linked to an identity (`identity_id`) and a tenant (`nid`).
+    1. Load all rows for this tenant in memory
+    1. Filter these rows in memory where the `identity_id` is the one found in step 1.1. Throw out the rest.
 
 So each time a user wants to reset their password, we load all recovery addresses of all users for this tenant, in memory. That is really not great and becomes worse and worse over time. 
 
@@ -183,7 +186,7 @@ This explains the high latency and CPU usage!
 ### Why?
 
 
-In CockroachDB, indexes are a tuple, e.g. `(nid, via, value)`. Conceptually, this is how the index looks like:
+In CockroachDB, indexes are a tuple, e.g. `(nid, via, value)`. Conceptually, this is how the index looks like, with two tenants, `1` and `2`:
 
 
 ![Index](crdb_index.svg)
@@ -195,7 +198,7 @@ To use it the most efficiently, we specify all the fields, e.g.: `WHERE nid = '1
 ![Point lookup](crdb_index2.svg)
 
 
-Only one row is scanned, this is optimal. 
+Only one row is scanned, this is optimal. To be more precise: if the fields needed by the query are all stored in the index, no row is scanned, only the index data is used. Otherwise, the index is used to find the row id, and then the row data is scanned in the table, using the primary index. 
 
 What happens then when only the first field in the tuple is provided, for example, only the `nid`? Well, the path in the index is very short, and all nodes underneath (the whole subtree, shown here in red) must be scanned and inspected:
 
@@ -204,7 +207,7 @@ What happens then when only the first field in the tuple is provided, for exampl
 This is what happens to us, and it is very wasteful.
 
 
-But wait, we *do* provide more than the `nid`: we provide the address! In fact, that's the only thing the user provides! So how come it was not used, and all rows for the tenant we loaded? Well, there's more: the order of the fields in the tuple also matters. So for a tuple `(A, B, C)`, if we only provide `A` and `C`, it is as if we only provided `A`, and then we load every element underneath `A`. 
+But wait, we *do* provide more than the `nid`: we provide the address! In fact, that's the only thing the user provides! So how come it was not used, and all rows for the tenant were loaded? Well, there's more: the order of the fields in the tuple also matters. So for a tuple `(A, B, C)`, if we only provide `A` and `C`, it is as if we only provided `A`, and then we load every element underneath `A`. 
 
 
 
@@ -214,6 +217,8 @@ So here it is, the root cause: we did provide the first and third field in the t
 
 So the query planner decided to use this index, this tuple of `(nid ASC, via ASC, value ASC)`, but it only knows the first value, `nid` (the tenant). So it can only eliminate rows from other tenants. For a tenant with many many users, performance is really bad. It's not quite a full table scan, but it's a full *tenant* table scan!
 
+
+That's what the plan shows: `/'gcp-us-west2'/'000e377a-062c-45b1-961c-1b28d682df6a'` means: for each region, get (all of) the data from the tenant (`nid`) `000e377a-062c-45b1-961c-1b28d682df6a`. And no other field is used in the index!
 
 ### First optimization: provide 'via'
 
@@ -243,7 +248,7 @@ table: identity_recovery_addresses@identity_recovery_addresses_status_via_uq_idx
 spans: [/'gcp-europe-west3'/'000e377a-062c-45b1-961c-1b28d682df6a'/'email'/'foo@bar.com' - /'gcp-europe-west3'/'000e377a-062c-45b1-961c-1b28d682df6a'/'email'/'foo@bar.com'] [/'gcp-us-east4'/'000e377a-062c-45b1-961c-1b28d682df6a'/'email'/'foo@bar.com' - /'gcp-us-east4'/'000e377a-062c-45b1-961c-1b28d682df6a'/'email'/'foo@bar.com'] [/'gcp-us-west2'/'000e377a-062c-45b1-961c-1b28d682df6a'/'email'/'foo@bar.com' - /'gcp-us-west2'/'000e377a-062c-45b1-961c-1b28d682df6a'/'email'/'foo@bar.com']
 ```
 
-It's now a point lookup! And the plan even says for this first step: `actual row count: 1`. Perfect! Such a simple fix... If you know how indexes work in CockroachDB.
+It's now a point lookup! We clearly see the path: `/'gcp-us-west2'/'000e377a-062c-45b1-961c-1b28d682df6a'/'email'/'foo@bar.com'`, meaning for each region, we traverse the index using `nid` -> `via` -> `value`. And the plan even says for this first step: `actual row count: 1`. Perfect! Such a simple fix... If you know how indexes work in CockroachDB.
 
 
 ### Second optimization: single region
@@ -302,14 +307,16 @@ So even if it's a small win, it is still a win.
 
 ![Results](crdb_recovery_addresses_3.png)
 
-Latency for this query went from a consistent 1-2s to always < 0.5s. 
+Latency for this query went from a consistent 1-2s to always < 0.5s. All of the time is spent waiting on the network (due to cross-region latency).
 
 More importantly, it completely disappeared from the top 10000 queries in terms of CPU time or rows scanned.
 
 
+By revamping the indexes and being very multi-region aware, we could reduce the latency further, but it's already 'good enough'. See the conclusion for a discussion about what 'good enough' means.
+
 ## Things I have tried to little effect
 
-I initially tried to restructure the self-join into a CTE that does not specify `via`:
+I initially tried to restructure the original self-join into a CTE that does not specify `via`:
 
 ```sql
 WITH target AS (
@@ -326,7 +333,7 @@ AND A.identity_id = target.identity_id
 LIMIT 10;
 ```
 
-It worked and performed a bit better than the self-join (without `via`), due to query planner quirks, but as soon as I understood that the query really needed to specify `via`, the CTE with `via` resulted in the exact same plan as the self-join with `via`.
+It worked and performed a bit better than the original self-join (without `via`), due to query planner quirks, but as soon as I understood that the query really needed to specify `via`, the CTE with `via` resulted in the exact same plan as the self-join with `via`.
 
 ---
 

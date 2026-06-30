@@ -71,7 +71,7 @@ Do not edit it by hand.
 <div class="article-prelude">
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
-<p class="publication-date">Published on 2026-06-29. Last modified on 2026-06-29.</p>
+<p class="publication-date">Published on 2026-06-29. Last modified on 2026-06-30.</p>
 </div>
 <div class="article-title">
   <h1>Optimization tales with CockroachDB, part 1</h1>
@@ -93,7 +93,7 @@ Do not edit it by hand.
 </li>
 
   <li>
-    <a href="#plan">Plan</a>
+    <a href="#query-execution">Query execution</a>
 </li>
 
   <li>
@@ -155,7 +155,8 @@ Do not edit it by hand.
   <a class="hash-anchor" href="#the-context" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>The software is <a href="https://github.com/ory/kratos">Kratos</a>, a widely used authentication and identity management service. Users of this software are humans. Humans often register with an email and password (Kratos also supports passwordless schemes such as passkeys, webauthn, etc, but the proverbial email+password approach remains very much in use). Humans also tend to forget their password. That's why Kratos like any identity management service worth its salt, supports password recovery.</p>
-<p>The user enter one of their addresses (email, phone number, etc), and if this address is in the system, a list of masked addresses is shown to them, they pick one, and a recovery link or code is sent to them on that address. Using that link or code, they can setup a new password. Pretty standard.</p>
+<p>The user enter one of their addresses (email, phone number, etc), and if this address is in the system, a list of masked addresses is shown to them, they pick one, and a recovery link or code is sent to them on that address. Using that link or code, they can setup a new password. Pretty standard:</p>
+<p><img src="recovery.png" alt="Account recovery" /></p>
 <p>The table looks like this (showing only relevant fields):</p>
 <pre>
   <div class="code-header">
@@ -280,10 +281,6 @@ Do not edit it by hand.
 <td>SQL CPU Time</td>
 <td>144.4 ms</td>
 </tr>
-<tr>
-<td>Client Wait Time</td>
-<td>0.0 ns</td>
-</tr>
 </tbody>
 </table>
 
@@ -341,16 +338,17 @@ Do not edit it by hand.
 
 <p>Immediately the metrics that jump out to me (and did to my CTO) are:</p>
 <ul>
-<li>Rows read: millions. This is simply not tenable, as mentioned, we expect ~10. Due to the <code>LIMIT 10</code>, we are immediately throwing out 99.99% of the read rows, this is pure waste.</li>
-<li>SQL CPU time: 144ms: Normal queries take &lt;1ms in CPU. This shows that a lot of rows are loaded in memory and processed somehow. This is also not scalable and impacts all other queries in this database.</li>
+<li>Rows read: 2 millions. This is simply not tenable, as mentioned, we expect ~10. Due to the <code>LIMIT 10</code>, we are immediately throwing out 99.99% of the read rows, this is pure waste.</li>
+<li>SQL CPU time: 144ms. Normal queries take &lt;1ms in CPU. This shows that a lot of rows are loaded in memory and processed somehow within the database. This is also not scalable and impacts all other queries in this database. The database should do very little CPU work!</li>
 </ul>
 <p>The other metrics are interesting but less important at the moment. For example, there is a relatively large number of retries and contention time. They probably are a by-product of the millons of rows scanned. Since looking for all recovery addresses of one identity (i.e. user) scans (but does not return) unrelated rows, it creates unintentional, and unneeded, contention on these rows.</p>
 <p>The next step is to inspect the plan being used in production using <code>EXPLAIN ANALYZE &lt;query&gt;</code>, or for even more details (specific to CockroachDB): <code>EXPLAIN ANALYZE (debug) &lt;query&gt;</code>.</p>
-<h3 id="plan">
-  <a class="title" href="#plan">Plan</a>
-  <a class="hash-anchor" href="#plan" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h3 id="query-execution">
+  <a class="title" href="#query-execution">Query execution</a>
+  <a class="hash-anchor" href="#query-execution" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
-<p>The first thing the plan does is this:</p>
+<p><em>One thing to note first: this particular setup uses CockroachDB multi-region. That means the database has several nodes in multiple regions and rows are region aware, because the table is defined as <code>LOCALITY REGIONAL BY ROW</code>. However, the data for an identity is stored in one region.</em></p>
+<p>The first thing the query does is this:</p>
 <pre>
   <div class="code-header">
     <span>Plaintext</span>
@@ -359,14 +357,17 @@ Do not edit it by hand.
   <code class="language-plaintext"><span class="line-number"></span><span class="code-hl"> table: identity_recovery_addresses@identity_recovery_addresses_status_via_uq_idx  </span>
 <span class="line-number"></span><span class="code-hl"> spans: [/'gcp-asia-northeast1'/'000e377a-062c-45b1-961c-1b28d682df6a' - /'gcp-asia-northeast1'/'000e377a-062c-45b1-961c-1b28d682df6a'] [/'gcp-europe-west3'/'000e377a-062c-45b1-961c-1b28d682df6a' - /'gcp-europe-west3'/'000e377a-062c-45b1-961c-1b28d682df6a'] [/'gcp-us-east4'/'000e377a-062c-45b1-961c-1b28d682df6a' - /'gcp-us-east4'/'000e377a-062c-45b1-961c-1b28d682df6a'] [/'gcp-us-west2'/'000e377a-062c-45b1-961c-1b28d682df6a' - /'gcp-us-west2'/'000e377a-062c-45b1-961c-1b28d682df6a']</span>
 </code></pre>
-<p>We see that it is using the right index <code>identity_recovery_addresses_status_via_uq_idx (nid ASC, via ASC, value ASC)</code>. We see that it fans-out to every region: asia, europe, us, etc. This is expected: we originally do not know in which region the identity is stored, so we have to do that.</p>
+<p>We see that it is using the right index <code>identity_recovery_addresses_status_via_uq_idx (nid ASC, via ASC, value ASC)</code>. We see that it fans-out to every region: asia, europe, us, etc. This is expected: we originally do not know in which region the identity is stored, so we have to ask every region in parallel.</p>
 <p>But there is a problem. Can you spot it? Unless you are an advanced CockroachDB user, I'd be surprised if you do. I know I did not spot anything at first.</p>
 <p>I'll explain the plan is layman terms. This is what the query planner is doing, when a user enters <code>foo@bar.com</code> in the recovery screen:</p>
 <ol>
-<li>Fan out to each region (this is fine and required). In each region:</li>
+<li><p>Fan out to each region (this is fine and required). In each region:</p>
+<ol>
 <li>Find the row with the address <code>foo@bar.com</code>. It is linked to an identity (<code>identity_id</code>) and a tenant (<code>nid</code>).</li>
 <li>Load all rows for this tenant in memory</li>
-<li>Filter these rows where the <code>identity_id</code> is the one found in step 1.1. Throw out the rest.</li>
+<li>Filter these rows in memory where the <code>identity_id</code> is the one found in step 1.1. Throw out the rest.</li>
+</ol>
+</li>
 </ol>
 <p>So each time a user wants to reset their password, we load all recovery addresses of all users for this tenant, in memory. That is really not great and becomes worse and worse over time.</p>
 <p>This explains the high latency and CPU usage!</p>
@@ -374,17 +375,18 @@ Do not edit it by hand.
   <a class="title" href="#why">Why?</a>
   <a class="hash-anchor" href="#why" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h3>
-<p>In CockroachDB, indexes are a tuple, e.g. <code>(nid, via, value)</code>. Conceptually, this is how the index looks like:</p>
+<p>In CockroachDB, indexes are a tuple, e.g. <code>(nid, via, value)</code>. Conceptually, this is how the index looks like, with two tenants, <code>1</code> and <code>2</code>:</p>
 <p><img src="crdb_index.svg" alt="Index" /></p>
 <p>To use it the most efficiently, we specify all the fields, e.g.: <code>WHERE nid = '1' AND via = 'email' AND value = zzz@accounting.com</code>. The database can then do a 'point lookup', meaning trace a path from the root of the index to a leaf (i.e. a row):</p>
 <p><img src="crdb_index2.svg" alt="Point lookup" /></p>
-<p>Only one row is scanned, this is optimal.</p>
+<p>Only one row is scanned, this is optimal. To be more precise: if the fields needed by the query are all stored in the index, no row is scanned, only the index data is used. Otherwise, the index is used to find the row id, and then the row data is scanned in the table, using the primary index.</p>
 <p>What happens then when only the first field in the tuple is provided, for example, only the <code>nid</code>? Well, the path in the index is very short, and all nodes underneath (the whole subtree, shown here in red) must be scanned and inspected:</p>
 <p><img src="crdb_index4.svg" alt="Only one tuple field provided" /></p>
 <p>This is what happens to us, and it is very wasteful.</p>
-<p>But wait, we <em>do</em> provide more than the <code>nid</code>: we provide the address! In fact, that's the only thing the user provides! So how come it was not used, and all rows for the tenant we loaded? Well, there's more: the order of the fields in the tuple also matters. So for a tuple <code>(A, B, C)</code>, if we only provide <code>A</code> and <code>C</code>, it is as if we only provided <code>A</code>, and then we load every element underneath <code>A</code>.</p>
+<p>But wait, we <em>do</em> provide more than the <code>nid</code>: we provide the address! In fact, that's the only thing the user provides! So how come it was not used, and all rows for the tenant were loaded? Well, there's more: the order of the fields in the tuple also matters. So for a tuple <code>(A, B, C)</code>, if we only provide <code>A</code> and <code>C</code>, it is as if we only provided <code>A</code>, and then we load every element underneath <code>A</code>.</p>
 <p>So here it is, the root cause: we did provide the first and third field in the tuple, but not the second one, <code>via</code>.</p>
 <p>So the query planner decided to use this index, this tuple of <code>(nid ASC, via ASC, value ASC)</code>, but it only knows the first value, <code>nid</code> (the tenant). So it can only eliminate rows from other tenants. For a tenant with many many users, performance is really bad. It's not quite a full table scan, but it's a full <em>tenant</em> table scan!</p>
+<p>That's what the plan shows: <code>/'gcp-us-west2'/'000e377a-062c-45b1-961c-1b28d682df6a'</code> means: for each region, get (all of) the data from the tenant (<code>nid</code>) <code>000e377a-062c-45b1-961c-1b28d682df6a</code>. And no other field is used in the index!</p>
 <h3 id="first-optimization-provide-via">
   <a class="title" href="#first-optimization-provide-via">First optimization: provide 'via'</a>
   <a class="hash-anchor" href="#first-optimization-provide-via" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -414,7 +416,7 @@ Do not edit it by hand.
   <code class="language-plaintext"><span class="line-number"></span><span class="code-hl">table: identity_recovery_addresses@identity_recovery_addresses_status_via_uq_idx</span>
 <span class="line-number"></span><span class="code-hl">spans: [/'gcp-europe-west3'/'000e377a-062c-45b1-961c-1b28d682df6a'/'email'/'foo@bar.com' - /'gcp-europe-west3'/'000e377a-062c-45b1-961c-1b28d682df6a'/'email'/'foo@bar.com'] [/'gcp-us-east4'/'000e377a-062c-45b1-961c-1b28d682df6a'/'email'/'foo@bar.com' - /'gcp-us-east4'/'000e377a-062c-45b1-961c-1b28d682df6a'/'email'/'foo@bar.com'] [/'gcp-us-west2'/'000e377a-062c-45b1-961c-1b28d682df6a'/'email'/'foo@bar.com' - /'gcp-us-west2'/'000e377a-062c-45b1-961c-1b28d682df6a'/'email'/'foo@bar.com']</span>
 </code></pre>
-<p>It's now a point lookup! And the plan even says for this first step: <code>actual row count: 1</code>. Perfect! Such a simple fix... If you know how indexes work in CockroachDB.</p>
+<p>It's now a point lookup! We clearly see the path: <code>/'gcp-us-west2'/'000e377a-062c-45b1-961c-1b28d682df6a'/'email'/'foo@bar.com'</code>, meaning for each region, we traverse the index using <code>nid</code> -&gt; <code>via</code> -&gt; <code>value</code>. And the plan even says for this first step: <code>actual row count: 1</code>. Perfect! Such a simple fix... If you know how indexes work in CockroachDB.</p>
 <h3 id="second-optimization-single-region">
   <a class="title" href="#second-optimization-single-region">Second optimization: single region</a>
   <a class="hash-anchor" href="#second-optimization-single-region" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -468,13 +470,14 @@ This is a big gain in terms of latency: at around 250ms network latency between 
   <a class="hash-anchor" href="#final-results" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p><img src="crdb_recovery_addresses_3.png" alt="Results" /></p>
-<p>Latency for this query went from a consistent 1-2s to always &lt; 0.5s.</p>
+<p>Latency for this query went from a consistent 1-2s to always &lt; 0.5s. All of the time is spent waiting on the network (due to cross-region latency).</p>
 <p>More importantly, it completely disappeared from the top 10000 queries in terms of CPU time or rows scanned.</p>
+<p>By revamping the indexes and being very multi-region aware, we could reduce the latency further, but it's already 'good enough'. See the conclusion for a discussion about what 'good enough' means.</p>
 <h2 id="things-i-have-tried-to-little-effect">
   <a class="title" href="#things-i-have-tried-to-little-effect">Things I have tried to little effect</a>
   <a class="hash-anchor" href="#things-i-have-tried-to-little-effect" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>I initially tried to restructure the self-join into a CTE that does not specify <code>via</code>:</p>
+<p>I initially tried to restructure the original self-join into a CTE that does not specify <code>via</code>:</p>
 <pre>
   <div class="code-header">
     <span>Sql</span>
@@ -493,7 +496,7 @@ This is a big gain in terms of latency: at around 250ms network latency between 
 <span class="line-number"></span><span class="code-hl">AND A.identity_id = target.identity_id</span>
 <span class="line-number"></span><span class="code-hl">LIMIT 10;</span>
 </code></pre>
-<p>It worked and performed a bit better than the self-join (without <code>via</code>), due to query planner quirks, but as soon as I understood that the query really needed to specify <code>via</code>, the CTE with <code>via</code> resulted in the exact same plan as the self-join with <code>via</code>.</p>
+<p>It worked and performed a bit better than the original self-join (without <code>via</code>), due to query planner quirks, but as soon as I understood that the query really needed to specify <code>via</code>, the CTE with <code>via</code> resulted in the exact same plan as the self-join with <code>via</code>.</p>
 <hr />
 <p>I tried to split the query into two queries, thinking it would be easier for the query planner to understand. It did not help.</p>
 <hr />
