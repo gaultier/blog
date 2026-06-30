@@ -4,7 +4,7 @@ Tags: SQL, Optimization, CockroachDB
 
 Quick question: What do you do when there is downtime at work? Read the news, tidy your inbox... Hunt for slow SQL queries?
 
-I'm in the last bucket. Embolden by my last success of speeding up the [password reset flow](/blog/optimization-tales-cockroachdb-part1.html), where too many rows were scanned, I stumbled upon a query that looked so simple, yet was very slow and did *thousands* of retries, for an endpoint that very heavily used... This peaked my interest.
+I'm in the last bucket. Emboldened by my last success of speeding up the [password reset flow](/blog/optimization-tales-cockroachdb-part1.html), where too many rows were scanned, I stumbled upon a query that looked so simple, yet was very slow and did *thousands* of retries, for an endpoint that very heavily used... This peaked my interest.
 
 As always, the work is [open-source](https://github.com/ory/kratos/commit/277d7697125df31f6ea3dc4f773548218fdbfa79)!
 
@@ -44,7 +44,7 @@ Error Message: TransactionRetryWithProtoRefreshError: ReadWithinUncertaintyInter
 If it looks like gibberish to you... Know that it did to me initially. Let's unpack it slowly:
 
 - `TransactionRetryWithProtoRefreshError`: the transaction was aborted by the server and the client was instructed to retry. We'll see why in a second. This is completely expected and normal behavior in CockroachDB in the default isolation level (Serializable).
-- `ReadWithinUncertaintyIntervalError: read [...] encountered previous write`: We tried to read the row containing the session token, in order to write to it, but another write happened concurrently on this row, and won the race against us. So we have to restart from the top: re-read the fresh row data.
+- `ReadWithinUncertaintyIntervalError: read [...] encountered previous write`: We tried to read the row containing the session token, in order to write to it, but we encounter a value with a higher (meaning: more recent) timestamp. So we conservatively have to restart from the top: re-read the fresh row data.
 
 
 
@@ -76,7 +76,7 @@ UPDATE sessions SET active = false WHERE active = true AND token = ?
 ```
 
 
-There is no semantic change, and yet, this means way fewer writes (up to 1, now) and fewer retries. Why? Because [transaction conflicts](https://www.cockroachlabs.com/docs/v26.2/architecture/transaction-layer#transaction-conflicts) in CockroachDB happen in two cases, write-write and write-read:
+There is no semantic change, and yet, this means way fewer writes (up to 1, now) and fewer retries. Why? Because [transaction conflicts](https://www.cockroachlabs.com/docs/v26.2/architecture/transaction-layer#transaction-conflicts) in CockroachDB happen in two main cases, write-write and write-read:
 
 > CockroachDB's transactions allow the following types of conflicts that involve running into a write intent:
 >
@@ -124,7 +124,7 @@ COMMIT;
 ## One last hurdle: does the row even exist?
 
 
-Some variations of this query actually check if the `UPDATE` affected any rows. If it did not, it means the session token did not exist, and the endpoint returns an error. Which is a bit debatable to me because it breaks idempotency and I don't really see the point. But it was important to me to do any breaking changes.
+Some variations of this query actually check if the `UPDATE` affected any rows. If it did not, it means the session token did not exist, and the endpoint returns an error. Which is a bit debatable to me because it breaks idempotency and I don't really see the point. But it was important to me to avoid any breaking changes.
 
 And the problem is that by adding `WHERE active = true`, we broke it: we cannot distinguish anymore whether the row count is 0 because the row did not exist, or because it existed and was already marked as inactive.
 

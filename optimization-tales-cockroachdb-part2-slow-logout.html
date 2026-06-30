@@ -115,7 +115,7 @@ Do not edit it by hand.
 </details>
 
 <p>Quick question: What do you do when there is downtime at work? Read the news, tidy your inbox... Hunt for slow SQL queries?</p>
-<p>I'm in the last bucket. Embolden by my last success of speeding up the <a href="/blog/optimization-tales-cockroachdb-part1.html">password reset flow</a>, where too many rows were scanned, I stumbled upon a query that looked so simple, yet was very slow and did <em>thousands</em> of retries, for an endpoint that very heavily used... This peaked my interest.</p>
+<p>I'm in the last bucket. Emboldened by my last success of speeding up the <a href="/blog/optimization-tales-cockroachdb-part1.html">password reset flow</a>, where too many rows were scanned, I stumbled upon a query that looked so simple, yet was very slow and did <em>thousands</em> of retries, for an endpoint that very heavily used... This peaked my interest.</p>
 <p>As always, the work is <a href="https://github.com/ory/kratos/commit/277d7697125df31f6ea3dc4f773548218fdbfa79">open-source</a>!</p>
 <p><em>This is part 2 of my optimization adventures with CockroachDB. See <a href="/blog/optimization-tales-cockroachdb-part1.html">part 1</a>.</em></p>
 <h2 id="the-context">
@@ -151,7 +151,7 @@ Do not edit it by hand.
 <p>If it looks like gibberish to you... Know that it did to me initially. Let's unpack it slowly:</p>
 <ul>
 <li><code>TransactionRetryWithProtoRefreshError</code>: the transaction was aborted by the server and the client was instructed to retry. We'll see why in a second. This is completely expected and normal behavior in CockroachDB in the default isolation level (Serializable).</li>
-<li><code>ReadWithinUncertaintyIntervalError: read [...] encountered previous write</code>: We tried to read the row containing the session token, in order to write to it, but another write happened concurrently on this row, and won the race against us. So we have to restart from the top: re-read the fresh row data.</li>
+<li><code>ReadWithinUncertaintyIntervalError: read [...] encountered previous write</code>: We tried to read the row containing the session token, in order to write to it, but we encounter a value with a higher (meaning: more recent) timestamp. So we conservatively have to restart from the top: re-read the fresh row data.</li>
 </ul>
 <h2 id="but-why">
   <a class="title" href="#but-why">But why?</a>
@@ -180,7 +180,7 @@ Do not edit it by hand.
   </div>
   <code class="language-sql"><span class="line-number"></span><span class="code-hl">UPDATE sessions SET active = false WHERE active = true AND token = ?</span>
 </code></pre>
-<p>There is no semantic change, and yet, this means way fewer writes (up to 1, now) and fewer retries. Why? Because <a href="https://www.cockroachlabs.com/docs/v26.2/architecture/transaction-layer#transaction-conflicts">transaction conflicts</a> in CockroachDB happen in two cases, write-write and write-read:</p>
+<p>There is no semantic change, and yet, this means way fewer writes (up to 1, now) and fewer retries. Why? Because <a href="https://www.cockroachlabs.com/docs/v26.2/architecture/transaction-layer#transaction-conflicts">transaction conflicts</a> in CockroachDB happen in two main cases, write-write and write-read:</p>
 <blockquote>
 <p>CockroachDB's transactions allow the following types of conflicts that involve running into a write intent:</p>
 <p>Write-write, where two transactions create write intents or acquire a lock on the same key.</p>
@@ -227,7 +227,7 @@ Your application needs to maintain a high workload concurrency with minimal tran
   <a class="title" href="#one-last-hurdle-does-the-row-even-exist">One last hurdle: does the row even exist?</a>
   <a class="hash-anchor" href="#one-last-hurdle-does-the-row-even-exist" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>Some variations of this query actually check if the <code>UPDATE</code> affected any rows. If it did not, it means the session token did not exist, and the endpoint returns an error. Which is a bit debatable to me because it breaks idempotency and I don't really see the point. But it was important to me to do any breaking changes.</p>
+<p>Some variations of this query actually check if the <code>UPDATE</code> affected any rows. If it did not, it means the session token did not exist, and the endpoint returns an error. Which is a bit debatable to me because it breaks idempotency and I don't really see the point. But it was important to me to avoid any breaking changes.</p>
 <p>And the problem is that by adding <code>WHERE active = true</code>, we broke it: we cannot distinguish anymore whether the row count is 0 because the row did not exist, or because it existed and was already marked as inactive.</p>
 <p>So, with some SQL acrobatics, I came up with this query using two CTEs to keep the same API contract:</p>
 <pre>
