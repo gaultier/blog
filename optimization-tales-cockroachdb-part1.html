@@ -603,7 +603,7 @@ This is a big gain in terms of latency: at around 250ms network latency between 
 <li>What am I optimizing for? CPU, latency, memory, contention time, number of retries, throughput, etc. In our case: rows scanned, mainly.</li>
 <li>When am I done? What is an acceptable performance budget? In our case: ~10 rows scanned.</li>
 </ul>
-<p>For the recovery flow, latency (or throughput for that matter) do not <em>really</em> matter: whether it takes 1ms or 5s is <em>fine</em>. I say this as a performance <del>junkie</del> advocate! I hate slow software! But for user driven, rarely performed actions, a handful of seconds is ok! What is not ok is creating humongous load on the database for no reason, which impacts every action in the system. That was my goal: reduce rows scanned to &lt;10 and CPU time to &lt;10ms. Reducing latency is a nice side-effect.</p>
+<p>For the recovery flow, latency (or throughput for that matter) do not <em>really</em> matter: whether it takes 1ms or 5s is <em>fine</em>. I say this as a performance <del>junkie</del> advocate! I hate slow software! But for user driven, rarely performed actions, a handful of seconds is ok! What is not ok is creating humongous load on the database for no reason, which impacts every action in the system. Reducing latency is a nice side-effect.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <div id="donate">

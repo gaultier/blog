@@ -463,6 +463,6 @@ Finally, when starting with any kind of optimization, I think you have to establ
 - What am I optimizing for? CPU, latency, memory, contention time, number of retries, throughput, etc. In our case: rows scanned, mainly.
 - When am I done? What is an acceptable performance budget? In our case: ~10 rows scanned.
 
-For the recovery flow, latency (or throughput for that matter) do not *really* matter: whether it takes 1ms or 5s is *fine*. I say this as a performance ~junkie~ advocate! I hate slow software! But for user driven, rarely performed actions, a handful of seconds is ok! What is not ok is creating humongous load on the database for no reason, which impacts every action in the system. That was my goal: reduce rows scanned to <10 and CPU time to <10ms. Reducing latency is a nice side-effect.
+For the recovery flow, latency (or throughput for that matter) do not *really* matter: whether it takes 1ms or 5s is *fine*. I say this as a performance ~junkie~ advocate! I hate slow software! But for user driven, rarely performed actions, a handful of seconds is ok! What is not ok is creating humongous load on the database for no reason, which impacts every action in the system. Reducing latency is a nice side-effect.
 
 
