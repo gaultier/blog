@@ -304,10 +304,11 @@ So even if it's a small win, it is still a win.
 
 ## Final results
 
+Let's observe the latency of this query in production during the deployment of the fix:
 
 ![Results](crdb_recovery_addresses_3.png)
 
-Latency for this query went from a consistent 1-2s to typically < 0.5s. All of the time is spent waiting on the network (due to cross-region latency).
+It went from a consistent 1-2s to typically < 0.5s. All of the time is spent waiting on the network (due to cross-region latency).
 
 More importantly, it completely disappeared from the top 10000 queries in terms of CPU time or rows scanned.
 

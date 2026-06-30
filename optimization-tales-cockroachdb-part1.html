@@ -473,8 +473,9 @@ This is a big gain in terms of latency: at around 250ms network latency between 
   <a class="title" href="#final-results">Final results</a>
   <a class="hash-anchor" href="#final-results" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
+<p>Let's observe the latency of this query in production during the deployment of the fix:</p>
 <p><img src="crdb_recovery_addresses_3.png" alt="Results" /></p>
-<p>Latency for this query went from a consistent 1-2s to typically &lt; 0.5s. All of the time is spent waiting on the network (due to cross-region latency).</p>
+<p>It went from a consistent 1-2s to typically &lt; 0.5s. All of the time is spent waiting on the network (due to cross-region latency).</p>
 <p>More importantly, it completely disappeared from the top 10000 queries in terms of CPU time or rows scanned.</p>
 <p>By revamping the indexes and being very multi-region aware, we could reduce the latency further, but it's already 'good enough'. See the conclusion for a discussion about what 'good enough' means.</p>
 <p>Let's measure the final query in production in the worst case: a tenant that has 47 million recovery addresses, and we query from a different region (so that we have to pay for the cross-region latency):</p>
