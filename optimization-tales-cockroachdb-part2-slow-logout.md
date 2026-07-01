@@ -1,4 +1,4 @@
-Title: Optimization tales with CockroachDB: the slow logout
+Title: Optimization tales with CockroachDB: the slow logout (part 2)
 Tags: SQL, Optimization, CockroachDB
 ---
 

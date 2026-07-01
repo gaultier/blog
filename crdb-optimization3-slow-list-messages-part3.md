@@ -1,4 +1,4 @@
-Title: Optimization tales with CockroachDB: the slow list of messages
+Title: Optimization tales with CockroachDB: the slow list of messages (part 3)
 Tags: SQL, Optimization, CockroachDB
 ---
 
@@ -60,14 +60,14 @@ spans: [/'gcp-asia-northeast1'/'000e377a-062c-45b1-961c-1b28d682df6a' - /'gcp-as
 Let's unpack it, the index in use is `nid ASC, recipient ASC, created_at DESC)`, and a span is `/'gcp-asia-northeast1'/'000e377a-062c-45b1-961c-1b28d682df6a' - /'gcp-asia-northeast1'/'000e377a-062c-45b1-961c-1b28d682df6a'`, which means:
 
 1. We use CockroachDB in a multi-region setup. The query is fanned-out to all regions in parallel. So far so good.
-1. The `nid` is then used in the index, so that only rows for the current tenant are scanned. That's great.
+1. The `nid` (i.e. tenant id) is then used in the index, so that only rows for the current tenant are scanned. That's great.
 1. That's it.
 
 
 Wait wait wait. That means we are reading all the rows of the tenant in memory, and then doing some post-processing to apply the remaining filters? But that makes no sense, because the query provides `created_at`, but this field is not used at all in the index!
 
 
-Ah, that is the same issue as in [part 1](/blog/optimization-tales-cockroachdb-part1.html): we use a multi-column index `(A, B, C)` and provide only `A` and `C`, which means the database can only really use `A` (i.e.: `nid`, the tenant id) in the index, and scans all of the remaining rows into memory. That explains why we read millions of rows.
+Aaaah, I understand now: that is the same issue as in [part 1](/blog/optimization-tales-cockroachdb-part1.html). We use a multi-column index `(A, B, C)` and provide only `A` and `C`, which means the database can only really use `A` (i.e.: `nid`, the tenant id) in the index, and scans all of the remaining rows into memory. That explains why we read millions of rows.
 
 
 I'll re-use the diagrams from [part 1](/blog/optimization-tales-cockroachdb-part1.html) to explain how the index looks like from the database perspective:
@@ -133,15 +133,16 @@ These steps are visible in the plan:
                     spans: [/'gcp-asia-northeast1'/'000e377a-062c-45b1-961c-1b28d682df6a' - /'gcp-asia-northeast1'/'000e377a-062c-45b1-961c-1b28d682df6a'] [/'gcp-europe-west3'/'000e377a-062c-45b1-961c-1b28d682df6a' - /'gcp-europe-west3'/'000e377a-062c-45b1-961c-1b28d682df6a'] [/'gcp-us-east4'/'000e377a-062c-45b1-961c-1b28d682df6a' - /'gcp-us-east4'/'000e377a-062c-45b1-961c-1b28d682df6a'] [/'gcp-us-west2'/'000e377a-062c-45b1-961c-1b28d682df6a' - /'gcp-us-west2'/'000e377a-062c-45b1-961c-1b28d682df6a']
 ```
 
+*In this example I accidentally ran the query for a tenant with very few rows (4), which is why all the numbers are low. But the inefficient index use in the first step is the culprit no matter the tenant.*
 
 So, completely suboptimal.
 
 
 
-## The fix
+## The right fix
 
 
-What we want is this index: `(nid, created_at, id)` (or  `(nid, id, created_at)`) so that the 3 provided fields in the query are used in the index.
+What we want is this index: `(nid, created_at, id)` so that the 3 provided fields in the query are used in the index.
 
 It turns out that this index used to exist! And then at some point it was removed. Either the person thought this index is unused, or that another index is better in this case. But that was the wrong move. 
 
@@ -156,6 +157,22 @@ CockroachDB has a cool feature where you can add an index in production as `NOT 
 
 
 Since `Kratos` supports 4 databases (SQLite, PostgreSQL, MySQL, CockroachDB), and this fix works on all databases, every single user benefits from it!
+
+
+## The wrong fix
+
+Since the query provides `nid`, `id`, and `created_at`, would the index `(nid, id, created_at)` also work?
+
+Counter-intuitively: no! 
+
+Why is that?
+
+The query does: `ORDER BY created_at DESC, id ASC`. The order matters: first we sort by `created_at`, and then by `id`.  With the index `(nid, id, created_at)`, `created_at` is not the left-leading column after `nid` so the `ORDER BY` no longer matches the order of the index fields. That would force the planner to load all of the rows into memory and sort them there!
+
+Order matters. 
+
+
+We alternatively could drop `id` from the `ORDER BY` clause since it is actually not required in this particular case, but I decided not to, because that would require modifying the pagination library that generates this query. This pagination library is used throughout the codebase so that would be a big risky change.
 
 
 ## Results

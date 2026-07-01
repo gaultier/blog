@@ -5,7 +5,7 @@ Do not edit it by hand.
 <!DOCTYPE html>
 <html>
 <head>
-<title>Optimization tales with CockroachDB: the slow list of messages</title>
+<title>Optimization tales with CockroachDB: the slow list of messages (part 3)</title>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link type="application/atom+xml" href="/blog/feed.xml" rel="self">
@@ -74,7 +74,7 @@ Do not edit it by hand.
 <p class="publication-date">Published on 2026-07-01. Last modified on 2026-07-01.</p>
 </div>
 <div class="article-title">
-  <h1>Optimization tales with CockroachDB: the slow list of messages</h1>
+  <h1>Optimization tales with CockroachDB: the slow list of messages (part 3)</h1>
 <div class="tags"> <a href="/blog/articles-by-tag.html#sql" class="tag">SQL</a> <a href="/blog/articles-by-tag.html#optimization" class="tag">Optimization</a> <a href="/blog/articles-by-tag.html#cockroachdb" class="tag">CockroachDB</a> </div>
 </div>
   <details class="toc"><summary>Table of contents</summary>
@@ -85,7 +85,11 @@ Do not edit it by hand.
 </li>
 
   <li>
-    <a href="#the-fix">The fix</a>
+    <a href="#the-right-fix">The right fix</a>
+</li>
+
+  <li>
+    <a href="#the-wrong-fix">The wrong fix</a>
 </li>
 
   <li>
@@ -153,11 +157,11 @@ Do not edit it by hand.
 <p>Let's unpack it, the index in use is <code>nid ASC, recipient ASC, created_at DESC)</code>, and a span is <code>/'gcp-asia-northeast1'/'000e377a-062c-45b1-961c-1b28d682df6a' - /'gcp-asia-northeast1'/'000e377a-062c-45b1-961c-1b28d682df6a'</code>, which means:</p>
 <ol>
 <li>We use CockroachDB in a multi-region setup. The query is fanned-out to all regions in parallel. So far so good.</li>
-<li>The <code>nid</code> is then used in the index, so that only rows for the current tenant are scanned. That's great.</li>
+<li>The <code>nid</code> (i.e. tenant id) is then used in the index, so that only rows for the current tenant are scanned. That's great.</li>
 <li>That's it.</li>
 </ol>
 <p>Wait wait wait. That means we are reading all the rows of the tenant in memory, and then doing some post-processing to apply the remaining filters? But that makes no sense, because the query provides <code>created_at</code>, but this field is not used at all in the index!</p>
-<p>Ah, that is the same issue as in <a href="/blog/optimization-tales-cockroachdb-part1.html">part 1</a>: we use a multi-column index <code>(A, B, C)</code> and provide only <code>A</code> and <code>C</code>, which means the database can only really use <code>A</code> (i.e.: <code>nid</code>, the tenant id) in the index, and scans all of the remaining rows into memory. That explains why we read millions of rows.</p>
+<p>Aaaah, I understand now: that is the same issue as in <a href="/blog/optimization-tales-cockroachdb-part1.html">part 1</a>. We use a multi-column index <code>(A, B, C)</code> and provide only <code>A</code> and <code>C</code>, which means the database can only really use <code>A</code> (i.e.: <code>nid</code>, the tenant id) in the index, and scans all of the remaining rows into memory. That explains why we read millions of rows.</p>
 <p>I'll re-use the diagrams from <a href="/blog/optimization-tales-cockroachdb-part1.html">part 1</a> to explain how the index looks like from the database perspective:</p>
 <p><img src="crdb_index.svg" alt="Index" /></p>
 <p>The optimal use is a point lookup, where all fields of the index are provided by the query:</p>
@@ -209,12 +213,13 @@ Do not edit it by hand.
 <span class="line-number"></span><span class="code-hl">                    table: courier_messages@courier_messages_nid_recipient_created_at_id_idx</span>
 <span class="line-number"></span><span class="code-hl">                    spans: [/'gcp-asia-northeast1'/'000e377a-062c-45b1-961c-1b28d682df6a' - /'gcp-asia-northeast1'/'000e377a-062c-45b1-961c-1b28d682df6a'] [/'gcp-europe-west3'/'000e377a-062c-45b1-961c-1b28d682df6a' - /'gcp-europe-west3'/'000e377a-062c-45b1-961c-1b28d682df6a'] [/'gcp-us-east4'/'000e377a-062c-45b1-961c-1b28d682df6a' - /'gcp-us-east4'/'000e377a-062c-45b1-961c-1b28d682df6a'] [/'gcp-us-west2'/'000e377a-062c-45b1-961c-1b28d682df6a' - /'gcp-us-west2'/'000e377a-062c-45b1-961c-1b28d682df6a']</span>
 </code></pre>
+<p><em>In this example I accidentally ran the query for a tenant with very few rows (4), which is why all the numbers are low. But the inefficient index use in the first step is the culprit no matter the tenant.</em></p>
 <p>So, completely suboptimal.</p>
-<h2 id="the-fix">
-  <a class="title" href="#the-fix">The fix</a>
-  <a class="hash-anchor" href="#the-fix" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="the-right-fix">
+  <a class="title" href="#the-right-fix">The right fix</a>
+  <a class="hash-anchor" href="#the-right-fix" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>What we want is this index: <code>(nid, created_at, id)</code> (or  <code>(nid, id, created_at)</code>) so that the 3 provided fields in the query are used in the index.</p>
+<p>What we want is this index: <code>(nid, created_at, id)</code> so that the 3 provided fields in the query are used in the index.</p>
 <p>It turns out that this index used to exist! And then at some point it was removed. Either the person thought this index is unused, or that another index is better in this case. But that was the wrong move.</p>
 <p>Ok, so we just have to re-add it I guess:</p>
 <pre>
@@ -227,6 +232,16 @@ Do not edit it by hand.
 </code></pre>
 <p>CockroachDB has a cool feature where you can add an index in production as <code>NOT VISIBLE</code>, which means no queries use it, and then when testing, you can force your query to see the index and use it. I did that, and I confirmed the same query used the new index. Since indexes are added in a background job (and we can even lower the load with <code>LOW PRIORITY</code>), we have the luxury to experiment in production safely.</p>
 <p>Since <code>Kratos</code> supports 4 databases (SQLite, PostgreSQL, MySQL, CockroachDB), and this fix works on all databases, every single user benefits from it!</p>
+<h2 id="the-wrong-fix">
+  <a class="title" href="#the-wrong-fix">The wrong fix</a>
+  <a class="hash-anchor" href="#the-wrong-fix" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>Since the query provides <code>nid</code>, <code>id</code>, and <code>created_at</code>, would the index <code>(nid, id, created_at)</code> also work?</p>
+<p>Counter-intuitively: no!</p>
+<p>Why is that?</p>
+<p>The query does: <code>ORDER BY created_at DESC, id ASC</code>. The order matters: first we sort by <code>created_at</code>, and then by <code>id</code>.  With the index <code>(nid, id, created_at)</code>, <code>created_at</code> is not the left-leading column after <code>nid</code> so the <code>ORDER BY</code> no longer matches the order of the index fields. That would force the planner to load all of the rows into memory and sort them there!</p>
+<p>Order matters.</p>
+<p>We alternatively could drop <code>id</code> from the <code>ORDER BY</code> clause since it is actually not required in this particular case, but I decided not to, because that would require modifying the pagination library that generates this query. This pagination library is used throughout the codebase so that would be a big risky change.</p>
 <h2 id="results">
   <a class="title" href="#results">Results</a>
   <a class="hash-anchor" href="#results" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
