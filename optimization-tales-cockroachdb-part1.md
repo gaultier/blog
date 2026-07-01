@@ -2,6 +2,8 @@ Title: Optimization tales with CockroachDB: the slow password reset flow
 Tags: SQL, Optimization, CockroachDB
 ---
 
+*Discussions: [/r/programming](https://old.reddit.com/r/programming/comments/1ujnc38/optimization_tales_with_cockroachdb_the_slow/?).*
+
 
 It all started one morning. I opened Slack as usual to start my working day, only to find a message from the CTO:
 
