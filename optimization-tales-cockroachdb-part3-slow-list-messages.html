@@ -143,7 +143,7 @@ Do not edit it by hand.
 <span class="line-number"></span><span class="code-hl">ORDER BY created_at DESC, id ASC</span>
 <span class="line-number"></span><span class="code-hl">LIMIT 100;</span>
 </code></pre>
-<p>This is basic pagination by id. The query gets generated from a pagination library so it looks a bit funky and perhaps slightly suboptimal but it works correctly.</p>
+<p>This is basic pagination by <code>(created_at, id)</code>. The query gets generated from a pagination library so it looks a bit funky and perhaps slightly suboptimal but it works correctly.</p>
 <p>So why is it so goddamn slow?</p>
 <p>I looked at the first step in the plan using <code>EXPLAIN ANALYZE</code> and I see we do use the index <code>courier_messages_nid_recipient_created_at_id_idx</code> (indeed, the statistics from CockroachDB mentioned <code>Full table scan: No</code>):</p>
 <pre>
@@ -219,7 +219,8 @@ Do not edit it by hand.
 <p>Why is that?</p>
 <p>The query does: <code>ORDER BY created_at DESC, id ASC</code>. The order matters: first we sort by <code>created_at</code>, and then by <code>id</code>.  With the index <code>(nid, id, created_at)</code>, <code>created_at</code> is not the left-leading column after <code>nid</code> so the <code>ORDER BY</code> no longer matches the order of the index fields. That would force the planner to load all of the rows into memory and sort them there and we're back to square one!</p>
 <p>Order matters.</p>
-<p>We alternatively could drop <code>id</code> from the <code>ORDER BY</code> clause since it is actually not required in this particular case, but I decided not to, because that would require modifying the pagination library that generates this query. This pagination library is used throughout the codebase so that would be a big risky change.</p>
+<hr />
+<p>We alternatively could drop <code>id</code> from the <code>ORDER BY</code> clause since it is debatable whether a stable total order is required in this particular case, but I decided not to, because that would require modifying the pagination library that generates this query. This pagination library is used throughout the codebase so that would be a big risky change.</p>
 <h2 id="results">
   <a class="title" href="#results">Results</a>
   <a class="hash-anchor" href="#results" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>

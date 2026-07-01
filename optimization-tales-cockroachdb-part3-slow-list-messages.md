@@ -45,7 +45,7 @@ ORDER BY created_at DESC, id ASC
 LIMIT 100;
 ```
 
-This is basic pagination by id. The query gets generated from a pagination library so it looks a bit funky and perhaps slightly suboptimal but it works correctly.
+This is basic pagination by `(created_at, id)`. The query gets generated from a pagination library so it looks a bit funky and perhaps slightly suboptimal but it works correctly.
 
 So why is it so goddamn slow?
 
@@ -148,7 +148,9 @@ The query does: `ORDER BY created_at DESC, id ASC`. The order matters: first we 
 Order matters. 
 
 
-We alternatively could drop `id` from the `ORDER BY` clause since it is actually not required in this particular case, but I decided not to, because that would require modifying the pagination library that generates this query. This pagination library is used throughout the codebase so that would be a big risky change.
+---
+
+We alternatively could drop `id` from the `ORDER BY` clause since it is debatable whether a stable total order is required in this particular case, but I decided not to, because that would require modifying the pagination library that generates this query. This pagination library is used throughout the codebase so that would be a big risky change.
 
 
 ## Results

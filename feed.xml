@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 <title>Philippe Gaultier's blog</title>
 <link href="https://gaultier.github.io/blog"/>
-<updated>2026-07-01T17:23:35+02:00</updated>
+<updated>2026-07-01T17:24:32+02:00</updated>
 <author>
   <name>Philippe Gaultier</name>
 </author>
@@ -429,7 +429,7 @@
 <title>Optimization tales with CockroachDB: the slow list of messages (part 3)</title>
 <link href="https://gaultier.github.io/blog/optimization-tales-cockroachdb-part3-slow-list-messages.html"/>
 <id>urn:uuid:975b2ad6-84f0-5845-b134-b8dc961753e3</id>
-<updated>2026-07-01T17:23:35+02:00</updated>
+<updated>2026-07-01T17:24:32+02:00</updated>
 <published>2026-07-01T17:11:05+02:00</published>
 </entry>
     </feed>
