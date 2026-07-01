@@ -45,7 +45,7 @@ ORDER BY created_at DESC, id ASC
 LIMIT 100;
 ```
 
-This is basic pagination by id. The query gets generated from a pagination library so it looks a bit funky and perhaps slighly suboptimal but it works correctly.
+This is basic pagination by id. The query gets generated from a pagination library so it looks a bit funky and perhaps slightly suboptimal but it works correctly.
 
 So why is it so goddamn slow?
 
@@ -153,6 +153,9 @@ CREATE INDEX courier_messages_nid_created_at_id_idx
 ```
 
 CockroachDB has a cool feature where you can add an index in production as `NOT VISIBLE`, which means no queries use it, and then when testing, you can force your query to see the index and use it. I did that, and I confirmed the same query used the new index. Since indexes are added in a background job (and we can even lower the load with `LOW PRIORITY`), we have the luxury to experiment in production safely.
+
+
+Since `Kratos` supports 4 databases (SQLite, PostgreSQL, MySQL, CockroachDB), and this fix works on all databases, every single user benefits from it!
 
 
 ## Results

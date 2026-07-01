@@ -139,7 +139,7 @@ Do not edit it by hand.
 <span class="line-number"></span><span class="code-hl">ORDER BY created_at DESC, id ASC</span>
 <span class="line-number"></span><span class="code-hl">LIMIT 100;</span>
 </code></pre>
-<p>This is basic pagination by id. The query gets generated from a pagination library so it looks a bit funky and perhaps slighly suboptimal but it works correctly.</p>
+<p>This is basic pagination by id. The query gets generated from a pagination library so it looks a bit funky and perhaps slightly suboptimal but it works correctly.</p>
 <p>So why is it so goddamn slow?</p>
 <p>I looked at the first step in the plan using <code>EXPLAIN ANALYZE</code> and I see we do use the index <code>courier_messages_nid_recipient_created_at_id_idx</code> (indeed, the statistics from CockroachDB mentioned <code>Full table scan: No</code>):</p>
 <pre>
@@ -226,6 +226,7 @@ Do not edit it by hand.
 <span class="line-number"></span><span class="code-hl">  ON courier_messages (nid ASC, created_at DESC, id ASC);</span>
 </code></pre>
 <p>CockroachDB has a cool feature where you can add an index in production as <code>NOT VISIBLE</code>, which means no queries use it, and then when testing, you can force your query to see the index and use it. I did that, and I confirmed the same query used the new index. Since indexes are added in a background job (and we can even lower the load with <code>LOW PRIORITY</code>), we have the luxury to experiment in production safely.</p>
+<p>Since <code>Kratos</code> supports 4 databases (SQLite, PostgreSQL, MySQL, CockroachDB), and this fix works on all databases, every single user benefits from it!</p>
 <h2 id="results">
   <a class="title" href="#results">Results</a>
   <a class="hash-anchor" href="#results" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
