@@ -4,7 +4,7 @@ Tags: SQL, Optimization, CockroachDB
 
 After fixing [too many rows scanned](/blog/optimization-tales-cockroachdb-part1.html) and [too many retries](/blog/optimization-tales-cockroachdb-part2-slow-logout.html), I came back to the list of slowest queries in the CockroachDB dashboard. 
 
-This one piqued my curiosity: 12s runtime, 1.8 millions rows read, SQL CPU time of 442 ms:
+This one piqued my curiosity: 12s runtime, 1.8 million rows read, SQL CPU time of 442 ms:
 
 ![Problem](crdb_optimization_part3-1.png)
 
@@ -39,7 +39,7 @@ And the query roughly does:
 SELECT * 
 FROM courier_messages
 WHERE nid = ? 
-    AND (created_at < now() OR created_at = now())
+    AND (created_at < ? OR created_at = ?)
     AND id > ?
 ORDER BY created_at DESC, id ASC
 LIMIT 100;
