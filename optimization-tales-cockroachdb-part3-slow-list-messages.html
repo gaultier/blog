@@ -217,7 +217,7 @@ Do not edit it by hand.
 <p>Since the query provides <code>nid</code>, <code>id</code>, and <code>created_at</code>, would the index <code>(nid, id, created_at)</code> also work?</p>
 <p>Counter-intuitively: no!</p>
 <p>Why is that?</p>
-<p>The query does: <code>ORDER BY created_at DESC, id ASC</code>. The order matters: first we sort by <code>created_at</code>, and then by <code>id</code>.  With the index <code>(nid, id, created_at)</code>, <code>created_at</code> is not the left-leading column after <code>nid</code> so the <code>ORDER BY</code> no longer matches the order of the index fields. That would force the planner to load all of the rows into memory and sort them there!</p>
+<p>The query does: <code>ORDER BY created_at DESC, id ASC</code>. The order matters: first we sort by <code>created_at</code>, and then by <code>id</code>.  With the index <code>(nid, id, created_at)</code>, <code>created_at</code> is not the left-leading column after <code>nid</code> so the <code>ORDER BY</code> no longer matches the order of the index fields. That would force the planner to load all of the rows into memory and sort them there and we're back to square one!</p>
 <p>Order matters.</p>
 <p>We alternatively could drop <code>id</code> from the <code>ORDER BY</code> clause since it is actually not required in this particular case, but I decided not to, because that would require modifying the pagination library that generates this query. This pagination library is used throughout the codebase so that would be a big risky change.</p>
 <h2 id="results">

@@ -143,7 +143,7 @@ Counter-intuitively: no!
 
 Why is that?
 
-The query does: `ORDER BY created_at DESC, id ASC`. The order matters: first we sort by `created_at`, and then by `id`.  With the index `(nid, id, created_at)`, `created_at` is not the left-leading column after `nid` so the `ORDER BY` no longer matches the order of the index fields. That would force the planner to load all of the rows into memory and sort them there!
+The query does: `ORDER BY created_at DESC, id ASC`. The order matters: first we sort by `created_at`, and then by `id`.  With the index `(nid, id, created_at)`, `created_at` is not the left-leading column after `nid` so the `ORDER BY` no longer matches the order of the index fields. That would force the planner to load all of the rows into memory and sort them there and we're back to square one!
 
 Order matters. 
 

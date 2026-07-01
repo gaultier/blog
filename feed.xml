@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 <title>Philippe Gaultier's blog</title>
 <link href="https://gaultier.github.io/blog"/>
-<updated>2026-07-01T17:22:45+02:00</updated>
+<updated>2026-07-01T17:23:35+02:00</updated>
 <author>
   <name>Philippe Gaultier</name>
 </author>
@@ -413,7 +413,7 @@
 <title>Optimization tales with CockroachDB: the slow password reset flow (part 1)</title>
 <link href="https://gaultier.github.io/blog/optimization-tales-cockroachdb-part1.html"/>
 <id>urn:uuid:c9bd96a5-08ac-59bf-8a08-34cee4d38073</id>
-<updated>2026-07-01T15:25:58+02:00</updated>
+<updated>2026-07-01T17:10:19+02:00</updated>
 <published>2026-06-29T16:09:53+02:00</published>
 </entry>
     
@@ -421,7 +421,7 @@
 <title>Optimization tales with CockroachDB: the slow logout (part 2)</title>
 <link href="https://gaultier.github.io/blog/optimization-tales-cockroachdb-part2-slow-logout.html"/>
 <id>urn:uuid:dea689c5-09ad-55f2-b296-379d8c67e1d9</id>
-<updated>2026-07-01T15:27:38+02:00</updated>
+<updated>2026-07-01T17:10:19+02:00</updated>
 <published>2026-06-30T14:47:42+02:00</published>
 </entry>
     
@@ -429,7 +429,7 @@
 <title>Optimization tales with CockroachDB: the slow list of messages (part 3)</title>
 <link href="https://gaultier.github.io/blog/optimization-tales-cockroachdb-part3-slow-list-messages.html"/>
 <id>urn:uuid:975b2ad6-84f0-5845-b134-b8dc961753e3</id>
-<updated>2026-07-01T17:22:45+02:00</updated>
+<updated>2026-07-01T17:23:35+02:00</updated>
 <published>2026-07-01T17:11:05+02:00</published>
 </entry>
     </feed>
