@@ -194,4 +194,4 @@ Follow up when the optimization has been applied: did it actually work? Can you 
 Know your data and access patterns: what fields are constants, which ones are only mutated in one direction (e.g. active: `true` -> `false`), etc. This knowledge unlocks many optimizations.
 
 
-
+An SQL statement has many semantically equivalent versions, with wildly different performance.

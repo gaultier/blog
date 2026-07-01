@@ -278,6 +278,7 @@ Your application needs to maintain a high workload concurrency with minimal tran
 <p>Have a basic understanding of how long something should take: updating one column in one row should not take several seconds.</p>
 <p>Follow up when the optimization has been applied: did it actually work? Can you observe it?</p>
 <p>Know your data and access patterns: what fields are constants, which ones are only mutated in one direction (e.g. active: <code>true</code> -&gt; <code>false</code>), etc. This knowledge unlocks many optimizations.</p>
+<p>An SQL statement has many semantically equivalent versions, with wildly different performance.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <div id="donate">
