@@ -150,7 +150,7 @@ Order matters.
 
 ---
 
-We alternatively could drop `id` from the `ORDER BY` clause since it is debatable whether a stable total order is required in this particular case, but I decided not to, because that would require modifying the pagination library that generates this query. This pagination library is used throughout the codebase so that would be a big risky change.
+We alternatively could drop `id` from the `ORDER BY` clause since it is debatable whether a stable total order is required in this particular case (`id` is used as a tiebreaker in case two elements have the same `created_at`), but I decided not to, because that would require modifying the pagination library that generates this query. This pagination library is used throughout the codebase so that would be a big risky change.
 
 
 ## Results
