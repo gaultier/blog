@@ -99,44 +99,20 @@ These steps are visible in the plan:
       │ count: 100
       │
       └── • filter
-          │ sql nodes: n48
-          │ regions: gcp-europe-west3
-          │ actual row count: 4
-          │ execution time: 16µs
-          │ sql cpu time: 16µs
-          │ estimated row count: 1
+          │ [...]
           │ filter: (created_at < '2026-06-16 09:02:42.094011') OR ((created_at = '2026-06-16 09:02:42.094011') AND (id > '5956b380-9f51-4882-be87-277e05b60d23'))
           │
           └── • sort
-              │ sql nodes: n48
-              │ regions: gcp-europe-west3
-              │ actual row count: 4
-              │ execution time: 27µs
-              │ estimated max memory allocated: 10 KiB
-              │ sql cpu time: 27µs
-              │ estimated row count: 0
+              │ [...]
               │ order: -created_at,+id
               │
               └── • scan
-                    sql nodes: n48
-                    kv nodes: n8, n12, n25, n61
-                    regions: gcp-asia-northeast1, gcp-europe-west3, gcp-us-east4, gcp-us-west2
-                    actual row count: 4
-                    KV time: 497ms
-                    KV rows decoded: 4
-                    KV bytes read: 410 B
-                    KV gRPC calls: 1
-                    estimated max memory allocated: 20 KiB
-                    sql cpu time: 20µs
-                    estimated row count: 0 (<0.01% of the table; stats collected 2 days ago)
+                    [...]
                     table: courier_messages@courier_messages_nid_recipient_created_at_id_idx
                     spans: [/'gcp-asia-northeast1'/'000e377a-062c-45b1-961c-1b28d682df6a' - /'gcp-asia-northeast1'/'000e377a-062c-45b1-961c-1b28d682df6a'] [/'gcp-europe-west3'/'000e377a-062c-45b1-961c-1b28d682df6a' - /'gcp-europe-west3'/'000e377a-062c-45b1-961c-1b28d682df6a'] [/'gcp-us-east4'/'000e377a-062c-45b1-961c-1b28d682df6a' - /'gcp-us-east4'/'000e377a-062c-45b1-961c-1b28d682df6a'] [/'gcp-us-west2'/'000e377a-062c-45b1-961c-1b28d682df6a' - /'gcp-us-west2'/'000e377a-062c-45b1-961c-1b28d682df6a']
 ```
 
-*In this example I accidentally ran the query for a tenant with very few rows (4), which is why all the numbers are low. But the inefficient index use in the first step is the culprit no matter the tenant.*
-
 So, completely suboptimal.
-
 
 
 ## The right fix
