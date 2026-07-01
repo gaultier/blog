@@ -115,7 +115,7 @@ Do not edit it by hand.
 </details>
 
 <p>Quick question: What do you do when there is downtime at work? Read the news, tidy your inbox... Hunt for slow SQL queries?</p>
-<p>I'm in the last bucket. Emboldened by my last success of speeding up the <a href="/blog/optimization-tales-cockroachdb-part1.html">password reset flow</a>, where too many rows were scanned, I stumbled upon a query that looked so simple, yet was very slow and did <em>thousands</em> of retries, for an endpoint that very heavily used... This peaked my interest.</p>
+<p>I'm in the last bucket. Emboldened by my recent success in speeding up the <a href="/blog/optimization-tales-cockroachdb-part1.html">password reset flow</a>, where too many rows were scanned, I stumbled upon a query that looked so simple, yet was very slow and did <em>thousands</em> of retries, for an endpoint that is very heavily used... This piqued my interest.</p>
 <p>As always, the work is <a href="https://github.com/ory/kratos/commit/277d7697125df31f6ea3dc4f773548218fdbfa79">open-source</a>!</p>
 <p><em>This is part 2 of my optimization adventures with CockroachDB. See <a href="/blog/optimization-tales-cockroachdb-part1.html">part 1</a>.</em></p>
 <h2 id="the-context">
@@ -125,7 +125,7 @@ Do not edit it by hand.
 <p>150K retries, 500 ms statement time:</p>
 <p><img src="crdb_slow_logout2.png" alt="Statement statistics" /></p>
 <p>Contrary to part 1, this time, rows scanned and CPU time are completely fine. But there are way too many retries.</p>
-<p>This query (and many variations of it, all suffering from the same issue), are executed when logging out a user. The session tokens are stored in the <code>sessions</code> table by setting <code>active</code> to false:</p>
+<p>This query (and many variations of it, all suffering from the same issue), are executed when logging out a user. A user is logged out by setting <code>active</code> to false on their session row in the <code>sessions</code> table:</p>
 <pre>
   <div class="code-header">
     <span>Sql</span>
@@ -186,7 +186,7 @@ Do not edit it by hand.
 <p>Write-write, where two transactions create write intents or acquire a lock on the same key.</p>
 <p>Write-read, when a read encounters an existing write intent with a timestamp less than its own.</p>
 </blockquote>
-<p>We now avoid the write-write scenario, yay! We still have the other case (write-read) than can happen:</p>
+<p>We now avoid the write-write scenario, yay! We still have the other case (write-read) that can happen:</p>
 <ol>
 <li>Transaction A starts</li>
 <li>Transaction B starts</li>
@@ -208,7 +208,7 @@ Your application needs to maintain a high workload concurrency with minimal tran
 <ul>
 <li>Non-repeatable reads: &quot;Non-repeatable reads return different row values because a concurrent transaction updated the values in between reads&quot;. Since we do not do more than one read, we are not affected by that.</li>
 <li>Phantom reads: &quot;Phantom reads return different rows because a concurrent transaction changed the set of rows that satisfy the row search&quot;: we do not write to any of the columns included in the <code>WHERE</code> criteria, these are constant (e.g. the session token). So we are not affected by that either.</li>
-<li>Lost update anomaly: &quot;The READ COMMITTED conditions that permit non-repeatable reads and phantom reads also permit lost update anomalies, where an update from a transaction appears to be &quot;lost&quot; because it is overwritten by a concurrent transaction&quot;. We do not care of that because as long as one write <code>active = false</code> on the row succeeds, all subsequent writes are irrelevant. In fact, this is our goal: to avoid redundant updates.</li>
+<li>Lost update anomaly: &quot;The READ COMMITTED conditions that permit non-repeatable reads and phantom reads also permit lost update anomalies, where an update from a transaction appears to be &quot;lost&quot; because it is overwritten by a concurrent transaction&quot;. We do not care about that because as long as one write <code>active = false</code> on the row succeeds, all subsequent writes are irrelevant. In fact, this is our goal: to avoid redundant updates.</li>
 <li>Write skew anomaly: &quot;two concurrent transactions each read values that the other subsequently updates&quot;. We also are fine with that: in the worst case, our transaction will read <code>active</code> as <code>true</code> when another concurrent transaction has already set it to <code>false</code>, and our transaction will do one redundant write. Completely fine.</li>
 </ul>
 <p>Ok, so let's do it:</p>
@@ -267,13 +267,13 @@ Your application needs to maintain a high workload concurrency with minimal tran
 <li>A new bucket appeared for ultra-low latencies. So essentially all latencies moved down a bucket, which is great.</li>
 </ul>
 <p>Also, contention and CPU time of the query (and all variations thereof) went to essentially 0 in the CockroachDB dashboard.</p>
-<p>I am not yet satisfied about these absolute numbers, I believe there is still room for improvement, but I am still happy about the impact of this change.</p>
+<p>I am not yet satisfied with these absolute numbers, I believe there is still room for improvement, but I am still happy about the impact of this change.</p>
 <h2 id="conclusion">
   <a class="title" href="#conclusion">Conclusion</a>
   <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Having the highest isolation level by default is I think the right call from the CockroachDB developers. But it can create some performance hotspots.</p>
-<p>As always: thoroughly read the docs of your database(s). Each own is its own thing. Do not assume that database A behaves like database B you know.</p>
+<p>As always: thoroughly read the docs of your database(s). Each one is its own thing. Do not assume that database A behaves like database B you know.</p>
 <p>As with most optimizations, it's not about making the work faster, it's about avoiding unnecessary work.</p>
 <p>Have a basic understanding of how long something should take: updating one column in one row should not take several seconds.</p>
 <p>Follow up when the optimization has been applied: did it actually work? Can you observe it?</p>
