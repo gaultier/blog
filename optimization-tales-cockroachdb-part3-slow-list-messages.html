@@ -103,7 +103,7 @@ Do not edit it by hand.
 </details>
 
 <p>After fixing <a href="/blog/optimization-tales-cockroachdb-part1.html">too many rows scanned</a> and <a href="/blog/optimization-tales-cockroachdb-part2-slow-logout.html">too many retries</a>, I came back to the list of slowest queries in the CockroachDB dashboard.</p>
-<p>This one piqued my curiosity: 12s runtime, 1.8 millions rows read, SQL CPU time of 442 ms:</p>
+<p>This one piqued my curiosity: 12s runtime, 1.8 million rows read, SQL CPU time of 442 ms:</p>
 <p><img src="crdb_optimization_part3-1.png" alt="Problem" /></p>
 <p>Which is weird given that there is a <code>LIMIT</code> there. I don't remember what the actual limit is in the code, I think it is <code>LIMIT 100</code>. In any case: we are reading millions of rows and throwing them nearly all away, in a very slow manner.</p>
 <p>The worst thing is: this query is doing pagination: reading one page of 100 entries in a table. It should take &lt; 0.5s tops.</p>
@@ -138,7 +138,7 @@ Do not edit it by hand.
   <code class="language-sql"><span class="line-number"></span><span class="code-hl">SELECT * </span>
 <span class="line-number"></span><span class="code-hl">FROM courier_messages</span>
 <span class="line-number"></span><span class="code-hl">WHERE nid = ? </span>
-<span class="line-number"></span><span class="code-hl">    AND (created_at &lt; now() OR created_at = now())</span>
+<span class="line-number"></span><span class="code-hl">    AND (created_at &lt; ? OR created_at = ?)</span>
 <span class="line-number"></span><span class="code-hl">    AND id &gt; ?</span>
 <span class="line-number"></span><span class="code-hl">ORDER BY created_at DESC, id ASC</span>
 <span class="line-number"></span><span class="code-hl">LIMIT 100;</span>
@@ -180,40 +180,18 @@ Do not edit it by hand.
 <span class="line-number"></span><span class="code-hl">      │ count: 100</span>
 <span class="line-number"></span><span class="code-hl">      │</span>
 <span class="line-number"></span><span class="code-hl">      └── • filter</span>
-<span class="line-number"></span><span class="code-hl">          │ sql nodes: n48</span>
-<span class="line-number"></span><span class="code-hl">          │ regions: gcp-europe-west3</span>
-<span class="line-number"></span><span class="code-hl">          │ actual row count: 4</span>
-<span class="line-number"></span><span class="code-hl">          │ execution time: 16µs</span>
-<span class="line-number"></span><span class="code-hl">          │ sql cpu time: 16µs</span>
-<span class="line-number"></span><span class="code-hl">          │ estimated row count: 1</span>
+<span class="line-number"></span><span class="code-hl">          │ [...]</span>
 <span class="line-number"></span><span class="code-hl">          │ filter: (created_at &lt; '2026-06-16 09:02:42.094011') OR ((created_at = '2026-06-16 09:02:42.094011') AND (id &gt; '5956b380-9f51-4882-be87-277e05b60d23'))</span>
 <span class="line-number"></span><span class="code-hl">          │</span>
 <span class="line-number"></span><span class="code-hl">          └── • sort</span>
-<span class="line-number"></span><span class="code-hl">              │ sql nodes: n48</span>
-<span class="line-number"></span><span class="code-hl">              │ regions: gcp-europe-west3</span>
-<span class="line-number"></span><span class="code-hl">              │ actual row count: 4</span>
-<span class="line-number"></span><span class="code-hl">              │ execution time: 27µs</span>
-<span class="line-number"></span><span class="code-hl">              │ estimated max memory allocated: 10 KiB</span>
-<span class="line-number"></span><span class="code-hl">              │ sql cpu time: 27µs</span>
-<span class="line-number"></span><span class="code-hl">              │ estimated row count: 0</span>
+<span class="line-number"></span><span class="code-hl">              │ [...]</span>
 <span class="line-number"></span><span class="code-hl">              │ order: -created_at,+id</span>
 <span class="line-number"></span><span class="code-hl">              │</span>
 <span class="line-number"></span><span class="code-hl">              └── • scan</span>
-<span class="line-number"></span><span class="code-hl">                    sql nodes: n48</span>
-<span class="line-number"></span><span class="code-hl">                    kv nodes: n8, n12, n25, n61</span>
-<span class="line-number"></span><span class="code-hl">                    regions: gcp-asia-northeast1, gcp-europe-west3, gcp-us-east4, gcp-us-west2</span>
-<span class="line-number"></span><span class="code-hl">                    actual row count: 4</span>
-<span class="line-number"></span><span class="code-hl">                    KV time: 497ms</span>
-<span class="line-number"></span><span class="code-hl">                    KV rows decoded: 4</span>
-<span class="line-number"></span><span class="code-hl">                    KV bytes read: 410 B</span>
-<span class="line-number"></span><span class="code-hl">                    KV gRPC calls: 1</span>
-<span class="line-number"></span><span class="code-hl">                    estimated max memory allocated: 20 KiB</span>
-<span class="line-number"></span><span class="code-hl">                    sql cpu time: 20µs</span>
-<span class="line-number"></span><span class="code-hl">                    estimated row count: 0 (&lt;0.01% of the table; stats collected 2 days ago)</span>
+<span class="line-number"></span><span class="code-hl">                    [...]</span>
 <span class="line-number"></span><span class="code-hl">                    table: courier_messages@courier_messages_nid_recipient_created_at_id_idx</span>
 <span class="line-number"></span><span class="code-hl">                    spans: [/'gcp-asia-northeast1'/'000e377a-062c-45b1-961c-1b28d682df6a' - /'gcp-asia-northeast1'/'000e377a-062c-45b1-961c-1b28d682df6a'] [/'gcp-europe-west3'/'000e377a-062c-45b1-961c-1b28d682df6a' - /'gcp-europe-west3'/'000e377a-062c-45b1-961c-1b28d682df6a'] [/'gcp-us-east4'/'000e377a-062c-45b1-961c-1b28d682df6a' - /'gcp-us-east4'/'000e377a-062c-45b1-961c-1b28d682df6a'] [/'gcp-us-west2'/'000e377a-062c-45b1-961c-1b28d682df6a' - /'gcp-us-west2'/'000e377a-062c-45b1-961c-1b28d682df6a']</span>
 </code></pre>
-<p><em>In this example I accidentally ran the query for a tenant with very few rows (4), which is why all the numbers are low. But the inefficient index use in the first step is the culprit no matter the tenant.</em></p>
 <p>So, completely suboptimal.</p>
 <h2 id="the-right-fix">
   <a class="title" href="#the-right-fix">The right fix</a>

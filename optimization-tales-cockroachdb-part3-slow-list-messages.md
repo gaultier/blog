@@ -172,3 +172,4 @@ We can also see that the degenerate cases (tenants with lots of rows which resul
 ## Conclusion
 
 This issue was quite similar to part 1, with a similar number of rows scanned in the millions. This one resulted in an even worse CPU usage due to the sorting done in the query (`ORDER BY`), and while in part 1, the fix was to specify more fields in the query to better use the existing index, here we instead chose to add a previously (and erroneously) removed index.
+
