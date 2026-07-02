@@ -151,6 +151,12 @@ The big issue that creates contention and retries is the scan range: it is huge,
 The better fix is to reduce the scan range: I believe that adding to the `WHERE` clause more precise criteria to exclude these new rows would go a long way, for example: `WHERE status - 'queued' AND created_at < now() - 1 second`.
 
 
+## Wrong optimizations
+
+CockroachDB allows a query to see a past version of the data with `SELECT ... AS OF SYSTEM TIME '-1s'` or `AS OF SYSTEM TIME follower_read_timestamp()`. However, that means that we would also see messages that just got delivered successfully and were just marked as 'successful', e.g. from the previous batch. This would lead to duplicate deliveries for this window of time.
+
+`SELECT ... FOR UPDATE` seems like a natural thing to do in this 'work queue' systems implemented with an SQL database. In fact I used that myself in the past. However this is completely orthogonal: `FOR UPDATE` is used to lock the rows that one worker is working on, to avoid other workers also working on these rows. This is to avoid duplication of work, not to reduce read-write contention. Since we have only one worker here, this is unnecessary and would not help performance.
+
 
 ## Conclusion
 
