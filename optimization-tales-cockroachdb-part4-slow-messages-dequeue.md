@@ -6,7 +6,7 @@ Today, this is the story of a failed optimization. Or rather, an optimization th
 
 
 
-In the [last part](/blog/optimization-tales-cockroachdb-part3-slow-list-messages.html), we optimized listing all messages in the table of messages `courier_messages`. This is a big table with millions of rows and a lot of churns: this is where all SMS or emails notifications are stored before being sent. It is essentially a work queue. And there is one problem: way too many retries to get the next messages to work on:
+In the [last part](/blog/optimization-tales-cockroachdb-part3-slow-list-messages.html), we optimized listing all messages in the table of messages `courier_messages`. This is a big table with millions of rows and a lot of churn: this is where all SMS or email notifications are stored before being sent. It is essentially a work queue. And there is one problem: way too many retries to get the next messages to work on:
 
 ![Too many retries](crdb_slow4_1.png)
 
@@ -15,7 +15,7 @@ Worse: the failure count is identical to the number of retries:
 ![Too many failures](crdb_slow4_2.png)
 
 
-Retrying so many time means that the tail latencies (p95, p99) are really inflated.
+Retrying so many times means that the tail latencies (p95, p99) are really inflated.
 
 
 All other metrics look fine. Weird. Time to investigate.
@@ -86,12 +86,12 @@ Our query uses the index `(status ASC, id ASC)`. So the 'scan range' is: all mes
 And you know what counts as a write in this table *and* is part of this scan range? An `INSERT`! Yes that's right: new messages are enqueued all the time, concurrently, using `INSERT`, and with the status 'queued'. These count as a write, and they contend with our query, because technically, the current list of queued messages is constantly changing, so we need to constantly retry! That's also completely unneeded: we do not need the exact, most recent list of queued messages, we only need 500 arbitrary 'queued' messages.
 
 
-As an aside: there are other components that read these rows, e.g. the search API, but read-read contention is not a thing: concurrent are fine and do not cause retries.
+As an aside: there are other components that read these rows, e.g. the search API, but read-read contention is not a thing: concurrent reads are fine and do not cause retries.
 
 
 Importantly: there is only one worker instance, globally. So we do not have any concurrent writes[^1] (write-write scenario), only read-writes. But that's frustrating: we want to be able to process as many messages as possible, and we are constantly retrying for no good reason.
 
-[^1]: Almost. We have two sources of concurrent writes: A) Once the worker is finished with handling a batch, it updates the status of each message accordingly, e.g. `status = 'success'`. These writes could overlap with the read of the next batch due to clock skew, and because we do not wait (i.e. sleep) between batches. So from the database perspective, the last write and the new read would overlap and create a write-read contention. B) Rows in this table have a TTL of 30 days, so they get removed automatically by the database in the background. But it's rare that messages still in the `queued` state would reach this TTL.
+[^1]: Almost. We have two sources of concurrent writes: A) Once the worker is finished with handling a batch, it updates the status of each message accordingly, e.g. `status = 'sent'`. These writes could overlap with the read of the next batch due to clock skew, and because we do not wait (i.e. sleep) between batches. So from the database perspective, the last write and the new read would overlap and create a write-read contention. B) Rows in this table have a TTL of 30 days, so they get removed automatically by the database in the background. But it's rare that messages still in the `queued` state would reach this TTL.
 
 
 
@@ -162,7 +162,7 @@ Coupled with:
 > Increase the chance that CockroachDB can automatically retry a failed transaction:
 > > Limit the size of the result sets of your transactions to less than the value of the sql.defaults.results_buffer.size cluster setting, so that CockroachDB is more likely to automatically retry when previous reads are invalidated at a pushed timestamp. When a transaction returns a result set larger than the configured buffer size, even if that transaction has been sent as a single batch, CockroachDB cannot automatically retry the transaction.
 
-And it turns out that the result set usually exceed this buffer size (16 KiB by default) and thus the server cannot transparently retry.
+And it turns out that the result set usually exceeds this buffer size (16 KiB by default) and thus the server cannot transparently retry.
 
 
 ## Future optimizations
@@ -171,7 +171,7 @@ And it turns out that the result set usually exceed this buffer size (16 KiB by 
 The big issue that creates contention and retries is the scan range: it is huge, due to the big table and the search criteria `WHERE status = 'queued'` that accidentally encompasses newly inserted rows.
 
 
-The better fix is to reduce the scan range: I believe that adding to the `WHERE` clause more precise criteria to exclude these new rows would go a long way, for example: `WHERE status - 'queued' AND created_at < now() - 1 second`.
+The better fix is to reduce the scan range: I believe that adding to the `WHERE` clause more precise criteria to exclude these new rows would go a long way, for example: `WHERE status = 'queued' AND created_at < now() - 1 second`.
 
 But this would not help if we keep the existing index of `(status, id)`: we would have the exact same scan range as before, and the `created_at` filter would only be applied too late.
 
@@ -183,10 +183,10 @@ We would need to create the index `(status, created_at, id)` to effectively redu
 
 CockroachDB allows a query to see a past version of the data with `SELECT ... AS OF SYSTEM TIME '-1s'` or `AS OF SYSTEM TIME follower_read_timestamp()`. However, that means that we would also see messages that just got delivered successfully and were just marked as 'sent', e.g. from the previous batch. This would lead to duplicate deliveries for this window of time.
 
-`SELECT ... FOR UPDATE` seems like a natural thing to do in this 'work queue' systems implemented with an SQL database. In fact I used that myself in the past. However this is completely orthogonal: `FOR UPDATE` is used to lock the rows that one worker is working on, to avoid other workers also working on these rows. This is to avoid duplication of work, not to reduce read-write contention. Since we have only one worker here, this is unnecessary and would not help performance. In fact it would worsen performance: `FOR UPDATE` acquires locks, which are in CockroachDB replicated, so our read now becomes a write! And it's a lock that our single worker is using, so that's in the current architecture completly unnecessary.
+`SELECT ... FOR UPDATE` seems like a natural thing to do in these 'work queue' systems implemented with an SQL database. In fact I used that myself in the past. However this is completely orthogonal: `FOR UPDATE` is used to lock the rows that one worker is working on, to avoid other workers also working on these rows. This is to avoid duplication of work, not to reduce read-write contention. Since we have only one worker here, this is unnecessary and would not help performance. In fact it would worsen performance: `FOR UPDATE` acquires locks, which in CockroachDB are replicated, so our read now becomes a write! And it's a lock that only our single worker is using, so that's completely unnecessary in the current architecture.
 
 
 ## Conclusion
 
 
-Reflecting on this investigation and somewhat failed optimization, I think where I failed is: I did not fully understand where the concurrent writes came from (i.e.: `INSERT`), and that the scan range is the what matters for contention, not the returned rows. Well, I'll try to deploy this `WHERE created_at < now() - 1 second` additional optimization and follow up with another post.
+Reflecting on this investigation and somewhat failed optimization, I think where I failed is: I did not fully understand where the concurrent writes came from (i.e.: `INSERT`), and that the scan range is what matters for contention, not the returned rows. Well, I'll try to deploy this `WHERE created_at < now() - 1 second` additional optimization and follow up with another post.
