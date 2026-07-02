@@ -176,14 +176,14 @@ The better fix is to reduce the scan range: I believe that adding to the `WHERE`
 But this would not help if we keep the existing index of `(status, id)`: we would have the exact same scan range as before, and the `created_at` filter would only be applied too late.
 
 
-We would need to create the index `(status, created_at, id)` to effectively reduce the scan range.
+We would need to create the index `(status, created_at, id)` to effectively reduce the scan range. And also adapt the `ORDER BY` to be: `ORDER BY created_at` so that it uses the index fields.
 
 
 ## Wrong optimizations
 
 CockroachDB allows a query to see a past version of the data with `SELECT ... AS OF SYSTEM TIME '-1s'` or `AS OF SYSTEM TIME follower_read_timestamp()`. However, that means that we would also see messages that just got delivered successfully and were just marked as 'sent', e.g. from the previous batch. This would lead to duplicate deliveries for this window of time.
 
-`SELECT ... FOR UPDATE` seems like a natural thing to do in this 'work queue' systems implemented with an SQL database. In fact I used that myself in the past. However this is completely orthogonal: `FOR UPDATE` is used to lock the rows that one worker is working on, to avoid other workers also working on these rows. This is to avoid duplication of work, not to reduce read-write contention. Since we have only one worker here, this is unnecessary and would not help performance.
+`SELECT ... FOR UPDATE` seems like a natural thing to do in this 'work queue' systems implemented with an SQL database. In fact I used that myself in the past. However this is completely orthogonal: `FOR UPDATE` is used to lock the rows that one worker is working on, to avoid other workers also working on these rows. This is to avoid duplication of work, not to reduce read-write contention. Since we have only one worker here, this is unnecessary and would not help performance. In fact it would worsen performance: `FOR UPDATE` acquires locks, which are in CockroachDB replicated, so our read now becomes a write! And it's a lock that our single worker is using, so that's in the current architecture completly unnecessary.
 
 
 ## Conclusion
