@@ -79,12 +79,14 @@ Let's unpack it:
 - `TransactionRetryWithProtoRefreshError`: The database instructed us to retry
 - `ReadWithinUncertaintyIntervalError: read [...] encountered previous write`: This means that we have a read-write contention scenario, where our query tries to read the messages, but another part of the code wrote to these ~rows~ the scanned range, so in order to 'read your writes', we have to start from the top and retry.
 
-What is the difference between 'wrote to these rows' and 'wrote to this scanned range'? Well, let's put ourselves in the database shoes. There is this big table, and we want to read rows from it with only one criteria: `status = 'queued'`. Yes, the query has a `LIMIT` but it gets applied at the very end (you can see that with the plan) so for contention purposes, it does not count at all: it only truncates the result set to 100 items.
+What is the difference between 'wrote to these rows' and 'wrote to this scanned range'? Well, let's put ourselves in the database shoes. There is this big table, and we want to read rows from it with only one criteria: `status = 'queued'`. Yes, the query has a `LIMIT` but it gets applied at the very end (you can see that with the plan) so for contention purposes, it does not count at all: it only truncates the result set to 100 items. Also, a healthy queue has just a handful of items in it in the `queued` state, so the limit is not even reached.
 
 Our query uses the index `(status ASC, id ASC)`. So the 'scan range' is: all messages in the 'queued' status. 
 
 And you know what counts as a write in this table *and* is part of this scan range? An `INSERT`! Yes that's right: new messages are enqueued all the time, concurrently, using `INSERT`, and with the status 'queued'. These count as a write, and they contend with our query, because technically, the current list of queued messages is constantly changing, so we need to constantly retry! That's also completely unneeded: we do not need the exact, most recent list of queued messages, we only need 100 arbitrary 'queued' messages.
-Since there are other components that read these rows, e.g. the search API, we can indeed have contention and our worker is forced to retry.
+
+
+As an aside: there are other components that read these rows, e.g. the search API, but read-read contention is not a thing: concurrent are fine and do not cause retries.
 
 
 Importantly: there is only one worker instance, globally. So we do not have any concurrent writes (write-write scenario), only read-writes. But that's frustrating: we want to be able to process as many messages as possible, and we are constantly retrying for no good reason.
