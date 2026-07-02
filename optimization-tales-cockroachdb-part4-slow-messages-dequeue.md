@@ -79,7 +79,7 @@ Let's unpack it:
 - `TransactionRetryWithProtoRefreshError`: The database instructed us to retry
 - `ReadWithinUncertaintyIntervalError: read [...] encountered previous write`: This means that we have a read-write contention scenario, where our query tries to read the messages, but another part of the code wrote to these ~rows~ the scanned range, so in order to 'read your writes', we have to start from the top and retry.
 
-What is the difference between 'wrote to these rows' and 'wrote to this scanned range'? Well, let's put ourselves in the database shoes. There is this big table, and we want to read rows from it with only one criteria: `status = 'queued'`. Yes, the query has a `LIMIT` but it gets applied at the very end (you can see that with the plan) so for contention purposes, it does not count at all: it only truncates the result set to 500 items. Also, a healthy queue has just a handful of items in it in the `queued` state, so the limit is not even reached.
+What is the difference between 'wrote to these rows' and 'wrote to this scanned range'? Well, let's put ourselves in the database shoes. There is this big table, and we want to read rows from it with only one criteria: `status = 'queued'`. Yes, the query has a `LIMIT 500`, but since a healthy queue is normally drained, the scan reads to the end of the span range, which means that the new `INSERT`s land within the scan range.
 
 Our query uses the index `(status ASC, id ASC)`. So the 'scan range' is: all messages in the 'queued' status. 
 
@@ -91,7 +91,7 @@ As an aside: there are other components that read these rows, e.g. the search AP
 
 Importantly: there is only one worker instance, globally. So we do not have any concurrent writes[^1] (write-write scenario), only read-writes. But that's frustrating: we want to be able to process as many messages as possible, and we are constantly retrying for no good reason.
 
-[^1]: Almost. We have two sources of concurrent writes: A) Once the worker is finished with handling a batch, it updates the status of each message accordingly, e.g. `status = 'success'`. These writes would overlap with the read of the next batch depending on the network latency, and because we do not wait (i.e. sleep) between batches. B) Rows in this table have a TTL of 30 days, so they get removed automatically by the database in the background. But it's rare that messages still in the `queued` state would reach this TTL.
+[^1]: Almost. We have two sources of concurrent writes: A) Once the worker is finished with handling a batch, it updates the status of each message accordingly, e.g. `status = 'success'`. These writes could overlap with the read of the next batch due to clock skew, and because we do not wait (i.e. sleep) between batches. So from the database perspective, the last write and the new read would overlap and create a write-read contention. B) Rows in this table have a TTL of 30 days, so they get removed automatically by the database in the background. But it's rare that messages still in the `queued` state would reach this TTL.
 
 
 
