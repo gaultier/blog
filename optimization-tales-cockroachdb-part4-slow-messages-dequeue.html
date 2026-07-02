@@ -86,12 +86,6 @@ Do not edit it by hand.
 
   <li>
     <a href="#investigation">Investigation</a>
-<ul>
-
-  <li>
-    <a href="#the-16-kib-boundary">The 16 KiB boundary</a>
-</li>
-</ul>
 </li>
 
   <li>
@@ -123,7 +117,7 @@ Do not edit it by hand.
 <p><img src="crdb_slow4_2.png" alt="Too many failures" /></p>
 <p>Retrying so many time means that the tail latencies (p95, p99) are really inflated.</p>
 <p>All other metrics look fine. Weird. Time to investigate.</p>
-<p>As always, the code is <a href="https://github.com/ory-corp/cloud/blob/805b09c9bfea2ffc1643cfab986d189f1022e1d3/kratos/kratos-oss/persistence/sql/persister_courier.go#L71-L82">open-source</a>.</p>
+<p>As always, the code is <a href="https://github.com/ory/kratos/blob/master/persistence/sql/persister_courier.go#L71">open-source</a>.</p>
 <h2 id="context">
   <a class="title" href="#context">Context</a>
   <a class="hash-anchor" href="#context" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -161,7 +155,7 @@ Do not edit it by hand.
   <a class="title" href="#investigation">Investigation</a>
   <a class="hash-anchor" href="#investigation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>The <a href="https://github.com/ory-corp/cloud/blob/805b09c9bfea2ffc1643cfab986d189f1022e1d3/kratos/kratos-oss/persistence/sql/persister_courier.go#L71-L82">code</a> is very short and simply runs this query in a loop (and then handles the messages).</p>
+<p>The <a href="https://github.com/ory/kratos/blob/master/persistence/sql/persister_courier.go#L71">code</a> is very short and simply runs this query in a loop (and then handles the messages).</p>
 <p>Two important points for CockroachDB:</p>
 <ul>
 <li>The default isolation level is <code>SERIALIZABLE</code>, the strictest</li>
@@ -187,10 +181,6 @@ Do not edit it by hand.
 <p>As an aside: there are other components that read these rows, e.g. the search API, but read-read contention is not a thing: concurrent are fine and do not cause retries.</p>
 <p>Importantly: there is only one worker instance, globally. So we do not have any concurrent writes<sup class="footnote-ref"><a href="#fn-1" id="fnref-1" data-footnote-ref>1</a></sup>
  (write-write scenario), only read-writes. But that's frustrating: we want to be able to process as many messages as possible, and we are constantly retrying for no good reason.</p>
-<h3 id="the-16-kib-boundary">
-  <a class="title" href="#the-16-kib-boundary">The 16 KiB boundary</a>
-  <a class="hash-anchor" href="#the-16-kib-boundary" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
-</h3>
 <h2 id="the-fix">
   <a class="title" href="#the-fix">The fix</a>
   <a class="hash-anchor" href="#the-fix" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -245,7 +235,7 @@ Do not edit it by hand.
 <p>Limit the size of the result sets of your transactions to less than the value of the sql.defaults.results_buffer.size cluster setting, so that CockroachDB is more likely to automatically retry when previous reads are invalidated at a pushed timestamp. When a transaction returns a result set larger than the configured buffer size, even if that transaction has been sent as a single batch, CockroachDB cannot automatically retry the transaction.</p>
 </blockquote>
 </blockquote>
-<p>And it turns out that our rows usually exceed this buffer size (16 KiB by default) and thus the server cannot transparently retry.</p>
+<p>And it turns out that the result set usually exceed this buffer size (16 KiB by default) and thus the server cannot transparently retry.</p>
 <h2 id="future-optimizations">
   <a class="title" href="#future-optimizations">Future optimizations</a>
   <a class="hash-anchor" href="#future-optimizations" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>

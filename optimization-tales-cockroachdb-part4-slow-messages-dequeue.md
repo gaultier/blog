@@ -20,7 +20,7 @@ Retrying so many time means that the tail latencies (p95, p99) are really inflat
 
 All other metrics look fine. Weird. Time to investigate.
 
-As always, the code is [open-source](https://github.com/ory-corp/cloud/blob/805b09c9bfea2ffc1643cfab986d189f1022e1d3/kratos/kratos-oss/persistence/sql/persister_courier.go#L71-L82).
+As always, the code is [open-source](https://github.com/ory/kratos/blob/master/persistence/sql/persister_courier.go#L71).
 
 ## Context
 
@@ -59,7 +59,7 @@ So why so many retries?
 
 
 
-The [code](https://github.com/ory-corp/cloud/blob/805b09c9bfea2ffc1643cfab986d189f1022e1d3/kratos/kratos-oss/persistence/sql/persister_courier.go#L71-L82) is very short and simply runs this query in a loop (and then handles the messages). 
+The [code](https://github.com/ory/kratos/blob/master/persistence/sql/persister_courier.go#L71) is very short and simply runs this query in a loop (and then handles the messages). 
 
 Two important points for CockroachDB:
 
@@ -93,8 +93,6 @@ Importantly: there is only one worker instance, globally. So we do not have any 
 
 [^1]: Almost. We have two sources of concurrent writes: A) Once the worker is finished with handling a batch, it updates the status of each message accordingly, e.g. `status = 'success'`. These writes would overlap with the read of the next batch depending on the network latency, and because we do not wait (i.e. sleep) between batches. B) Rows in this table have a TTL of 30 days, so they get removed automatically by the database in the background. But it's rare that messages still in the `queued` state would reach this TTL.
 
-
-### The 16 KiB boundary
 
 
 ## The fix
@@ -164,7 +162,7 @@ Coupled with:
 > Increase the chance that CockroachDB can automatically retry a failed transaction:
 > > Limit the size of the result sets of your transactions to less than the value of the sql.defaults.results_buffer.size cluster setting, so that CockroachDB is more likely to automatically retry when previous reads are invalidated at a pushed timestamp. When a transaction returns a result set larger than the configured buffer size, even if that transaction has been sent as a single batch, CockroachDB cannot automatically retry the transaction.
 
-And it turns out that our rows usually exceed this buffer size (16 KiB by default) and thus the server cannot transparently retry.
+And it turns out that the result set usually exceed this buffer size (16 KiB by default) and thus the server cannot transparently retry.
 
 
 ## Future optimizations
