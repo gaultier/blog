@@ -137,18 +137,34 @@ Simple fix. Before, an implicit transaction was used (with the default isolation
 ## The results
 
 
-Slow values (> 700 ms query latency) have become rarer (~15/s to ~10/s):
+Slow values (> 700 ms query latency) have become somewhat rarer (~15/s to ~10/s):
 
 ![Results, extreme values](crdb_slow4_4.png)
 
 
-Slow (> 1s) latencies have become rarer, and less slow (< 1s) latencies have become more frequent (unfortunately these buckets are very coarse): 
+Slow (> 1s) latencies have become visibly rarer, and less slow (< 1s) latencies have become more frequent (unfortunately these buckets are very coarse): 
 
 ![Results, histogram](crdb_slow4_3.png)
 
 
 
 It's not the optimization of the century, but it's a bit better.
+
+
+
+However, we still have a lot of retries for this query. 
+
+The official [docs](https://www.cockroachlabs.com/docs/stable/read-committed) offer an explanation:
+
+
+> In rare cases under READ COMMITTED isolation, a RETRY_WRITE_TOO_OLD or ReadWithinUncertaintyIntervalError error can be returned to the client if a statement has already begun streaming a partial result set back to the client and cannot retry transparently.
+
+Coupled with:
+
+> Increase the chance that CockroachDB can automatically retry a failed transaction:
+> > Limit the size of the result sets of your transactions to less than the value of the sql.defaults.results_buffer.size cluster setting, so that CockroachDB is more likely to automatically retry when previous reads are invalidated at a pushed timestamp. When a transaction returns a result set larger than the configured buffer size, even if that transaction has been sent as a single batch, CockroachDB cannot automatically retry the transaction.
+
+And it turns out that our rows usually exceed this buffer size (16 KiB by default) and thus the server cannot transparently retry.
 
 
 ## Future optimizations

@@ -228,11 +228,24 @@ Do not edit it by hand.
   <a class="title" href="#the-results">The results</a>
   <a class="hash-anchor" href="#the-results" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>Slow values (&gt; 700 ms query latency) have become rarer (~15/s to ~10/s):</p>
+<p>Slow values (&gt; 700 ms query latency) have become somewhat rarer (~15/s to ~10/s):</p>
 <p><img src="crdb_slow4_4.png" alt="Results, extreme values" /></p>
-<p>Slow (&gt; 1s) latencies have become rarer, and less slow (&lt; 1s) latencies have become more frequent (unfortunately these buckets are very coarse):</p>
+<p>Slow (&gt; 1s) latencies have become visibly rarer, and less slow (&lt; 1s) latencies have become more frequent (unfortunately these buckets are very coarse):</p>
 <p><img src="crdb_slow4_3.png" alt="Results, histogram" /></p>
 <p>It's not the optimization of the century, but it's a bit better.</p>
+<p>However, we still have a lot of retries for this query.</p>
+<p>The official <a href="https://www.cockroachlabs.com/docs/stable/read-committed">docs</a> offer an explanation:</p>
+<blockquote>
+<p>In rare cases under READ COMMITTED isolation, a RETRY_WRITE_TOO_OLD or ReadWithinUncertaintyIntervalError error can be returned to the client if a statement has already begun streaming a partial result set back to the client and cannot retry transparently.</p>
+</blockquote>
+<p>Coupled with:</p>
+<blockquote>
+<p>Increase the chance that CockroachDB can automatically retry a failed transaction:</p>
+<blockquote>
+<p>Limit the size of the result sets of your transactions to less than the value of the sql.defaults.results_buffer.size cluster setting, so that CockroachDB is more likely to automatically retry when previous reads are invalidated at a pushed timestamp. When a transaction returns a result set larger than the configured buffer size, even if that transaction has been sent as a single batch, CockroachDB cannot automatically retry the transaction.</p>
+</blockquote>
+</blockquote>
+<p>And it turns out that our rows usually exceed this buffer size (16 KiB by default) and thus the server cannot transparently retry.</p>
 <h2 id="future-optimizations">
   <a class="title" href="#future-optimizations">Future optimizations</a>
   <a class="hash-anchor" href="#future-optimizations" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
