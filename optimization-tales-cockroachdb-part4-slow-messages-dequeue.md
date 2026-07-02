@@ -181,7 +181,7 @@ We would need to create the index `(status, created_at, id)` to effectively redu
 
 ## Wrong optimizations
 
-CockroachDB allows a query to see a past version of the data with `SELECT ... AS OF SYSTEM TIME '-1s'` or `AS OF SYSTEM TIME follower_read_timestamp()`. However, that means that we would also see messages that just got delivered successfully and were just marked as 'successful', e.g. from the previous batch. This would lead to duplicate deliveries for this window of time.
+CockroachDB allows a query to see a past version of the data with `SELECT ... AS OF SYSTEM TIME '-1s'` or `AS OF SYSTEM TIME follower_read_timestamp()`. However, that means that we would also see messages that just got delivered successfully and were just marked as 'sent', e.g. from the previous batch. This would lead to duplicate deliveries for this window of time.
 
 `SELECT ... FOR UPDATE` seems like a natural thing to do in this 'work queue' systems implemented with an SQL database. In fact I used that myself in the past. However this is completely orthogonal: `FOR UPDATE` is used to lock the rows that one worker is working on, to avoid other workers also working on these rows. This is to avoid duplication of work, not to reduce read-write contention. Since we have only one worker here, this is unnecessary and would not help performance.
 

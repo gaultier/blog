@@ -248,7 +248,7 @@ Do not edit it by hand.
   <a class="title" href="#wrong-optimizations">Wrong optimizations</a>
   <a class="hash-anchor" href="#wrong-optimizations" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>CockroachDB allows a query to see a past version of the data with <code>SELECT ... AS OF SYSTEM TIME '-1s'</code> or <code>AS OF SYSTEM TIME follower_read_timestamp()</code>. However, that means that we would also see messages that just got delivered successfully and were just marked as 'successful', e.g. from the previous batch. This would lead to duplicate deliveries for this window of time.</p>
+<p>CockroachDB allows a query to see a past version of the data with <code>SELECT ... AS OF SYSTEM TIME '-1s'</code> or <code>AS OF SYSTEM TIME follower_read_timestamp()</code>. However, that means that we would also see messages that just got delivered successfully and were just marked as 'sent', e.g. from the previous batch. This would lead to duplicate deliveries for this window of time.</p>
 <p><code>SELECT ... FOR UPDATE</code> seems like a natural thing to do in this 'work queue' systems implemented with an SQL database. In fact I used that myself in the past. However this is completely orthogonal: <code>FOR UPDATE</code> is used to lock the rows that one worker is working on, to avoid other workers also working on these rows. This is to avoid duplication of work, not to reduce read-write contention. Since we have only one worker here, this is unnecessary and would not help performance.</p>
 <h2 id="conclusion">
   <a class="title" href="#conclusion">Conclusion</a>
