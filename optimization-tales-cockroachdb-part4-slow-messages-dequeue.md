@@ -129,6 +129,8 @@ LIMIT 500
 COMMIT;
 ```
 
+Other databases do not need a change, only CockroachDB uses `SERIALIZABLE` as the strictest isolation level.
+
 
 Simple fix. Before, an implicit transaction was used (with the default isolation level `SERIALIZABLE`), now we use an explicit `READ COMMITTED` transaction.
 
