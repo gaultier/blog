@@ -15,7 +15,7 @@ Worse: the failure count is identical to the number of retries:
 ![Too many failures](crdb_slow4_2.png)
 
 
-In CockroachDB, the default number of retries for a transaction is 50, after which an error is returned. So we retry to the fullest, and to no avail. This also means that the tail latencies (p95, p99) are really inflated.
+Retrying so many time means that the tail latencies (p95, p99) are really inflated.
 
 
 All other metrics look fine. Weird. Time to investigate.
@@ -44,10 +44,10 @@ SELECT *
 FROM courier_messages
 WHERE status = 'queued'
 ORDER BY id ASC
-LIMIT 100
+LIMIT 500
 ```
 
-I do not remember what the exact limit is, but it's something like that. And then when messages are delivered, their status is set to `sent` (on success), `processing` (on failure, to retry later),  or `abandoned` (after too many retries).
+I do not remember what the exact limit is, but it's something like that. And then when messages are delivered, their status is set to `sent` (on success), `abandoned` (after too many retries), etc.
 
 
 It's pretty simple, and from the plan and metrics, we notice that the correct index is used. 
@@ -79,17 +79,22 @@ Let's unpack it:
 - `TransactionRetryWithProtoRefreshError`: The database instructed us to retry
 - `ReadWithinUncertaintyIntervalError: read [...] encountered previous write`: This means that we have a read-write contention scenario, where our query tries to read the messages, but another part of the code wrote to these ~rows~ the scanned range, so in order to 'read your writes', we have to start from the top and retry.
 
-What is the difference between 'wrote to these rows' and 'wrote to this scanned range'? Well, let's put ourselves in the database shoes. There is this big table, and we want to read rows from it with only one criteria: `status = 'queued'`. Yes, the query has a `LIMIT` but it gets applied at the very end (you can see that with the plan) so for contention purposes, it does not count at all: it only truncates the result set to 100 items. Also, a healthy queue has just a handful of items in it in the `queued` state, so the limit is not even reached.
+What is the difference between 'wrote to these rows' and 'wrote to this scanned range'? Well, let's put ourselves in the database shoes. There is this big table, and we want to read rows from it with only one criteria: `status = 'queued'`. Yes, the query has a `LIMIT` but it gets applied at the very end (you can see that with the plan) so for contention purposes, it does not count at all: it only truncates the result set to 500 items. Also, a healthy queue has just a handful of items in it in the `queued` state, so the limit is not even reached.
 
 Our query uses the index `(status ASC, id ASC)`. So the 'scan range' is: all messages in the 'queued' status. 
 
-And you know what counts as a write in this table *and* is part of this scan range? An `INSERT`! Yes that's right: new messages are enqueued all the time, concurrently, using `INSERT`, and with the status 'queued'. These count as a write, and they contend with our query, because technically, the current list of queued messages is constantly changing, so we need to constantly retry! That's also completely unneeded: we do not need the exact, most recent list of queued messages, we only need 100 arbitrary 'queued' messages.
+And you know what counts as a write in this table *and* is part of this scan range? An `INSERT`! Yes that's right: new messages are enqueued all the time, concurrently, using `INSERT`, and with the status 'queued'. These count as a write, and they contend with our query, because technically, the current list of queued messages is constantly changing, so we need to constantly retry! That's also completely unneeded: we do not need the exact, most recent list of queued messages, we only need 500 arbitrary 'queued' messages.
 
 
 As an aside: there are other components that read these rows, e.g. the search API, but read-read contention is not a thing: concurrent are fine and do not cause retries.
 
 
-Importantly: there is only one worker instance, globally. So we do not have any concurrent writes (write-write scenario), only read-writes. But that's frustrating: we want to be able to process as many messages as possible, and we are constantly retrying for no good reason.
+Importantly: there is only one worker instance, globally. So we do not have any concurrent writes[^1] (write-write scenario), only read-writes. But that's frustrating: we want to be able to process as many messages as possible, and we are constantly retrying for no good reason.
+
+[^1]: Almost. We have two sources of concurrent writes: A) Once the worker is finished with handling a batch, it updates the status of each message accordingly, e.g. `status = 'success'`. These writes would overlap with the read of the next batch depending on the network latency, and because we do not wait (i.e. sleep) between batches. B) Rows in this table have a TTL of 30 days, so they get removed automatically by the database in the background. But it's rare that messages still in the `queued` state would reach this TTL.
+
+
+### The 16 KiB boundary
 
 
 ## The fix
@@ -119,7 +124,7 @@ SELECT *
 FROM courier_messages
 WHERE status = 'queued'
 ORDER BY id ASC
-LIMIT 100
+LIMIT 500
 
 COMMIT;
 ```
@@ -151,6 +156,11 @@ The big issue that creates contention and retries is the scan range: it is huge,
 
 
 The better fix is to reduce the scan range: I believe that adding to the `WHERE` clause more precise criteria to exclude these new rows would go a long way, for example: `WHERE status - 'queued' AND created_at < now() - 1 second`.
+
+But this would not help if we keep the existing index of `(status, id)`: we would have the exact same scan range as before, and the `created_at` filter would only be applied too late.
+
+
+We would need to create the index `(status, created_at, id)` to effectively reduce the scan range.
 
 
 ## Wrong optimizations
