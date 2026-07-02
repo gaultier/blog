@@ -190,3 +190,7 @@ CockroachDB allows a query to see a past version of the data with `SELECT ... AS
 
 
 Reflecting on this investigation and somewhat failed optimization, I think where I failed is: I did not fully understand where the concurrent writes came from (i.e.: `INSERT`), and that the scan range is what matters for contention, not the returned rows. Well, I'll try to deploy this `WHERE created_at < now() - 1 second` additional optimization and follow up with another post.
+
+The main lesson that I also take away after each optimization adventure is: understand your data and access patterns. Who is reading, who is writing, and how can we take advantage of that.
+
+Another lesson that always applies is: optimization is typically not about speeding things up, it's about doing less work.

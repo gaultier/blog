@@ -111,11 +111,11 @@ Do not edit it by hand.
 </details>
 
 <p>Today, this is the story of a failed optimization. Or rather, an optimization that did not have as big an impact as expected. I think it's important to also tell these tales and not present an unrealistic, rosy view of optimization adventures. Sometimes, they don't quite work as you hoped.</p>
-<p>In the <a href="/blog/optimization-tales-cockroachdb-part3-slow-list-messages.html">last part</a>, we optimized listing all messages in the table of messages <code>courier_messages</code>. This is a big table with millions of rows and a lot of churns: this is where all SMS or emails notifications are stored before being sent. It is essentially a work queue. And there is one problem: way too many retries to get the next messages to work on:</p>
+<p>In the <a href="/blog/optimization-tales-cockroachdb-part3-slow-list-messages.html">last part</a>, we optimized listing all messages in the table of messages <code>courier_messages</code>. This is a big table with millions of rows and a lot of churn: this is where all SMS or email notifications are stored before being sent. It is essentially a work queue. And there is one problem: way too many retries to get the next messages to work on:</p>
 <p><img src="crdb_slow4_1.png" alt="Too many retries" /></p>
 <p>Worse: the failure count is identical to the number of retries:</p>
 <p><img src="crdb_slow4_2.png" alt="Too many failures" /></p>
-<p>Retrying so many time means that the tail latencies (p95, p99) are really inflated.</p>
+<p>Retrying so many times means that the tail latencies (p95, p99) are really inflated.</p>
 <p>All other metrics look fine. Weird. Time to investigate.</p>
 <p>As always, the code is <a href="https://github.com/ory/kratos/blob/master/persistence/sql/persister_courier.go#L71">open-source</a>.</p>
 <h2 id="context">
@@ -178,7 +178,7 @@ Do not edit it by hand.
 <p>What is the difference between 'wrote to these rows' and 'wrote to this scanned range'? Well, let's put ourselves in the database shoes. There is this big table, and we want to read rows from it with only one criteria: <code>status = 'queued'</code>. Yes, the query has a <code>LIMIT 500</code>, but since a healthy queue is normally drained, the scan reads to the end of the span range, which means that the new <code>INSERT</code>s land within the scan range.</p>
 <p>Our query uses the index <code>(status ASC, id ASC)</code>. So the 'scan range' is: all messages in the 'queued' status.</p>
 <p>And you know what counts as a write in this table <em>and</em> is part of this scan range? An <code>INSERT</code>! Yes that's right: new messages are enqueued all the time, concurrently, using <code>INSERT</code>, and with the status 'queued'. These count as a write, and they contend with our query, because technically, the current list of queued messages is constantly changing, so we need to constantly retry! That's also completely unneeded: we do not need the exact, most recent list of queued messages, we only need 500 arbitrary 'queued' messages.</p>
-<p>As an aside: there are other components that read these rows, e.g. the search API, but read-read contention is not a thing: concurrent are fine and do not cause retries.</p>
+<p>As an aside: there are other components that read these rows, e.g. the search API, but read-read contention is not a thing: concurrent reads are fine and do not cause retries.</p>
 <p>Importantly: there is only one worker instance, globally. So we do not have any concurrent writes<sup class="footnote-ref"><a href="#fn-1" id="fnref-1" data-footnote-ref>1</a></sup>
  (write-write scenario), only read-writes. But that's frustrating: we want to be able to process as many messages as possible, and we are constantly retrying for no good reason.</p>
 <h2 id="the-fix">
@@ -235,13 +235,13 @@ Do not edit it by hand.
 <p>Limit the size of the result sets of your transactions to less than the value of the sql.defaults.results_buffer.size cluster setting, so that CockroachDB is more likely to automatically retry when previous reads are invalidated at a pushed timestamp. When a transaction returns a result set larger than the configured buffer size, even if that transaction has been sent as a single batch, CockroachDB cannot automatically retry the transaction.</p>
 </blockquote>
 </blockquote>
-<p>And it turns out that the result set usually exceed this buffer size (16 KiB by default) and thus the server cannot transparently retry.</p>
+<p>And it turns out that the result set usually exceeds this buffer size (16 KiB by default) and thus the server cannot transparently retry.</p>
 <h2 id="future-optimizations">
   <a class="title" href="#future-optimizations">Future optimizations</a>
   <a class="hash-anchor" href="#future-optimizations" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>The big issue that creates contention and retries is the scan range: it is huge, due to the big table and the search criteria <code>WHERE status = 'queued'</code> that accidentally encompasses newly inserted rows.</p>
-<p>The better fix is to reduce the scan range: I believe that adding to the <code>WHERE</code> clause more precise criteria to exclude these new rows would go a long way, for example: <code>WHERE status - 'queued' AND created_at &lt; now() - 1 second</code>.</p>
+<p>The better fix is to reduce the scan range: I believe that adding to the <code>WHERE</code> clause more precise criteria to exclude these new rows would go a long way, for example: <code>WHERE status = 'queued' AND created_at &lt; now() - 1 second</code>.</p>
 <p>But this would not help if we keep the existing index of <code>(status, id)</code>: we would have the exact same scan range as before, and the <code>created_at</code> filter would only be applied too late.</p>
 <p>We would need to create the index <code>(status, created_at, id)</code> to effectively reduce the scan range. And also adapt the <code>ORDER BY</code> to be: <code>ORDER BY created_at</code> so that it uses the index fields.</p>
 <h2 id="wrong-optimizations">
@@ -249,17 +249,19 @@ Do not edit it by hand.
   <a class="hash-anchor" href="#wrong-optimizations" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>CockroachDB allows a query to see a past version of the data with <code>SELECT ... AS OF SYSTEM TIME '-1s'</code> or <code>AS OF SYSTEM TIME follower_read_timestamp()</code>. However, that means that we would also see messages that just got delivered successfully and were just marked as 'sent', e.g. from the previous batch. This would lead to duplicate deliveries for this window of time.</p>
-<p><code>SELECT ... FOR UPDATE</code> seems like a natural thing to do in this 'work queue' systems implemented with an SQL database. In fact I used that myself in the past. However this is completely orthogonal: <code>FOR UPDATE</code> is used to lock the rows that one worker is working on, to avoid other workers also working on these rows. This is to avoid duplication of work, not to reduce read-write contention. Since we have only one worker here, this is unnecessary and would not help performance. In fact it would worsen performance: <code>FOR UPDATE</code> acquires locks, which are in CockroachDB replicated, so our read now becomes a write! And it's a lock that our single worker is using, so that's in the current architecture completly unnecessary.</p>
+<p><code>SELECT ... FOR UPDATE</code> seems like a natural thing to do in these 'work queue' systems implemented with an SQL database. In fact I used that myself in the past. However this is completely orthogonal: <code>FOR UPDATE</code> is used to lock the rows that one worker is working on, to avoid other workers also working on these rows. This is to avoid duplication of work, not to reduce read-write contention. Since we have only one worker here, this is unnecessary and would not help performance. In fact it would worsen performance: <code>FOR UPDATE</code> acquires locks, which in CockroachDB are replicated, so our read now becomes a write! And it's a lock that only our single worker is using, so that's completely unnecessary in the current architecture.</p>
 <h2 id="conclusion">
   <a class="title" href="#conclusion">Conclusion</a>
   <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>Reflecting on this investigation and somewhat failed optimization, I think where I failed is: I did not fully understand where the concurrent writes came from (i.e.: <code>INSERT</code>), and that the scan range is the what matters for contention, not the returned rows. Well, I'll try to deploy this <code>WHERE created_at &lt; now() - 1 second</code> additional optimization and follow up with another post.</p>
+<p>Reflecting on this investigation and somewhat failed optimization, I think where I failed is: I did not fully understand where the concurrent writes came from (i.e.: <code>INSERT</code>), and that the scan range is what matters for contention, not the returned rows. Well, I'll try to deploy this <code>WHERE created_at &lt; now() - 1 second</code> additional optimization and follow up with another post.</p>
+<p>The main lesson that I also take away after each optimization adventure is: understand your data and access patterns. Who is reading, who is writing, and how can we take advantage of that.</p>
+<p>Another lesson that always applies is: optimization is typically not about speeding things up, it's about doing less work.</p>
 <section class="footnotes" data-footnotes>
 <ol>
 <li id="fn-1">
 <p>
-Almost. We have two sources of concurrent writes: A) Once the worker is finished with handling a batch, it updates the status of each message accordingly, e.g. <code>status = 'success'</code>. These writes could overlap with the read of the next batch due to clock skew, and because we do not wait (i.e. sleep) between batches. So from the database perspective, the last write and the new read would overlap and create a write-read contention. B) Rows in this table have a TTL of 30 days, so they get removed automatically by the database in the background. But it's rare that messages still in the <code>queued</code> state would reach this TTL.<a href="#fnref-1" class="footnote-backref" data-footnote-backref data-footnote-backref-idx="1" aria-label="Back to reference 1">↩</a>
+Almost. We have two sources of concurrent writes: A) Once the worker is finished with handling a batch, it updates the status of each message accordingly, e.g. <code>status = 'sent'</code>. These writes could overlap with the read of the next batch due to clock skew, and because we do not wait (i.e. sleep) between batches. So from the database perspective, the last write and the new read would overlap and create a write-read contention. B) Rows in this table have a TTL of 30 days, so they get removed automatically by the database in the background. But it's rare that messages still in the <code>queued</code> state would reach this TTL.<a href="#fnref-1" class="footnote-backref" data-footnote-backref data-footnote-backref-idx="1" aria-label="Back to reference 1">↩</a>
 </p>
 </li>
 </ol>
