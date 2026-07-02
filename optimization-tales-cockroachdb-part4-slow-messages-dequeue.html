@@ -212,7 +212,7 @@ Do not edit it by hand.
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">COMMIT;</span>
 </code></pre>
-<p>Other databases do not need a change, only CockroachDB uses <code>SERIALIZABLE</code> as the strictest isolation level.</p>
+<p>Other databases do not need a change, only CockroachDB uses <code>SERIALIZABLE</code> as the default isolation level.</p>
 <p>Simple fix. Before, an implicit transaction was used (with the default isolation level <code>SERIALIZABLE</code>), now we use an explicit <code>READ COMMITTED</code> transaction.</p>
 <h2 id="the-results">
   <a class="title" href="#the-results">The results</a>
