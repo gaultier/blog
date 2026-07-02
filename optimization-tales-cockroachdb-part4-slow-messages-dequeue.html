@@ -87,15 +87,33 @@ Do not edit it by hand.
   <li>
     <a href="#investigation">Investigation</a>
 </li>
+
+  <li>
+    <a href="#the-fix">The fix</a>
+</li>
+
+  <li>
+    <a href="#the-results">The results</a>
+</li>
+
+  <li>
+    <a href="#future-optimizations">Future optimizations</a>
+</li>
+
+  <li>
+    <a href="#conclusion">Conclusion</a>
+</li>
 </ul>
 </details>
 
+<p>Today, this is the story of a failed optimization. Or rather, an optimization that did not have as big an impact as expected. I think it's important to also tell these tales and not present an unrealistic, rosy view of optimization advantures. Sometimes, they don't quite work as you hoped.</p>
 <p>In the <a href="/blog/optimization-tales-cockroachdb-part3-slow-list-messages.html">last part</a>, we optimized listing all messages in the table of messages <code>courier_messages</code>. This is a big table with millions of rows and a lot of churns: this is where all SMS or emails notifications are stored before being sent. It is essentially a work queue. And there is one problem: way too many retries to get the next messages to work on:</p>
 <p><img src="crdb_slow4_1.png" alt="Too many retries" /></p>
 <p>Worse: the failure count is identical to the number of retries:</p>
 <p><img src="crdb_slow4_2.png" alt="Too many failures" /></p>
 <p>In CockroachDB, the default number of retries for a transaction is 50, after which an error is returned. So we retry to the fullest, and to no avail. This also means that the tail latencies (p95, p99) are really inflated.</p>
 <p>All other metrics look fine. Weird. Time to investigate.</p>
+<p>As always, the code is <a href="https://github.com/ory-corp/cloud/blob/805b09c9bfea2ffc1643cfab986d189f1022e1d3/kratos/kratos-oss/persistence/sql/persister_courier.go#L71-L82">open-source</a>.</p>
 <h2 id="context">
   <a class="title" href="#context">Context</a>
   <a class="hash-anchor" href="#context" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -126,13 +144,90 @@ Do not edit it by hand.
 <span class="line-number"></span><span class="code-hl">ORDER BY id ASC</span>
 <span class="line-number"></span><span class="code-hl">LIMIT 100</span>
 </code></pre>
-<p>I do not remember what the exact limit is, but it's something like that.</p>
+<p>I do not remember what the exact limit is, but it's something like that. And then when messages are delivered, their status is set to <code>sent</code> (on success), <code>processing</code> (on failure, to retry later),  or <code>abandoned</code> (after too many retries).</p>
 <p>It's pretty simple, and from the plan and metrics, we notice that the correct index is used.</p>
 <p>So why so many retries?</p>
 <h2 id="investigation">
   <a class="title" href="#investigation">Investigation</a>
   <a class="hash-anchor" href="#investigation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
+<p>The <a href="https://github.com/ory-corp/cloud/blob/805b09c9bfea2ffc1643cfab986d189f1022e1d3/kratos/kratos-oss/persistence/sql/persister_courier.go#L71-L82">code</a> is very short and simply runs this query in a loop (and then handles the messages).</p>
+<p>From the previous Investigations, we remember two important points for CockroachDB:</p>
+<ul>
+<li>The default isolation level is <code>SERIALIZABLE</code>, the strictest</li>
+<li>For a number of reasons, concurrent access of the same rows may make the database force the client (our application) to retry</li>
+</ul>
+<p>The error from the retries is:</p>
+<pre>
+  <div class="code-header">
+    <span>Plaintext</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-plaintext"><span class="line-number"></span><span class="code-hl">Error Code: 40001</span>
+<span class="line-number"></span><span class="code-hl">Error Message: TransactionRetryWithProtoRefreshError: ReadWithinUncertaintyIntervalError: read at time 1781712863.936725360,0 encountered previous write with future timestamp 1781712863.957518522,0 within uncertainty interval t &lt;= (local=1781712864.036725360,0, global=1781712864.036725360,0); observed timestamps: [{25 1781712864.055700939,0} {62 1781712864.179153461,0} {63 1781712863.936725360,0}]: &quot;sql txn&quot; meta={id=920488bd key=/Min iso=Serializable pri=0.00655660 epo=0 ts=1781712863.936725360,0 min=1781712863.936725360,0 seq=0} lock=false stat=PENDING rts=1781712863.936725360,0 gul=1781712864.036725360,0 obs={n25@1781712864.055700939,0 n62@1781712864.179153461,0 n63@1781712863.936725360,0}</span>
+</code></pre>
+<p>Let's unpack it:</p>
+<ul>
+<li><code>TransactionRetryWithProtoRefreshError</code>: The database instructed us to retry</li>
+<li><code>ReadWithinUncertaintyIntervalError: read [...] encountered previous write</code>: This means that we have a read-write contention scenario, where our query tries to read the messages, but another part of the code wrote to these <del>rows</del> the scanned range, so in order to 'read your writes', we have to start from the top and retry.</li>
+</ul>
+<p>What is the difference between 'wrote to these rows' and 'wrote to this scanned range'? Well, let's put ourselves in the database shoes. There is this big table, and we want to read rows from it with only one criteria: <code>status = 'queued'</code>. Yes, the query has a <code>LIMIT</code> but it gets applied at the very end (you can see that with the plan) so for contention purposes, it does not count at all: it only truncates the result set to 100 items.</p>
+<p>Our query uses the index <code>(status ASC, id ASC)</code>. So the 'scan range' is: all messages in the 'queued' status.</p>
+<p>And you know what counts as a write in this table <em>and</em> is part of this scan range? An <code>INSERT</code>! Yes that's right: new messages are enqueued all the time, concurrently, using <code>INSERT</code>, and with the status 'queued'. These count as a write, and they contend with our query, because technically, the current list of queued messages is constantly changing, so we need to constantly retry! That's also completely unneeded: we do not need the exact, most recent list of queued messages, we only need 100 arbitrary 'queued' messages.
+Since there are other components that read these rows, e.g. the search API, we can indeed have contention and our worker is forced to retry.</p>
+<p>Importantly: there is only one worker instance, globally. So we do not have any concurrent writes (write-write scenario), only read-writes. But that's frustrating: we want to be able to process as many messages as possible, and we are constantly retrying for no good reason.</p>
+<h2 id="the-fix">
+  <a class="title" href="#the-fix">The fix</a>
+  <a class="hash-anchor" href="#the-fix" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>We remember a crucial quote from the <a href="https://www.cockroachlabs.com/docs/v26.2/read-committed">docs</a>:</p>
+<blockquote>
+<p>Whereas SERIALIZABLE isolation guarantees data correctness by placing transactions into a serializable ordering, READ COMMITTED isolation permits some concurrency anomalies in exchange for minimizing transaction aborts, retries, and blocking.</p>
+</blockquote>
+<p>So, can we live with these <a href="https://www.cockroachlabs.com/docs/v26.2/read-committed#concurrency-anomalies">concurrency anomalies</a>? Let's see:</p>
+<ul>
+<li>Non-repeatable reads: &quot;Non-repeatable reads return different row values because a concurrent transaction updated the values in between reads&quot;. Since we do not do more than one read, we are not affected by that.</li>
+<li>Phantom reads: &quot;Phantom reads return different rows because a concurrent transaction changed the set of rows that satisfy the row search&quot;: Since we do not do more than one read, we are not affected by that.</li>
+<li>Lost update anomaly: &quot;The READ COMMITTED conditions that permit non-repeatable reads and phantom reads also permit lost update anomalies, where an update from a transaction appears to be &quot;lost&quot; because it is overwritten by a concurrent transaction&quot;. We do not write in this transaction so we are good.</li>
+<li>Write skew anomaly: &quot;two concurrent transactions each read values that the other subsequently updates&quot;. No concurrent transaction is writing to the same rows so we are also fine there.</li>
+</ul>
+<p>Ok, so let's do it:</p>
+<pre>
+  <div class="code-header">
+    <span>Sql</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-sql"><span class="line-number"></span><span class="code-hl">BEGIN TRANSACTION ISOLATION LEVEL READ COMMITTED;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">SELECT *</span>
+<span class="line-number"></span><span class="code-hl">FROM courier_messages</span>
+<span class="line-number"></span><span class="code-hl">WHERE status = 'queued'</span>
+<span class="line-number"></span><span class="code-hl">ORDER BY id ASC</span>
+<span class="line-number"></span><span class="code-hl">LIMIT 100</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">COMMIT;</span>
+</code></pre>
+<p>Simple fix. Before, an implicit transaction was used (with the default isolation leven <code>SERIALIZABLE</code>), now we use an explicit <code>READ COMMITTED</code> transaction.</p>
+<h2 id="the-results">
+  <a class="title" href="#the-results">The results</a>
+  <a class="hash-anchor" href="#the-results" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>Slow values (&gt; 700 ms query latency) have become rarer (~15/s to ~10/s):</p>
+<p><img src="crdb_slow4_4.png" alt="Results, extreme values" /></p>
+<p>Slow (&gt; 1s) latencies have become rarer, and less slow (&lt; 1s) latencies have become more frequent (unfortunately these buckets are very coarse):</p>
+<p><img src="crdb_slow4_3.png" alt="Results, histogram" /></p>
+<p>It's not the optimization of the century, but it's a bit better.</p>
+<h2 id="future-optimizations">
+  <a class="title" href="#future-optimizations">Future optimizations</a>
+  <a class="hash-anchor" href="#future-optimizations" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>The big issue that creates contention and retries is the scan range: it is huge, due to the big table and the search criteria <code>WHERE status = 'queued'</code> that accidentally encompasses newly inserted rows.</p>
+<p>The better fix is to reduce the scan range: I believe that adding to the <code>WHERE</code> clause more precise criteria to exclude these new rows would go a long way, for example: <code>WHERE status - 'queued' AND created_at &lt; now() - 1 second</code>.</p>
+<h2 id="conclusion">
+  <a class="title" href="#conclusion">Conclusion</a>
+  <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>Reflecting on this investigation and somewhat failed optimization, I think where I failed is: I did not fully understand where the concurrent writes came from (i.e.: <code>INSERT</code>), and that the scan range is the what matters for contention, not the returned rows. Well, I'll try to deploy this <code>WHERE created_at &lt; now() - 1 second</code> additional optimization and follow up with another post.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <div id="donate">
