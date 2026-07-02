@@ -2,7 +2,7 @@ Title: Optimization tales with CockroachDB: the slow dequeue of messages (part 4
 Tags: SQL, Optimization, CockroachDB
 ---
 
-Today, this is the story of a failed optimization. Or rather, an optimization that did not have as big an impact as expected. I think it's important to also tell these tales and not present an unrealistic, rosy view of optimization advantures. Sometimes, they don't quite work as you hoped.
+Today, this is the story of a failed optimization. Or rather, an optimization that did not have as big an impact as expected. I think it's important to also tell these tales and not present an unrealistic, rosy view of optimization adventures. Sometimes, they don't quite work as you hoped.
 
 
 
@@ -61,7 +61,7 @@ So why so many retries?
 
 The [code](https://github.com/ory-corp/cloud/blob/805b09c9bfea2ffc1643cfab986d189f1022e1d3/kratos/kratos-oss/persistence/sql/persister_courier.go#L71-L82) is very short and simply runs this query in a loop (and then handles the messages). 
 
-From the previous Investigations, we remember two important points for CockroachDB:
+Two important points for CockroachDB:
 
 - The default isolation level is `SERIALIZABLE`, the strictest
 - For a number of reasons, concurrent access of the same rows may make the database force the client (our application) to retry
@@ -123,7 +123,7 @@ COMMIT;
 ```
 
 
-Simple fix. Before, an implicit transaction was used (with the default isolation leven `SERIALIZABLE`), now we use an explicit `READ COMMITTED` transaction.
+Simple fix. Before, an implicit transaction was used (with the default isolation level `SERIALIZABLE`), now we use an explicit `READ COMMITTED` transaction.
 
 ## The results
 
