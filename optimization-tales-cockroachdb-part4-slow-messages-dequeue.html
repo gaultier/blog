@@ -242,8 +242,23 @@ Do not edit it by hand.
 </h2>
 <p>The big issue that creates contention and retries is the scan range: it is huge, due to the big table and the search criteria <code>WHERE status = 'queued'</code> that accidentally encompasses newly inserted rows.</p>
 <p>The better fix is to reduce the scan range: I believe that adding to the <code>WHERE</code> clause more precise criteria to exclude these new rows would go a long way, for example: <code>WHERE status = 'queued' AND created_at &lt;  now() - INTERVAL '1 second'</code>.</p>
+<p>Cherry on the cake, we can even make the time window bound on both ends, to avoid contending with new <code>INSERT</code>s on one end, and the <code>DELETE</code>s from the 30 days TTL background job on the other end:</p>
+<p><code>WHERE status = 'queued' AND created_at BETWEEN now() - INTERVAL '29 day' AND now() - INTERVAL '1 second'</code></p>
+<p>Yes, that's possible, but unlikely, that a message would remain in the queue for 30 days in the <code>queued</code> status, and contend with our query. But at least now, we can completely avoid this case.</p>
 <p>But this would not help if we keep the existing index of <code>(status, id)</code>: we would have the exact same scan range as before, and the <code>created_at</code> filter would only be applied too late.</p>
-<p>We would need to create the index <code>(status, created_at, id)</code> to effectively reduce the scan range. And also adapt the <code>ORDER BY</code> to be: <code>ORDER BY created_at</code> so that it uses the index fields.</p>
+<p>We additionally need to create the index <code>(status, created_at)</code> to effectively reduce the scan range. And also adapt the <code>ORDER BY</code> to be: <code>ORDER BY created_at</code> so that it uses the index.</p>
+<p>So the final query now is:</p>
+<pre>
+  <div class="code-header">
+    <span>Sql</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-sql"><span class="line-number"></span><span class="code-hl">SELECT * FROM courier_messages</span>
+<span class="line-number"></span><span class="code-hl">WHERE status = 'queued'</span>
+<span class="line-number"></span><span class="code-hl">AND created_at BETWEEN now() - INTERVAL '29 day' AND now() - INTERVAL '1 second'</span>
+<span class="line-number"></span><span class="code-hl">ORDER BY created_at</span>
+<span class="line-number"></span><span class="code-hl">LIMIT 100</span>
+</code></pre>
 <h2 id="wrong-optimizations">
   <a class="title" href="#wrong-optimizations">Wrong optimizations</a>
   <a class="hash-anchor" href="#wrong-optimizations" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>

@@ -173,10 +173,28 @@ The big issue that creates contention and retries is the scan range: it is huge,
 
 The better fix is to reduce the scan range: I believe that adding to the `WHERE` clause more precise criteria to exclude these new rows would go a long way, for example: `WHERE status = 'queued' AND created_at <  now() - INTERVAL '1 second'`.
 
+Cherry on the cake, we can even make the time window bound on both ends, to avoid contending with new `INSERT`s on one end, and the `DELETE`s from the 30 days TTL background job on the other end:
+
+`WHERE status = 'queued' AND created_at BETWEEN now() - INTERVAL '29 day' AND now() - INTERVAL '1 second'`
+
+Yes, that's possible, but unlikely, that a message would remain in the queue for 30 days in the `queued` status, and contend with our query. But at least now, we can completely avoid this case.
+
 But this would not help if we keep the existing index of `(status, id)`: we would have the exact same scan range as before, and the `created_at` filter would only be applied too late.
 
 
-We would need to create the index `(status, created_at, id)` to effectively reduce the scan range. And also adapt the `ORDER BY` to be: `ORDER BY created_at` so that it uses the index fields.
+We additionally need to create the index `(status, created_at)` to effectively reduce the scan range. And also adapt the `ORDER BY` to be: `ORDER BY created_at` so that it uses the index.
+
+
+So the final query now is:
+
+
+```sql
+SELECT * FROM courier_messages
+WHERE status = 'queued'
+AND created_at BETWEEN now() - INTERVAL '29 day' AND now() - INTERVAL '1 second'
+ORDER BY created_at
+LIMIT 100
+```
 
 
 ## Wrong optimizations
