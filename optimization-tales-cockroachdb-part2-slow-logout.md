@@ -2,6 +2,8 @@ Title: Optimization tales with CockroachDB: the slow logout (part 2)
 Tags: SQL, Optimization, CockroachDB
 ---
 
+*Discussions: [/r/programming](https://old.reddit.com/r/programming/comments/1ula04r/optimization_tales_with_cockroachdb_the_slow/?) .*
+
 Quick question: What do you do when there is downtime at work? Read the news, tidy your inbox... Hunt for slow SQL queries?
 
 I'm in the last bucket. Emboldened by my recent success in speeding up the [password reset flow](/blog/optimization-tales-cockroachdb-part1.html), where too many rows were scanned, I stumbled upon a query that looked so simple, yet was very slow and did *thousands* of retries, for an endpoint that is very heavily used... This piqued my interest.
