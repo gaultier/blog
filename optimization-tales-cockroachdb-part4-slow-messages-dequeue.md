@@ -79,7 +79,7 @@ Let's unpack it:
 - `TransactionRetryWithProtoRefreshError`: The database instructed us to retry
 - `ReadWithinUncertaintyIntervalError: read [...] encountered previous write`: This means that we have a read-write contention scenario, where our query tries to read the messages, but another part of the code wrote to these ~rows~ the scanned range, so in order to 'read your writes', we have to start from the top and retry.
 
-What is the difference between 'wrote to these rows' and 'wrote to this scanned range'? Well, let's put ourselves in the database shoes. There is this big table, and we want to read rows from it with only one criteria: `status = 'queued'`. Yes, the query has a `LIMIT 500`, but since a healthy queue is normally drained, the scan reads to the end of the span range, which means that the new `INSERT`s land within the scan range.
+What is the difference between 'wrote to these rows' and 'wrote to this scanned range'? Well, let's put ourselves in the database shoes. There is this big table, and we want to read rows from it with only one criterion: `status = 'queued'`. Yes, the query has a `LIMIT 500`, but since a healthy queue is normally drained, the scan reads to the end of the span range, which means that the new `INSERT`s land within the scan range.
 
 Our query uses the index `(status ASC, id ASC)`. So the 'scan range' is: all messages in the 'queued' status. 
 
@@ -171,7 +171,7 @@ And it turns out that the result set usually exceeds this buffer size (16 KiB by
 The big issue that creates contention and retries is the scan range: it is huge, due to the big table and the search criteria `WHERE status = 'queued'` that accidentally encompasses newly inserted rows.
 
 
-The better fix is to reduce the scan range: I believe that adding to the `WHERE` clause more precise criteria to exclude these new rows would go a long way, for example: `WHERE status = 'queued' AND created_at < now() - 1 second`.
+The better fix is to reduce the scan range: I believe that adding to the `WHERE` clause more precise criteria to exclude these new rows would go a long way, for example: `WHERE status = 'queued' AND created_at <  now() - INTERVAL '1 second'`.
 
 But this would not help if we keep the existing index of `(status, id)`: we would have the exact same scan range as before, and the `created_at` filter would only be applied too late.
 
