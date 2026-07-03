@@ -157,13 +157,6 @@ The official [docs](https://www.cockroachlabs.com/docs/stable/read-committed) of
 
 > In rare cases under READ COMMITTED isolation, a RETRY_WRITE_TOO_OLD or ReadWithinUncertaintyIntervalError error can be returned to the client if a statement has already begun streaming a partial result set back to the client and cannot retry transparently.
 
-Coupled with:
-
-> Increase the chance that CockroachDB can automatically retry a failed transaction:
-> > Limit the size of the result sets of your transactions to less than the value of the sql.defaults.results_buffer.size cluster setting, so that CockroachDB is more likely to automatically retry when previous reads are invalidated at a pushed timestamp. When a transaction returns a result set larger than the configured buffer size, even if that transaction has been sent as a single batch, CockroachDB cannot automatically retry the transaction.
-
-And it turns out that the result set usually exceeds this buffer size (16 KiB by default) and thus the server cannot transparently retry.
-
 
 ## Future optimizations
 
