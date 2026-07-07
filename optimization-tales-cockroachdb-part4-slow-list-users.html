@@ -119,11 +119,11 @@ Do not edit it by hand.
 <p>Ok, but a costly operation done on 5 rows should still not take 10s!</p>
 <p>Well... the order of operations matters. The database essentially does this:</p>
 <ol>
-<li>Find all rows (using an index) corresponding to the search criteria due to <code>WHERE ...</code>. This could be millions of rows.</li>
+<li>Find all rows (using an index) corresponding to the search criteria due to <code>WHERE ...</code>. This could be thousands of rows.</li>
 <li>Deduplicate them due to <code>DISTINCT</code>.</li>
 <li>Return the first 5 rows due to <code>LIMIT</code>.</li>
 </ol>
-<p>So, we deduplicate millions of rows, just to return 5 - and there are no duplicates to start with!</p>
+<p>So, we deduplicate thousands of rows, just to return 5 - and there are no duplicates to start with!</p>
 <h2 id="the-fix">
   <a class="title" href="#the-fix">The fix</a>
   <a class="hash-anchor" href="#the-fix" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>

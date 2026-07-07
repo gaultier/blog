@@ -39,12 +39,12 @@ Ok, but a costly operation done on 5 rows should still not take 10s!
 
 Well... the order of operations matters. The database essentially does this:
 
-1. Find all rows (using an index) corresponding to the search criteria due to `WHERE ...`. This could be millions of rows.
+1. Find all rows (using an index) corresponding to the search criteria due to `WHERE ...`. This could be thousands of rows.
 2. Deduplicate them due to `DISTINCT`.
 3. Return the first 5 rows due to `LIMIT`.
 
 
-So, we deduplicate millions of rows, just to return 5 - and there are no duplicates to start with!
+So, we deduplicate thousands of rows, just to return 5 - and there are no duplicates to start with!
 
 ## The fix
 
