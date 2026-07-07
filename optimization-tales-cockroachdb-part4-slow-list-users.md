@@ -6,6 +6,8 @@ Another day, another optimization story with CockroachDB. What's interesting wit
 
 In the other parts I have improved latency, SQL CPU time, retries, and number of rows scanned. Then, I stumbled upon a query that's slow (10.4s max latency) but all other metrics are fine. That puzzled me for a bit. Especially because it's a simple query: list all identities (a.k.a. users, a.k.a accounts) with some criteria. This is exposed as an API endpoint that accept a number of parameters. And it returns just a hanful of items: looking at the number of requested items, which is also a (bounded) query parameter, it's typically 5. It should be fast! 
 
+As always, the code is [open-source](https://github.com/ory/kratos/commit/3f4c8503e6ad990cb7515e332f24e8cf2c1fe99c)!
+
 ## Investigation
 
 So my first instinct is to think: well, an API user built a query with weird parameters and now the query is not using an index, or the wrong one. But no, the CockroachDB dashboard does not warn about a suboptimal plan. Well, now my next guess is that the query is perhaps quite convoluted and thus hard for the query optimizer to, well, optimize.
@@ -73,7 +75,7 @@ In fact, all latencies > 1s disappeared:
 ![Latencies](crdb_optimization_part4-2.png)
 
 
-x10 speed-up by simply omitting `DISTINCT`. Not bad.
+x10 speed-up by simply omitting `DISTINCT`, just a few lines of [diff](https://github.com/ory/kratos/commit/3f4c8503e6ad990cb7515e332f24e8cf2c1fe99c). Not bad.
 
 Looking at what the query does now, it spends its time waiting on the network, so nothing easy to further optimize here.
 

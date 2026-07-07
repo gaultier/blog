@@ -100,6 +100,7 @@ Do not edit it by hand.
 
 <p>Another day, another optimization story with CockroachDB. What's interesting with optimization a complex application is that it's like a d20 (a die with 20 sides): once a side is done, another side needs attention.</p>
 <p>In the other parts I have improved latency, SQL CPU time, retries, and number of rows scanned. Then, I stumbled upon a query that's slow (10.4s max latency) but all other metrics are fine. That puzzled me for a bit. Especially because it's a simple query: list all identities (a.k.a. users, a.k.a accounts) with some criteria. This is exposed as an API endpoint that accept a number of parameters. And it returns just a hanful of items: looking at the number of requested items, which is also a (bounded) query parameter, it's typically 5. It should be fast!</p>
+<p>As always, the code is <a href="https://github.com/ory/kratos/commit/3f4c8503e6ad990cb7515e332f24e8cf2c1fe99c">open-source</a>!</p>
 <h2 id="investigation">
   <a class="title" href="#investigation">Investigation</a>
   <a class="hash-anchor" href="#investigation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -143,7 +144,7 @@ Do not edit it by hand.
 <p><img src="crdb_optimization_part4-1.png" alt="p95" /></p>
 <p>In fact, all latencies &gt; 1s disappeared:</p>
 <p><img src="crdb_optimization_part4-2.png" alt="Latencies" /></p>
-<p>x10 speed-up by simply omitting <code>DISTINCT</code>. Not bad.</p>
+<p>x10 speed-up by simply omitting <code>DISTINCT</code>, just a few lines of <a href="https://github.com/ory/kratos/commit/3f4c8503e6ad990cb7515e332f24e8cf2c1fe99c">diff</a>. Not bad.</p>
 <p>Looking at what the query does now, it spends its time waiting on the network, so nothing easy to further optimize here.</p>
 <h2 id="conclusion">
   <a class="title" href="#conclusion">Conclusion</a>
