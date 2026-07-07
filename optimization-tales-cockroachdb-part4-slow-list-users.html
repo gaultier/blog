@@ -105,7 +105,7 @@ Do not edit it by hand.
   <a class="title" href="#investigation">Investigation</a>
   <a class="hash-anchor" href="#investigation" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>So my first instinct is to think: well, an API user built a query with weird parameters and now the query is not using an index, or the wrong one. But no, the CockroachDB dashboard does not warn about a suboptimal plan. Well, now my next guess is that the query is perhaps quite convoluted and thus hard for the query optimizer to, well, optimize.</p>
+<p>So my first instinct is to think: well, an API user built a query with weird parameters and now the query is not using an index, or the wrong one. But no, the CockroachDB dashboard does not warn about a suboptimal plan, I can see the correct index is used. Well, now my next guess is that the query is perhaps quite convoluted and thus hard for the query optimizer to, well, optimize.</p>
 <p>But also no, it's basically just: <code>SELECT * FROM identities WHERE &lt;some criteria&gt; LIMIT 5</code>. Taking 10+s for that is egregious, I think everybody will agree.</p>
 <p>But when I re-read the query, I noticed something new: it's actually <code>SELECT DISTINCT * FROM ...</code>, not just <code>SELECT * FROM</code>. Aha, maybe that's why?</p>
 <p>So now I have two questions: 1) How slow is it to deduplicate a few rows? and 2) Why do we even use <code>DISTINCT</code> here? This table does not have duplicates!</p>

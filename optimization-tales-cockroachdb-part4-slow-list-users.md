@@ -10,7 +10,7 @@ As always, the code is [open-source](https://github.com/ory/kratos/commit/3f4c85
 
 ## Investigation
 
-So my first instinct is to think: well, an API user built a query with weird parameters and now the query is not using an index, or the wrong one. But no, the CockroachDB dashboard does not warn about a suboptimal plan. Well, now my next guess is that the query is perhaps quite convoluted and thus hard for the query optimizer to, well, optimize.
+So my first instinct is to think: well, an API user built a query with weird parameters and now the query is not using an index, or the wrong one. But no, the CockroachDB dashboard does not warn about a suboptimal plan, I can see the correct index is used. Well, now my next guess is that the query is perhaps quite convoluted and thus hard for the query optimizer to, well, optimize.
 
 But also no, it's basically just: `SELECT * FROM identities WHERE <some criteria> LIMIT 5`. Taking 10+s for that is egregious, I think everybody will agree. 
 
