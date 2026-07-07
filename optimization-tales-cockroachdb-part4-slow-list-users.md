@@ -88,7 +88,7 @@ Sometimes metrics can deceive us. I would have expected to see a high CPU time d
 As always, 'optimizing' typically means: do less work. Not: make the work faster.
 
 
-Complex query building logic is easy to get wrong and often results in sub-optimal queries.
+Complex query building logic is easy to get wrong and often results in sub-optimal queries. Look at the SQL that actually runs, and optimize for the common case of the API usage, based on traces/logs/metrics.
 
 
 Finally, if you see a trivial case to optimize, coupled with a more intricate case, it's fine to go half-way and only tackle the easy case. Deploy that, confirm it did help, and then you can revisit the hard case. It's already great for your users and now you are sure you are on the right path. Don't let perfect be the enemy of good.
