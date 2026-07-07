@@ -2,9 +2,9 @@ Title: Optimization tales with CockroachDB: the slow list of users (part 4)
 Tags: SQL, Optimization, CockroachDB
 ---
 
-Another day, another optimization story with CockroachDB. What's interesting with optimization a complex application is that it's like a d20 (a die with 20 sides): once a side is done, another side needs attention.
+Another day, another optimization story with CockroachDB. What's interesting with optimizing a complex application is that it's like a d20 (a die with 20 sides): once a side is done, another side needs attention.
 
-In the other parts I have improved latency, SQL CPU time, retries, and number of rows scanned. Then, I stumbled upon a query that's slow (10.4s max latency) but all other metrics are fine. That puzzled me for a bit. Especially because it's a simple query: list all identities (a.k.a. users, a.k.a accounts) with some criteria. This is exposed as an API endpoint that accept a number of parameters. And it returns just a hanful of items: looking at the number of requested items, which is also a (bounded) query parameter, it's typically 5. It should be fast! 
+In the other parts I have improved latency, SQL CPU time, retries, and number of rows scanned. Then, I stumbled upon a query that's slow (10.4s max latency) but all other metrics are fine. That puzzled me for a bit. Especially because it's a simple query: list all identities (a.k.a. users, a.k.a accounts) with some criteria. This is exposed as an API endpoint that accepts a number of parameters. And it returns just a handful of items: looking at the number of requested items, which is also a (bounded) query parameter, it's typically 5. It should be fast! 
 
 As always, the code is [open-source](https://github.com/ory/kratos/commit/3f4c8503e6ad990cb7515e332f24e8cf2c1fe99c)!
 
@@ -33,11 +33,11 @@ Due to lack of time and faced with convoluted code, and fearing making a breakin
 But: for the `thin` case, it's trivial to see that `DISTINCT` is not needed. 
 
 
-Back to my first interrogation: why is `DISTINCT` even slow? Well, looking at the `identities` schema, it has at least two columns of type `JSONB`. They store large JSON documents. So that's why: `DISTINCT` forces the database to compare all columns of the rows for deduplication, and if some columns are big, this is costly.
+Back to my first question: why is `DISTINCT` even slow? Well, looking at the `identities` schema, it has at least two columns of type `JSONB`. They store large JSON documents. So that's why: `DISTINCT` forces the database to compare all columns of the rows for deduplication, and if some columns are big, this is costly.
 
 Ok, but a costly operation done on 5 rows should still not take 10s!
 
-Wel... the order of operations matters. The database essentially does this:
+Well... the order of operations matters. The database essentially does this:
 
 1. Find all rows (using an index) corresponding to the search criteria due to `WHERE ...`. This could be millions of rows.
 2. Deduplicate them due to `DISTINCT`.
