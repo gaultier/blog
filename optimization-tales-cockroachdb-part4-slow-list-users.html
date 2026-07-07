@@ -98,8 +98,8 @@ Do not edit it by hand.
 </ul>
 </details>
 
-<p>Another day, another optimization story with CockroachDB. What's interesting with optimization a complex application is that it's like a d20 (a die with 20 sides): once a side is done, another side needs attention.</p>
-<p>In the other parts I have improved latency, SQL CPU time, retries, and number of rows scanned. Then, I stumbled upon a query that's slow (10.4s max latency) but all other metrics are fine. That puzzled me for a bit. Especially because it's a simple query: list all identities (a.k.a. users, a.k.a accounts) with some criteria. This is exposed as an API endpoint that accept a number of parameters. And it returns just a hanful of items: looking at the number of requested items, which is also a (bounded) query parameter, it's typically 5. It should be fast!</p>
+<p>Another day, another optimization story with CockroachDB. What's interesting with optimizing a complex application is that it's like a d20 (a die with 20 sides): once a side is done, another side needs attention.</p>
+<p>In the other parts I have improved latency, SQL CPU time, retries, and number of rows scanned. Then, I stumbled upon a query that's slow (10.4s max latency) but all other metrics are fine. That puzzled me for a bit. Especially because it's a simple query: list all identities (a.k.a. users, a.k.a accounts) with some criteria. This is exposed as an API endpoint that accepts a number of parameters. And it returns just a handful of items: looking at the number of requested items, which is also a (bounded) query parameter, it's typically 5. It should be fast!</p>
 <p>As always, the code is <a href="https://github.com/ory/kratos/commit/3f4c8503e6ad990cb7515e332f24e8cf2c1fe99c">open-source</a>!</p>
 <h2 id="investigation">
   <a class="title" href="#investigation">Investigation</a>
@@ -115,9 +115,9 @@ Do not edit it by hand.
 <p>The code building the SQL query based on the API parameters is quite complex and it seems to me that the <code>DISTINCT</code> is not <em>really</em> needed, if we used stricter criteria in the <code>WHERE</code> part or in the <code>JOIN</code> clauses, or perhaps if we deduplicated in the application code.</p>
 <p>Due to lack of time and faced with convoluted code, and fearing making a breaking change, I slowly backed away from the code path for <code>full</code>. A dragon for another time.</p>
 <p>But: for the <code>thin</code> case, it's trivial to see that <code>DISTINCT</code> is not needed.</p>
-<p>Back to my first interrogation: why is <code>DISTINCT</code> even slow? Well, looking at the <code>identities</code> schema, it has at least two columns of type <code>JSONB</code>. They store large JSON documents. So that's why: <code>DISTINCT</code> forces the database to compare all columns of the rows for deduplication, and if some columns are big, this is costly.</p>
+<p>Back to my first question: why is <code>DISTINCT</code> even slow? Well, looking at the <code>identities</code> schema, it has at least two columns of type <code>JSONB</code>. They store large JSON documents. So that's why: <code>DISTINCT</code> forces the database to compare all columns of the rows for deduplication, and if some columns are big, this is costly.</p>
 <p>Ok, but a costly operation done on 5 rows should still not take 10s!</p>
-<p>Wel... the order of operations matters. The database essentially does this:</p>
+<p>Well... the order of operations matters. The database essentially does this:</p>
 <ol>
 <li>Find all rows (using an index) corresponding to the search criteria due to <code>WHERE ...</code>. This could be millions of rows.</li>
 <li>Deduplicate them due to <code>DISTINCT</code>.</li>
@@ -153,6 +153,7 @@ Do not edit it by hand.
 <p>Sometimes metrics can deceive us. I would have expected to see a high CPU time due to <code>DISTINCT</code> but it was not the case.</p>
 <p>As always, 'optimizing' typically means: do less work. Not: make the work faster.</p>
 <p>Complex query building logic is easy to get wrong and often results in sub-optimal queries. Look at the SQL that actually runs, and optimize for the common case of the API usage, based on traces/logs/metrics.</p>
+<p>Remember that the order of operations in the SQL query is not the same as the order of operations in the database. By looking at the plan with <code>EXPLAIN ANALYZE</code>, we can see the true order.</p>
 <p>Finally, if you see a trivial case to optimize, coupled with a more intricate case, it's fine to go half-way and only tackle the easy case. Deploy that, confirm it did help, and then you can revisit the hard case. It's already great for your users and now you are sure you are on the right path. Don't let perfect be the enemy of good.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
