@@ -54,13 +54,13 @@ If we are in the `thin` case, we build this query, without `DISTINCT`: `SELECT *
 Otherwise, in case of the `full` case, we keep the `DISTINCT`: `SELECT DISTINCT * from identities WHERE ... JOIN <a million tables>`.
 
 
-Alternative, suboptimal fix: instead of using the whole row for `DISTINCT`, we could make it look at only one column, e.g. `DISTINCT ON id`. That makes `DISTINCT` faster. But what is even faster than that, is no `DISTINCT` at all, when it's not needed.
+Alternative, suboptimal fix: instead of using the whole row for `DISTINCT`, we could make it look at only one column, e.g. `DISTINCT ON (id)`. That makes `DISTINCT` faster. But what is even faster than that, is no `DISTINCT` at all, when it's not needed.
 
 As the official [docs](https://www.cockroachlabs.com/docs/v26.2/performance-best-practices-overview.html#avoid-select-distinct-for-large-tables) put it:
 
 > SELECT DISTINCT allows you to obtain unique entries from a query by removing duplicate entries. However, SELECT DISTINCT is computationally expensive. As a performance best practice, use SELECT with the WHERE clause instead.
 
-Interestingly, the `SELECT DISTINCT` query had very little CPU time. Perhaps it's an accounting bug, or perhaps the time due to `DISTINCT` is counted somewhere
+Interestingly, the `SELECT DISTINCT` query had very little CPU time. Perhaps it's an accounting bug, or perhaps the time due to `DISTINCT` is counted somewhere else, or perhaps most of the time was simply waiting on the network to receive these millions of rows, that we immediately threw away.
 
 
 ## Results

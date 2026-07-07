@@ -130,12 +130,12 @@ Do not edit it by hand.
 </h2>
 <p>If we are in the <code>thin</code> case, we build this query, without <code>DISTINCT</code>: <code>SELECT * from identities WHERE ... LIMIT 5</code>.</p>
 <p>Otherwise, in case of the <code>full</code> case, we keep the <code>DISTINCT</code>: <code>SELECT DISTINCT * from identities WHERE ... JOIN &lt;a million tables&gt;</code>.</p>
-<p>Alternative, suboptimal fix: instead of using the whole row for <code>DISTINCT</code>, we could make it look at only one column, e.g. <code>DISTINCT ON id</code>. That makes <code>DISTINCT</code> faster. But what is even faster than that, is no <code>DISTINCT</code> at all, when it's not needed.</p>
+<p>Alternative, suboptimal fix: instead of using the whole row for <code>DISTINCT</code>, we could make it look at only one column, e.g. <code>DISTINCT ON (id)</code>. That makes <code>DISTINCT</code> faster. But what is even faster than that, is no <code>DISTINCT</code> at all, when it's not needed.</p>
 <p>As the official <a href="https://www.cockroachlabs.com/docs/v26.2/performance-best-practices-overview.html#avoid-select-distinct-for-large-tables">docs</a> put it:</p>
 <blockquote>
 <p>SELECT DISTINCT allows you to obtain unique entries from a query by removing duplicate entries. However, SELECT DISTINCT is computationally expensive. As a performance best practice, use SELECT with the WHERE clause instead.</p>
 </blockquote>
-<p>Interestingly, the <code>SELECT DISTINCT</code> query had very little CPU time. Perhaps it's an accounting bug, or perhaps the time due to <code>DISTINCT</code> is counted somewhere</p>
+<p>Interestingly, the <code>SELECT DISTINCT</code> query had very little CPU time. Perhaps it's an accounting bug, or perhaps the time due to <code>DISTINCT</code> is counted somewhere else, or perhaps most of the time was simply waiting on the network to receive these millions of rows, that we immediately threw away.</p>
 <h2 id="results">
   <a class="title" href="#results">Results</a>
   <a class="hash-anchor" href="#results" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
