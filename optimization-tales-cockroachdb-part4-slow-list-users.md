@@ -4,7 +4,7 @@ Tags: SQL, Optimization, CockroachDB
 
 Another day, another optimization story with CockroachDB. What's interesting with optimizing a complex application is that it's like a d20 (a die with 20 sides): once a side is done, another side needs attention.
 
-In the other parts I have improved latency, SQL CPU time, retries, and number of rows scanned. Then, I stumbled upon a query that's slow (10.4s max latency) but all other metrics are fine. That puzzled me for a bit. Especially because it's a simple query: list all identities (a.k.a. users, a.k.a accounts) with some criteria. This is exposed as an API endpoint that accepts a number of parameters. And it returns just a handful of items: looking at the number of requested items, which is also a (bounded) query parameter, it's typically 5. It should be fast! 
+In the other parts I have improved latency, SQL CPU time, retries, and number of rows scanned. Then, I stumbled upon a query that's slow (**10.4s max latency**) but all other metrics are fine. That puzzled me for a bit. Especially because it's a simple query: list all identities (a.k.a. users, a.k.a accounts) with some criteria. This is exposed as an API endpoint that accepts a number of parameters. And it returns just a handful of items: looking at the number of requested items, which is also a (bounded) query parameter, it's typically 5. It should be fast! 
 
 As always, the code is [open-source](https://github.com/ory/kratos/commit/3f4c8503e6ad990cb7515e332f24e8cf2c1fe99c)!
 
