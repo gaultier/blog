@@ -87,6 +87,14 @@ Do not edit it by hand.
   <li>
     <a href="#the-fix">The fix</a>
 </li>
+
+  <li>
+    <a href="#results">Results</a>
+</li>
+
+  <li>
+    <a href="#conclusion">Conclusion</a>
+</li>
 </ul>
 </details>
 
@@ -101,7 +109,7 @@ Do not edit it by hand.
 <p>But when I re-read the query, I notice something new: it's actually <code>SELECT DISTINCT * FROM ...</code>, not just <code>SELECT * FROM</code>. Aha, maybe that's why?</p>
 <p>So now I have two questions: 1) How slow is it to deduplicate a few rows? and 2) Why do we even use <code>DISTINCT</code> here? This table does not have duplicates!</p>
 <hr />
-<p>So now I read the code and I notice something: the API accepts a parameter that controls how much data we return, it's conceptually <code>thin</code> or <code>full</code>. When it's <code>thin</code>, we only read the <code>identities</code> table: this is the query I showed. When it's <code>full</code>, we <code>JOIN</code> all the related tables (and there are a lot of them) to get all the related data.</p>
+<p>So now I go read the code and I notice something: the API accepts a parameter that controls how much data we return, it's conceptually <code>thin</code> or <code>full</code>. When it's <code>thin</code>, we only read the <code>identities</code> table: this is the query I showed. When it's <code>full</code>, we <code>JOIN</code> all the related tables (and there are a lot of them) to get all the related data.</p>
 <p>When <code>full</code> is provided in the API call, due to the <code>JOIN</code>s, one identity will typically correspond to many rows in the result set. That's why the author of the code uses <code>DISTINCT</code>... maybe?</p>
 <p>The code building the SQL query based on the API parameters is quite complex and it seems to me that the <code>DISTINCT</code> is not <em>really</em> needed, if we used stricter criteria in the <code>WHERE</code> part or in the <code>JOIN</code> clauses, or perhaps if we deduplicated in the application code.</p>
 <p>Due to lack of time and faced with convoluted code, and fearing making a breaking change, I slowly backed away from the code path for <code>full</code>. A dragon for another time.</p>
@@ -113,6 +121,28 @@ Do not edit it by hand.
 </h2>
 <p>If we are in the <code>thin</code> case, we build this query, without <code>DISTINCT</code>: <code>SELECT * from identities WHERE ... LIMIT 5</code>.</p>
 <p>Otherwise, in case of the <code>full</code> case, we keep the <code>DISTINCT</code>: <code>SELECT DISTINCT * from identities WHERE ... JOIN &lt;a million tables&gt;</code>.</p>
+<p>Alternative, suboptimal fix: instead of using the whole row for <code>DISTINCT</code>, we could make it look at only one column, e.g. <code>DISTINCT ON id</code>. That makes <code>DISTINCT</code> faster. But what is even faster than that is no <code>DISTINCT</code> at all when it's not needed.</p>
+<p>As the official <a href="https://www.cockroachlabs.com/docs/v26.2/performance-best-practices-overview.html#avoid-select-distinct-for-large-tables">docs</a> put it:</p>
+<blockquote>
+<p>SELECT DISTINCT allows you to obtain unique entries from a query by removing duplicate entries. However, SELECT DISTINCT is computationally expensive. As a performance best practice, use SELECT with the WHERE clause instead.</p>
+</blockquote>
+<p>Interestingly, the <code>SELECT DISTINCT</code> query had very little CPU time. Perhaps it's an accounting bug, or perhaps the time due to <code>DISTINCT</code> is counted somewhere</p>
+<h2 id="results">
+  <a class="title" href="#results">Results</a>
+  <a class="hash-anchor" href="#results" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>p95 goes from 1-10s to &lt;1s:</p>
+<p><img src="crdb_optimization_part4-1.png" alt="p95" /></p>
+<p>In fact, all latencies &gt; 1s disappeared:</p>
+<p><img src="crdb_optimization_part4-2.png" alt="Latencies" /></p>
+<p>Looking at what the query does now, it spends its time waiting on the network, so nothing easy to further optimize here.</p>
+<h2 id="conclusion">
+  <a class="title" href="#conclusion">Conclusion</a>
+  <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>Sometimes metrics can deceive us. I would have expected to see a high CPU time due to <code>DISTINCT</code> but it was not the case.</p>
+<p>As always, 'optimizing' typically means: do less work. Not: make the work faster.</p>
+<p>Complex query building logic is easy to get wrong and often results in sub-optimal queries.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <div id="donate">
