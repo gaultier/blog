@@ -135,7 +135,7 @@ Do not edit it by hand.
 <blockquote>
 <p>SELECT DISTINCT allows you to obtain unique entries from a query by removing duplicate entries. However, SELECT DISTINCT is computationally expensive. As a performance best practice, use SELECT with the WHERE clause instead.</p>
 </blockquote>
-<p>Interestingly, the <code>SELECT DISTINCT</code> query had very little CPU time. Perhaps it's an accounting bug, or perhaps the time due to <code>DISTINCT</code> is counted somewhere else, or perhaps most of the time was simply waiting on the network to receive these millions of rows, that we immediately threw away.</p>
+<p>Interestingly, the <code>SELECT DISTINCT</code> query had very little CPU time. Perhaps it's an accounting bug, or perhaps the time due to <code>DISTINCT</code> is counted somewhere else, or perhaps most of the time was simply waiting on the network to receive these thousands of rows, that we immediately threw away.</p>
 <h2 id="results">
   <a class="title" href="#results">Results</a>
   <a class="hash-anchor" href="#results" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>

@@ -60,7 +60,7 @@ As the official [docs](https://www.cockroachlabs.com/docs/v26.2/performance-best
 
 > SELECT DISTINCT allows you to obtain unique entries from a query by removing duplicate entries. However, SELECT DISTINCT is computationally expensive. As a performance best practice, use SELECT with the WHERE clause instead.
 
-Interestingly, the `SELECT DISTINCT` query had very little CPU time. Perhaps it's an accounting bug, or perhaps the time due to `DISTINCT` is counted somewhere else, or perhaps most of the time was simply waiting on the network to receive these millions of rows, that we immediately threw away.
+Interestingly, the `SELECT DISTINCT` query had very little CPU time. Perhaps it's an accounting bug, or perhaps the time due to `DISTINCT` is counted somewhere else, or perhaps most of the time was simply waiting on the network to receive these thousands of rows, that we immediately threw away.
 
 
 ## Results
