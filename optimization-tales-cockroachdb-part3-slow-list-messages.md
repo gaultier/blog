@@ -1,4 +1,4 @@
-Title: Optimization tales with CockroachDB: the slow list of messages (part 3)
+Title: Optimization tales in production with CockroachDB: the slow list of messages (part 3)
 Tags: SQL, Optimization, CockroachDB
 ---
 

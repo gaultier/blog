@@ -1,4 +1,4 @@
-Title: Optimization tales with CockroachDB: the slow list of users (part 4)
+Title: Optimization tales in production with CockroachDB: the slow list of users (part 4)
 Tags: SQL, Optimization, CockroachDB
 ---
 
