@@ -53,6 +53,7 @@ const STANDARD_LANGS: [&str; 21] = [
 ];
 
 const CUSTOM_LANGS: [&str; 5] = ["awk", "dtrace", "gnuplot", "odin", "toml"];
+const IGNORED_MARKDOWN_FILES: [&str; 3] = ["README.md", "todo.md", "index.md"];
 
 struct Title {
     text: String,
@@ -1256,10 +1257,7 @@ fn generate_all(cache: &mut HashMap<u64, Article>) -> anyhow::Result<()> {
 
     let mut articles: Vec<Article> = Vec::with_capacity(git_stats.len());
     for gs in git_stats {
-        if gs.path_from_git_root == "README.md"
-            || gs.path_from_git_root == "todo.md"
-            || gs.path_from_git_root == "index.md"
-        {
+        if IGNORED_MARKDOWN_FILES.contains(&gs.path_from_git_root.as_str()) {
             continue;
         }
 
@@ -1336,9 +1334,12 @@ fn watch(mtx_cond: Arc<(Mutex<()>, Condvar)>, cache: &mut HashMap<u64, Article>)
 
                             cvar.notify_all();
                         }
+
                         if path.extension() == Some("md".as_ref())
-                            // Ignore `README.md`.
-                            && path.file_stem() != Some("README".as_ref())
+                            // Ignore some files:
+                            && !path
+                                .file_name()
+                                .is_some_and(|name| IGNORED_MARKDOWN_FILES.iter().any(|ignored| name == *ignored))
                         {
                             println!("🔄 md file changed: {}", file_name.to_str().unwrap());
                             if let Err(err) = generate_all(cache) {
