@@ -1,5 +1,13 @@
 ## Ideas for articles
 
+- [ ] DTrace + CGO lack of `:return` probe fire:
+```d
+pid$target::*cryptoSource*Uint64*:entry {self->t=1}
+
+pid$target::*cryptoSource*Uint64*:return {self->t=0}
+
+pid$target::*rand*: /self->t/ {}
+```
 - [ ] The many ways I have sped up our Go codebase
     - Use bcrypt's fastest parameter
     - Re-use a precomputed (at startup) bcrypt hash in tests
