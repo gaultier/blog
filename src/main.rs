@@ -77,6 +77,8 @@ struct GitStat {
 struct Article {
     git_stat: GitStat,
     html_title: String,
+    // The same title, as plain text, for non-HTML contexts.
+    text_title: String,
     html_path: PathBuf,
     tags: Vec<String>,
     html_output: Vec<u8>,
@@ -485,6 +487,43 @@ fn md_to_html(md_content: &str) -> anyhow::Result<Vec<u8>> {
     md_to_html_rec(&mut sb, &mut footnote_defs, &md_ast, &[], false)?;
 
     Ok(sb)
+}
+
+fn md_to_text_rec(node: &Node, out: &mut String) {
+    match node {
+        Node::Text(text) => out.push_str(&text.value),
+        Node::InlineCode(code) => out.push_str(&code.value),
+        Node::Code(code) => out.push_str(&code.value),
+        other => {
+            if let Some(children) = other.children() {
+                for child in children {
+                    md_to_text_rec(child, out);
+                }
+            }
+        }
+    }
+}
+
+// Render markdown to plain text, for the places where markup is not allowed:
+// `<title>`, or an Atom feed entry title.
+fn md_to_text(md_content: &str) -> anyhow::Result<String> {
+    let md_ast = markdown::to_mdast(
+        md_content,
+        &ParseOptions {
+            constructs: markdown::Constructs {
+                gfm_autolink_literal: false,
+                ..markdown::Constructs::gfm()
+            },
+            gfm_strikethrough_single_tilde: true,
+            ..Default::default()
+        },
+    )
+    .map_err(|err| anyhow!("failed to parse markdown: {:?}", err))?;
+
+    let mut res = String::with_capacity(md_content.len());
+    md_to_text_rec(&md_ast, &mut res);
+
+    Ok(res)
 }
 
 fn md_html_append(md_content: &str, html_content: &mut Vec<u8>) -> anyhow::Result<()> {
@@ -951,6 +990,7 @@ fn md_render_article(
     let article = Article {
         git_stat,
         html_title: html_root_title,
+        text_title: md_to_text(md_root_title)?,
         html_path,
         tags: tags.iter().map(|t| t.to_string()).collect(),
         html_output: sb,
@@ -1112,7 +1152,8 @@ fn generate_article_rss(
 <published>{}</published>
 </entry>
     "#,
-        text_sanitize_for_html(&article.html_title, true),
+        text_sanitize_for_html(&article.text_title, true),
+
         BASE_URL,
         article
             .html_path
