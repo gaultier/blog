@@ -66,7 +66,7 @@ struct Title {
     slug: String,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Hash)]
 struct GitStat {
     creation_date: String,
     modification_date: String,
@@ -84,8 +84,16 @@ struct Article {
     html_output: Vec<u8>,
 }
 
-fn hash_article_inputs(html_header: &[u8], html_footer: &[u8], md_content: &[u8]) -> u64 {
+fn hash_article_inputs(
+    git_stat: &GitStat,
+    html_header: &[u8],
+    html_footer: &[u8],
+    md_content: &[u8],
+) -> u64 {
     let mut hasher = DefaultHasher::new();
+    // The rendered article embeds the path and both dates, so they belong in
+    // the key: two articles with the same body are not interchangeable.
+    git_stat.hash(&mut hasher);
     html_header.hash(&mut hasher);
     html_footer.hash(&mut hasher);
     md_content.hash(&mut hasher);
@@ -880,7 +888,8 @@ fn md_render_article(
 
     let md_content_bytes = fs::read(&git_stat.path_from_git_root)
         .with_context(|| format!("failed to read file: {}", &git_stat.path_from_git_root))?;
-    let hash = hash_article_inputs(html_header, html_footer, &md_content_bytes);
+    let hash = hash_article_inputs(&git_stat, html_header, html_footer, &md_content_bytes);
+
     if let Some(article) = cache.get(&hash) {
         return Ok(article.clone());
     }
