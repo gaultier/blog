@@ -1,4 +1,4 @@
-use anyhow::{Context, anyhow, bail};
+use anyhow::{Context, anyhow, bail, ensure};
 use markdown::{
     ParseOptions,
     mdast::{FootnoteDefinition, Node},
@@ -284,8 +284,20 @@ fn git_get_articles_stats() -> anyhow::Result<Vec<GitStat>> {
         ])
         .output()
         .context("failed to get git stats")?;
-    assert_eq!(Some(0), output.status.code());
-    assert!(output.stderr.is_empty());
+    ensure!(
+        output.status.success(),
+        "git log failed: status={} stderr={}",
+        output.status,
+        String::from_utf8_lossy(&output.stderr)
+    );
+    // git writes warnings here without failing, which is not our problem to
+    // turn into a build error.
+    if !output.stderr.is_empty() {
+        eprintln!(
+            "git log stderr: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
 
     // Sample git output:
     // 2024-10-31T16:09:02+01:00
@@ -311,12 +323,20 @@ fn git_get_articles_stats() -> anyhow::Result<Vec<GitStat>> {
         };
 
         let date_trimmed = line.trim_matches('\'');
-        assert!(!date_trimmed.is_empty());
+        ensure!(
+            !date_trimmed.is_empty(),
+            "empty date line in git log entry: `{}`",
+            line
+        );
 
         let empty = lines
             .next()
             .ok_or(anyhow!("expected empty line in git log entry, after date"))?;
-        assert!(empty.is_empty());
+        ensure!(
+            empty.is_empty(),
+            "expected an empty line after the date in git log entry, got: `{}`",
+            empty
+        );
 
         // Files.
         loop {
@@ -332,14 +352,14 @@ fn git_get_articles_stats() -> anyhow::Result<Vec<GitStat>> {
             let mut split = line.splitn(3, '\t');
             match (split.next(), split.next(), split.next()) {
                 (Some("D"), Some(path), None) => {
-                    assert!(!path.is_empty());
+                    ensure!(!path.is_empty(), "empty path in git log entry: `{}`", line);
                     res.remove(path).ok_or(anyhow!(
                         "expected path in delete action in git log to already be known: {}",
                         path
                     ))?;
                 }
                 (Some("A"), Some(path), None) => {
-                    assert!(!path.is_empty());
+                    ensure!(!path.is_empty(), "empty path in git log entry: `{}`", line);
                     let git_stat = GitStat {
                         creation_date: date_trimmed.to_owned(),
                         modification_date: date_trimmed.to_owned(),
@@ -352,16 +372,22 @@ fn git_get_articles_stats() -> anyhow::Result<Vec<GitStat>> {
                         "expected path in modified action in git log to already be known: {}",
                         path
                     ))?;
-                    assert_ne!(
-                        entry.modification_date.as_str().cmp(date_trimmed),
-                        Ordering::Greater
+                    ensure!(
+                        entry.modification_date.as_str().cmp(date_trimmed) != Ordering::Greater,
+                        "git log is not in chronological order: path={} previous={} current={}",
+                        path,
+                        entry.modification_date,
+                        date_trimmed
                     );
                     // Update the modification date.
                     entry.modification_date = date_trimmed.to_owned();
                 }
                 (Some(action), Some(path_old), Some(path_new)) if action.starts_with("R") => {
-                    assert!(!path_old.is_empty());
-                    assert!(!path_new.is_empty());
+                    ensure!(
+                        !path_old.is_empty() && !path_new.is_empty(),
+                        "empty path in git log rename entry: `{}`",
+                        line
+                    );
 
                     // Renaming a file does not publish a new article: keep the
                     // date it was first added under its old name.
