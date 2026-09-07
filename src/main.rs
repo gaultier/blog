@@ -1361,6 +1361,29 @@ fn watch(mtx_cond: Arc<(Mutex<()>, Condvar)>, cache: &mut HashMap<u64, Article>)
     println!("end of file watch ");
 }
 
+// Resolve a URL path to a file inside `root`, or `None` if it points outside of
+// it. Everything but plain file/directory names is refused rather than
+// resolved: there is nothing above the blog root worth serving.
+fn http_resolve_path(root: &Path, url_path: &str) -> Option<PathBuf> {
+    let rel = url_path.strip_prefix("/blog/")?;
+
+    let mut res = root.to_path_buf();
+    for comp in Path::new(rel).components() {
+        match comp {
+            std::path::Component::Normal(c) => res.push(c),
+            _ => return None,
+        }
+    }
+
+    // Symlinks can still point outside of the root, so check the real path too.
+    let res = res.canonicalize().ok()?;
+    if !res.starts_with(root) {
+        return None;
+    }
+
+    Some(res)
+}
+
 fn get_content_type(path: &Path) -> &'static str {
     let extension = match path.extension() {
         None => return "text/plain",
@@ -1466,8 +1489,13 @@ fn main() {
     if let Some(arg) = arg1
         && arg == "watch"
     {
+        let serve_root = std::env::current_dir()
+            .and_then(|d| d.canonicalize())
+            .expect("failed to resolve the current directory");
+
         let mtx_cond = Arc::new((Mutex::new(()), Condvar::new()));
         let mtx_cond2 = Arc::clone(&mtx_cond);
+
         thread::spawn(move || {
             watch(mtx_cond2, &mut cache);
         });
@@ -1486,26 +1514,33 @@ fn main() {
                     let _ = live_reload(resp, mtx_cond.clone());
                 }
                 _ => {
-                    let path_str = req.path.unwrap().replace("/blog/", "");
-                    let path = Path::new(&path_str);
+                    let url_path = req.path.unwrap();
+                    let path = match http_resolve_path(&serve_root, url_path) {
+                        Some(path) => path,
+                        None => {
+                            eprintln!("refused path: url_path={}", url_path);
+                            write!(resp, "HTTP/1.1 404\r\nConnection: Close\r\n\r\n").unwrap();
+                            return;
+                        }
+                    };
 
-                    let content = std::fs::read(path);
-                    if content.is_err() {
-                        eprintln!(
-                            "file not found: url_path={} path_str={}",
-                            req.path.unwrap(),
-                            &path_str
-                        );
-                        write!(resp, "HTTP/1.1 404\r\nConnection: Close\r\n\r\n").unwrap();
-                        return;
-                    }
-                    let content = content.unwrap();
+                    let content = match std::fs::read(&path) {
+                        Ok(content) => content,
+                        Err(err) => {
+                            eprintln!(
+                                "file not found: url_path={} path={:?} err={}",
+                                url_path, &path, err
+                            );
+                            write!(resp, "HTTP/1.1 404\r\nConnection: Close\r\n\r\n").unwrap();
+                            return;
+                        }
+                    };
 
                     write!(
                         resp,
                         "HTTP/1.1 200\r\nContent-Length: {}\r\nContent-Type: {}\r\n\r\n",
                         content.len(),
-                        get_content_type(path)
+                        get_content_type(&path)
                     )
                     .unwrap();
                     resp.write_all(&content).unwrap();
