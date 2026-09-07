@@ -396,7 +396,7 @@ fn git_get_articles_stats() -> anyhow::Result<Vec<GitStat>> {
 // TODO: Return Rc<String> or Cow<str>?
 fn md_collect_titles(
     node: &Node,
-    title_to_counter: &mut BTreeMap<String, u8>,
+    title_to_counter: &mut BTreeMap<String, u32>,
     titles: &mut Vec<Title>,
 ) -> anyhow::Result<()> {
     match node {
@@ -421,16 +421,19 @@ fn md_collect_titles(
                 );
             }
 
-            let counter = title_to_counter
-                .entry(content.clone())
+            // Key the counter on the slug rather than on the title text:
+            // `## Foo!` and `## Foo?` are different titles that collapse to the
+            // same slug, and would otherwise both claim `id="foo"`.
+            let slug = html_slug(&content);
+            let counter = *title_to_counter
+                .entry(slug.clone())
                 .and_modify(|c| *c += 1)
                 .or_insert(0);
-            let slug_target = if *counter > 0 {
-                Cow::Owned(format!("{}-{}", &content, counter))
+            let slug = if counter > 0 {
+                format!("{}-{}", slug, counter)
             } else {
-                Cow::Borrowed(&content)
+                slug
             };
-            let slug = html_slug(&slug_target);
             titles.push(Title {
                 text: content,
                 depth,
@@ -580,7 +583,7 @@ fn md_html_append(md_content: &str, html_content: &mut Vec<u8>) -> anyhow::Resul
     .map_err(|err| anyhow!("failed to parse markdown: {:?}", err))?;
 
     let mut md_titles = Vec::with_capacity(12);
-    let mut title_to_counter: BTreeMap<String, u8> = BTreeMap::new();
+    let mut title_to_counter: BTreeMap<String, u32> = BTreeMap::new();
     md_collect_titles(&md_ast, &mut title_to_counter, &mut md_titles)?;
 
     md_to_html_rec(html_content, &mut footnote_defs, &md_ast, &md_titles, false)?;
@@ -1086,7 +1089,7 @@ fn md_render_article(
     writeln!(sb, r#"</div>"#)?;
 
     let mut md_titles = Vec::with_capacity(12);
-    let mut title_to_counter: BTreeMap<String, u8> = BTreeMap::new();
+    let mut title_to_counter: BTreeMap<String, u32> = BTreeMap::new();
     md_collect_titles(&md_ast, &mut title_to_counter, &mut md_titles)?;
 
     md_render_toc(&mut sb, &md_titles)?;
