@@ -84,6 +84,17 @@ struct Article {
     html_output: Vec<u8>,
 }
 
+// Match on the file name, not on the path: the generator and the watcher used
+// to disagree about what "ignored" meant, so a file in a subdirectory was an
+// article to one of them and noise to the other.
+fn is_ignored_markdown_file(path: &Path) -> bool {
+    path.file_name().is_some_and(|name| {
+        IGNORED_MARKDOWN_FILES
+            .iter()
+            .any(|ignored| name == AsRef::<Path>::as_ref(ignored))
+    })
+}
+
 fn hash_article_inputs(
     git_stat: &GitStat,
     html_header: &[u8],
@@ -1455,7 +1466,7 @@ fn generate_all(cache: &mut HashMap<u64, Article>) -> anyhow::Result<()> {
     let mut articles: Vec<Article> = Vec::with_capacity(git_stats.len());
     let mut failures = 0usize;
     for gs in git_stats {
-        if IGNORED_MARKDOWN_FILES.contains(&gs.path_from_git_root.as_str()) {
+        if is_ignored_markdown_file(Path::new(&gs.path_from_git_root)) {
             continue;
         }
 
@@ -1572,12 +1583,7 @@ fn watch(mtx_cond: Arc<(Mutex<u64>, Condvar)>, cache: &mut HashMap<u64, Article>
                 cvar.notify_all();
             }
 
-            if path.extension() == Some("md".as_ref())
-                // Ignore some files:
-                && !IGNORED_MARKDOWN_FILES
-                    .iter()
-                    .any(|ignored| file_name == AsRef::<Path>::as_ref(ignored))
-            {
+            if path.extension() == Some("md".as_ref()) && !is_ignored_markdown_file(&path) {
                 println!("🔄 md file changed: {}", file_name_str);
                 if let Err(err) = generate_all(cache) {
                     eprintln!("err: {:?}", err);
