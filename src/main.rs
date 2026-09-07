@@ -172,20 +172,42 @@ fn md_lint_rec(node: &Node, md_path: &Path) -> anyhow::Result<()> {
             Ok(())
         }
         Node::Text(text) => {
-            // Check that `DTrace` has the correct case.
+            // Spellings that are always wrong: `DTrace`, `KiB` and `kB` have
+            // one correct casing each.
             let incorrect = ["dtrace", "dTrace", "Dtrace", "Kib", "kb", "KB", "Kb"];
             for inc in incorrect {
-                if let Some(_pos) = text.value.find(inc) {
+                let mut base = 0usize;
+                while let Some(pos) = text.value[base..].find(inc) {
+                    let start = base + pos;
+                    let end = start + inc.len();
+                    base = end;
+
+                    // Only whole words count: `KB` must not match `workbench`,
+                    // while `100KB` must still be caught, so digits do not
+                    // count as part of a word here.
+                    let letter_before = text.value[..start]
+                        .chars()
+                        .next_back()
+                        .is_some_and(char::is_alphabetic);
+                    let letter_after = text.value[end..]
+                        .chars()
+                        .next()
+                        .is_some_and(char::is_alphabetic);
+                    if letter_before || letter_after {
+                        continue;
+                    }
+
                     bail!(
-                        "incorrect casing for DTrace: file={:?} position={:?} excerpt:{}",
+                        "incorrect spelling `{}`: file={:?} position={:?}",
+                        inc,
                         md_path.to_str(),
-                        text.position,
-                        inc
+                        text.position
                     );
                 }
             }
             Ok(())
         }
+
         Node::Code(code) => {
             match &code.lang {
                 None => {
