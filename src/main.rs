@@ -16,7 +16,7 @@ use std::{
     process::Command,
     sync::{Arc, Condvar, Mutex},
     thread::{self},
-    time::Instant,
+    time::{Duration, Instant},
 };
 
 use std::io::Write;
@@ -53,6 +53,10 @@ const STANDARD_LANGS: [&str; 21] = [
 ];
 
 const CUSTOM_LANGS: [&str; 5] = ["awk", "dtrace", "gnuplot", "odin", "toml"];
+// Upper bound on the size of an incoming HTTP request, to bound the memory a
+// single connection can make us allocate.
+const HTTP_REQUEST_SIZE_MAX: usize = 1024 * 1024; // 1 MiB.
+const HTTP_READ_TIMEOUT: Duration = Duration::from_secs(30);
 const IGNORED_MARKDOWN_FILES: [&str; 3] = ["README.md", "todo.md", "index.md"];
 
 struct Title {
@@ -1422,13 +1426,26 @@ where
 
         let handler = handler.clone();
         thread::spawn(move || {
+            // Do not let a stalled client hold a thread forever.
+            if let Err(err) = stream.set_read_timeout(Some(HTTP_READ_TIMEOUT)) {
+                eprintln!("http: failed to set the read timeout: {}", err);
+                return;
+            }
+
             let mut req_bytes: Vec<u8> = Vec::with_capacity(10 * 1024); // 10 KiB.
             loop {
-                let cap = req_bytes.capacity();
-                if cap == 0 {
-                    eprintln!("http: no more cap");
-                    return;
+                // Grow when full: a request bigger than the initial capacity
+                // used to end up handing `read()` an empty slice, which reads 0
+                // and drops the connection without ever answering.
+                if req_bytes.len() == req_bytes.capacity() {
+                    if req_bytes.capacity() >= HTTP_REQUEST_SIZE_MAX {
+                        eprintln!("http: request bigger than {} bytes", HTTP_REQUEST_SIZE_MAX);
+                        return;
+                    }
+                    req_bytes.reserve(req_bytes.capacity());
                 }
+                let cap = req_bytes.capacity();
+
 
                 let old_len = req_bytes.len();
                 // Zero the spare capacity so that `read()` gets a real `&mut [u8]`.
