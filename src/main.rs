@@ -1,7 +1,7 @@
 use anyhow::{Context, anyhow, bail};
 use markdown::{
     ParseOptions,
-    mdast::{FootnoteDefinition, Node, Text},
+    mdast::{FootnoteDefinition, Node},
 };
 use notify::{EventKind, RecursiveMode, Watcher, event::ModifyKind};
 use std::{
@@ -352,7 +352,6 @@ fn git_get_articles_stats() -> anyhow::Result<Vec<GitStat>> {
                         path_from_git_root: path_new.to_owned(),
                     };
                     res.insert(path_new.to_owned(), git_stat);
-
                 }
                 _ => {
                     bail!("invalid combination in git log entry: `{}`", line);
@@ -386,16 +385,19 @@ fn md_collect_titles(
         }
         Node::Heading(heading) => {
             let depth = heading.depth;
-            // TODO: Handle markdown title!
-            assert_eq!(1, heading.children.len(), "{:#?}", heading.children);
-            let child = heading
-                .children
-                .first()
-                .ok_or(anyhow!("heading has no children"))?;
-            let content = match child {
-                Node::Text(Text { value, .. }) => value.clone(),
-                other => panic!("unexpected value: {:#?}", other),
-            };
+            // A heading is not necessarily one text node: it can hold inline
+            // code, a link, or emphasis. Flatten it to plain text for the slug
+            // and the table of contents.
+            let mut content = String::new();
+            for child in &heading.children {
+                md_to_text_rec(child, &mut content);
+            }
+            if content.is_empty() {
+                bail!(
+                    "heading has no text content: position={:?}",
+                    heading.position
+                );
+            }
 
             let counter = title_to_counter
                 .entry(content.clone())
@@ -603,7 +605,10 @@ fn md_to_html_rec(
         Node::FootnoteDefinition(footnote_definition) => {
             footnote_defs.push(footnote_definition.clone());
         }
-        Node::MdxJsxFlowElement(_mdx_jsx_flow_element) => todo!(),
+        Node::MdxJsxFlowElement(_) => bail!(
+            "unsupported markdown node: MdxJsxFlowElement position={:?}",
+            node.position()
+        ),
         Node::List(list) => {
             let tag = if list.ordered { "ol" } else { "ul" };
             if let Some(start) = list.start
@@ -618,15 +623,30 @@ fn md_to_html_rec(
             }
             writeln!(content, "</{}>", tag)?;
         }
-        Node::MdxjsEsm(_mdxjs_esm) => todo!(),
-        Node::Toml(_toml) => todo!(),
-        Node::Yaml(_yaml) => todo!(),
-        Node::Break(_) => todo!(),
+        Node::MdxjsEsm(_) => bail!(
+            "unsupported markdown node: MdxjsEsm position={:?}",
+            node.position()
+        ),
+        Node::Toml(_) => bail!(
+            "unsupported markdown node: Toml position={:?}",
+            node.position()
+        ),
+        Node::Yaml(_) => bail!(
+            "unsupported markdown node: Yaml position={:?}",
+            node.position()
+        ),
+        Node::Break(_) => bail!(
+            "unsupported markdown node: Break position={:?}",
+            node.position()
+        ),
         Node::InlineCode(inline_code) => {
             let sanitized = text_sanitize_for_html(&inline_code.value, false);
             write!(content, "<code>{}</code>", sanitized)?;
         }
-        Node::InlineMath(_inline_math) => todo!(),
+        Node::InlineMath(_) => bail!(
+            "unsupported markdown node: InlineMath position={:?}",
+            node.position()
+        ),
         Node::Delete(delete) => {
             write!(content, "<del>")?;
             for child in &delete.children {
@@ -641,7 +661,10 @@ fn md_to_html_rec(
             }
             write!(content, "</em>")?;
         }
-        Node::MdxTextExpression(_mdx_text_expression) => todo!(),
+        Node::MdxTextExpression(_) => bail!(
+            "unsupported markdown node: MdxTextExpression position={:?}",
+            node.position()
+        ),
         Node::FootnoteReference(footnote_reference) => {
             writeln!(
                 content,
@@ -664,8 +687,14 @@ fn md_to_html_rec(
                 image.url, image.alt
             )?;
         }
-        Node::ImageReference(_image_reference) => todo!(),
-        Node::MdxJsxTextElement(_mdx_jsx_text_element) => todo!(),
+        Node::ImageReference(_) => bail!(
+            "unsupported markdown node: ImageReference position={:?}",
+            node.position()
+        ),
+        Node::MdxJsxTextElement(_) => bail!(
+            "unsupported markdown node: MdxJsxTextElement position={:?}",
+            node.position()
+        ),
         Node::Link(link) => {
             write!(
                 content,
@@ -677,7 +706,10 @@ fn md_to_html_rec(
             }
             write!(content, r#"</a>"#)?;
         }
-        Node::LinkReference(_link_reference) => todo!(),
+        Node::LinkReference(_) => bail!(
+            "unsupported markdown node: LinkReference position={:?}",
+            node.position()
+        ),
         Node::Strong(strong) => {
             write!(content, "<strong>")?;
             for child in &strong.children {
@@ -713,14 +745,23 @@ fn md_to_html_rec(
             }
             writeln!(content, "</code></pre>")?;
         }
-        Node::Math(_math) => todo!(),
-        Node::MdxFlowExpression(_mdx_flow_expression) => todo!(),
+        Node::Math(_) => bail!(
+            "unsupported markdown node: Math position={:?}",
+            node.position()
+        ),
+        Node::MdxFlowExpression(_) => bail!(
+            "unsupported markdown node: MdxFlowExpression position={:?}",
+            node.position()
+        ),
         Node::Heading(heading) => {
-            assert_eq!(heading.children.len(), 1);
+            let position = heading
+                .position
+                .as_ref()
+                .ok_or(anyhow!("heading has no position"))?;
             let title = titles
                 .iter()
-                .find(|t| t.start_md_offset == heading.position.as_ref().unwrap().start.offset)
-                .ok_or(anyhow!("failed to find title"))?;
+                .find(|t| t.start_md_offset == position.start.offset)
+                .ok_or_else(|| anyhow!("failed to find title: position={:?}", position))?;
 
             writeln!(content, r#"<h{} id="{}">"#, heading.depth, title.slug)?;
             write!(content, r##"  <a class="title" href="#{}">"##, title.slug)?;
@@ -782,7 +823,10 @@ fn md_to_html_rec(
             }
             writeln!(content, "</li>")?;
         }
-        Node::Definition(_definition) => todo!(),
+        Node::Definition(_) => bail!(
+            "unsupported markdown node: Definition position={:?}",
+            node.position()
+        ),
         Node::Paragraph(paragraph) => {
             write!(content, "<p>")?;
             for child in &paragraph.children {
@@ -1054,12 +1098,22 @@ fn md_render_footnote_definitions(
     for def in footnote_defs {
         writeln!(content, r#"<li id="fn-{}">"#, def.identifier)?;
 
-        assert_eq!(1, def.children.len());
-        let child = &def.children[0];
+        let [child] = def.children.as_slice() else {
+            bail!(
+                "expected exactly one paragraph in footnote definition: id={} children={}",
+                def.identifier,
+                def.children.len()
+            );
+        };
         let children = match child {
             Node::Paragraph(p) => &p.children,
-            other => panic!("unexpected footnote definition: {:#?}", other),
+            other => bail!(
+                "expected a paragraph in footnote definition: id={} position={:?}",
+                def.identifier,
+                other.position()
+            ),
         };
+
         writeln!(content, r#"<p>"#)?;
         for child in children {
             md_to_html_rec(content, &mut vec![], child, &[], false)?;
