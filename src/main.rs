@@ -817,24 +817,33 @@ fn md_render_toc(content: &mut Vec<u8>, titles: &[Title]) -> anyhow::Result<()> 
 <ul>"#
     )?;
 
-    let mut current_depth = titles[0].depth;
+    // Heading depths of the `<ul>` levels currently open. The one written just
+    // above is the base level and is never closed inside the loop.
+    let base_depth = titles[0].depth;
+    let mut open_depths: Vec<u8> = vec![base_depth];
 
     for (i, title) in titles.iter().enumerate() {
-        if title.depth > current_depth {
-            for _ in 0..(title.depth - current_depth) {
-                writeln!(content, "<ul>")?;
+        // An article may start at `##` and later use `#`, and it may jump from
+        // `##` straight to `####`. Neither should be trusted to describe the
+        // nesting: clamp to the base level, and open at most one level at a
+        // time so that a nested <ul> always sits inside the <li> it belongs to.
+        let depth = title.depth.max(base_depth);
+        let current_depth = open_depths.last().copied().unwrap_or(base_depth);
+
+        if depth > current_depth {
+            writeln!(content, "<ul>")?;
+            open_depths.push(depth);
+        } else {
+            if i > 0 {
+                // Close the previous item.
+                writeln!(content, "</li>")?;
             }
-        } else if title.depth < current_depth {
-            // Close the current <li>, then close the <ul> levels, then close the parent <li>.
-            for _ in 0..(current_depth - title.depth) {
-                writeln!(content, "</li>\n</ul>")?;
+            while open_depths.len() > 1 && depth < open_depths.last().copied().unwrap_or(base_depth)
+            {
+                open_depths.pop();
+                writeln!(content, "</ul>\n</li>")?;
             }
-            writeln!(content, "</li>")?; // Close the <li> of the previous same-level item.
-        } else if i > 0 {
-            // Same level: just close the previous item.
-            writeln!(content, "</li>")?;
         }
-        current_depth = title.depth;
 
         writeln!(
             content,
@@ -844,14 +853,16 @@ fn md_render_toc(content: &mut Vec<u8>, titles: &[Title]) -> anyhow::Result<()> 
             title.slug,
             text_sanitize_for_html(&title.text, false),
         )?;
-
     }
 
-    // Final cleanup: close all remaining open tags.
-    let base_depth = titles[0].depth;
-    for _ in 0..=(current_depth - base_depth) {
-        writeln!(content, "</li>\n</ul>")?;
+    // Final cleanup: close all remaining open tags. `titles` is not empty, so
+    // there is always a last <li> to close.
+    writeln!(content, "</li>")?;
+    while open_depths.len() > 1 {
+        open_depths.pop();
+        writeln!(content, "</ul>\n</li>")?;
     }
+    writeln!(content, "</ul>")?;
     writeln!(content, "</details>\n")?;
 
     Ok(())
@@ -1158,7 +1169,6 @@ fn generate_article_rss(
 </entry>
     "#,
         text_sanitize_for_html(&article.text_title, true),
-
         BASE_URL,
         article
             .html_path
@@ -1492,7 +1502,6 @@ where
                 }
                 let cap = req_bytes.capacity();
 
-
                 let old_len = req_bytes.len();
                 // Zero the spare capacity so that `read()` gets a real `&mut [u8]`.
                 // This does not reallocate since `len <= capacity`.
@@ -1509,7 +1518,6 @@ where
                     eprintln!("http: read 0");
                     return;
                 }
-
 
                 let mut headers = [httparse::EMPTY_HEADER; 1024];
                 let mut req = httparse::Request::new(&mut headers);
@@ -1619,7 +1627,6 @@ fn main() {
                         get_content_type(&path)
                     );
                     let _ = resp.write_all(&content);
-
                 }
             };
         })
