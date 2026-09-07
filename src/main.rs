@@ -319,7 +319,18 @@ fn git_get_articles_stats() -> anyhow::Result<Vec<GitStat>> {
     //
     // R100    sha.md  making_my_debug_build_run_100_times_faster.md
 
-    let output_str = String::from_utf8_lossy(&output.stdout);
+    let res = git_parse_log(&String::from_utf8_lossy(&output.stdout))?;
+
+    println!(
+        "🗄️ git stats: {} files in {} ms",
+        res.len(),
+        Instant::now().duration_since(start).as_millis()
+    );
+
+    Ok(res)
+}
+
+fn git_parse_log(output_str: &str) -> anyhow::Result<Vec<GitStat>> {
     let mut lines = output_str.lines().peekable();
 
     let mut res: BTreeMap<String, GitStat> = BTreeMap::new();
@@ -419,15 +430,7 @@ fn git_get_articles_stats() -> anyhow::Result<Vec<GitStat>> {
         }
     }
 
-    let res: Vec<GitStat> = res.into_values().collect();
-
-    println!(
-        "🗄️ git stats: {} files in {} ms",
-        res.len(),
-        Instant::now().duration_since(start).as_millis()
-    );
-
-    Ok(res)
+    Ok(res.into_values().collect())
 }
 
 // TODO: Return Rc<String> or Cow<str>?
@@ -515,6 +518,24 @@ fn md_parse_metadata(md_content: &str) -> anyhow::Result<(&str, Vec<&str>)> {
     let tags: Vec<&str> = tags_str.split(", ").map(|s| s.trim_ascii()).collect();
 
     Ok((title, tags))
+}
+
+// Return everything after the `---` line that closes the metadata header.
+//
+// The delimiter is a line of its own, right after the `Title:` and `Tags:`
+// lines. Looking for the first `---` anywhere in the document would also match
+// one inside the title, or a thematic break in an article whose header is
+// malformed, and silently truncate everything before it.
+fn md_strip_metadata(md_content: &str) -> Option<&str> {
+    let mut offset = 0usize;
+    for (i, line) in md_content.split_inclusive('\n').enumerate() {
+        if i >= 2 && line.trim_ascii() == "---" {
+            return Some(&md_content[offset + line.len()..]);
+        }
+        offset += line.len();
+    }
+
+    None
 }
 
 fn html_slug(s: &str) -> String {
@@ -1027,27 +1048,12 @@ fn md_render_article(
 
     let (md_root_title, tags) = md_parse_metadata(&md_content)?;
 
-    // The delimiter closing the metadata header is a line of its own, right
-    // after the `Title:` and `Tags:` lines. Looking for the first `---`
-    // anywhere in the document would also match one inside the title, or a
-    // thematic break in an article whose header is malformed, and silently
-    // truncate everything before it.
-    let mut offset = 0usize;
-    let mut metadata_delim_end = None;
-    for (i, line) in md_content.split_inclusive('\n').enumerate() {
-        if i >= 2 && line.trim_ascii() == "---" {
-            metadata_delim_end = Some(offset + line.len());
-            break;
-        }
-        offset += line.len();
-    }
-    let metadata_delim_end = metadata_delim_end.ok_or_else(|| {
+    let md_content_article = md_strip_metadata(&md_content).ok_or_else(|| {
         anyhow!(
             "no metadata delimiter found: path={}",
             &git_stat.path_from_git_root
         )
     })?;
-    let md_content_article = &md_content[metadata_delim_end..];
 
     let md_path = PathBuf::from(&git_stat.path_from_git_root);
     let html_path = md_path.with_extension("html");
@@ -1235,6 +1241,21 @@ fn generate_tags_page(
 ) -> anyhow::Result<()> {
     let start = Instant::now();
 
+    let sb = tags_page_build(articles, html_header, html_footer)?;
+    fs::write("articles-by-tag.html", sb).context("failed to write articles-by-tag.html")?;
+
+    println!(
+        "⚙️ generated articles-by-tag.html: {} us",
+        Instant::now().duration_since(start).as_micros()
+    );
+    Ok(())
+}
+
+fn tags_page_build(
+    articles: &[Article],
+    html_header: &[u8],
+    html_footer: &[u8],
+) -> anyhow::Result<Vec<u8>> {
     let mut tag_to_articles = BTreeMap::new();
 
     for article in articles {
@@ -1298,13 +1319,8 @@ fn generate_tags_page(
     writeln!(sb, "</ul>",)?;
 
     sb.extend(html_footer);
-    fs::write("articles-by-tag.html", sb).context("failed to write articles-by-tag.html")?;
 
-    println!(
-        "⚙️ generated articles-by-tag.html: {} us",
-        Instant::now().duration_since(start).as_micros()
-    );
-    Ok(())
+    Ok(sb)
 }
 
 fn generate_article_rss(
@@ -1342,6 +1358,18 @@ fn generate_article_rss(
 fn generate_rss(articles: &mut [Article]) -> anyhow::Result<()> {
     let start = Instant::now();
 
+    let sb = rss_build(articles)?;
+    fs::write("feed.xml", sb).context("failed to write feed.xml")?;
+
+    println!(
+        "⚙️ generated feed.xml: {} us",
+        Instant::now().duration_since(start).as_micros()
+    );
+
+    Ok(())
+}
+
+fn rss_build(articles: &mut [Article]) -> anyhow::Result<Vec<u8>> {
     articles.sort_by(|a, b| {
         a.git_stat
             .creation_date
@@ -1380,14 +1408,8 @@ fn generate_rss(articles: &mut [Article]) -> anyhow::Result<()> {
     }
 
     sb.extend(b"</feed>");
-    fs::write("feed.xml", sb).context("failed to write feed.xml")?;
 
-    println!(
-        "⚙️ generated feed.xml: {} us",
-        Instant::now().duration_since(start).as_micros()
-    );
-
-    Ok(())
+    Ok(sb)
 }
 
 fn generate_home_page(
@@ -1537,6 +1559,18 @@ fn lock_ignore_poison<T>(lock: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
     lock.lock().unwrap_or_else(|err| err.into_inner())
 }
 
+// Many editors save by writing a temporary file and renaming it over the
+// target, which never produces `Modify(Data(..))`: on macOS FSEvents it shows
+// up as `Create` or `Modify(Name(..))`. Only listening for data modifications
+// missed those saves entirely.
+fn watch_event_is_interesting(kind: &EventKind) -> bool {
+    matches!(
+        kind,
+        EventKind::Create(_)
+            | EventKind::Modify(ModifyKind::Any | ModifyKind::Data(_) | ModifyKind::Name(_))
+    )
+}
+
 fn watch(mtx_cond: Arc<(Mutex<u64>, Condvar)>, cache: &mut HashMap<u64, Article>) {
     let (etx, erx) = std::sync::mpsc::channel::<notify::Result<notify::Event>>();
     let mut watcher = notify::recommended_watcher(etx).unwrap();
@@ -1552,16 +1586,7 @@ fn watch(mtx_cond: Arc<(Mutex<u64>, Condvar)>, cache: &mut HashMap<u64, Article>
             }
         };
 
-        // Many editors save by writing a temporary file and renaming it over
-        // the target, which never produces `Modify(Data(..))`: on macOS
-        // FSEvents it shows up as `Create` or `Modify(Name(..))`. Only
-        // listening for data modifications missed those saves entirely.
-        let interesting = matches!(
-            event.kind,
-            EventKind::Create(_)
-                | EventKind::Modify(ModifyKind::Any | ModifyKind::Data(_) | ModifyKind::Name(_))
-        );
-        if !interesting {
+        if !watch_event_is_interesting(&event.kind) {
             continue;
         }
 
@@ -1694,6 +1719,73 @@ fn get_content_type(path: &Path) -> &'static str {
     }
 }
 
+#[derive(Debug, PartialEq, Eq)]
+enum HttpReadError {
+    // The client sent more than `HTTP_REQUEST_SIZE_MAX` without completing a
+    // request.
+    TooBig,
+    // The connection closed before the request was complete.
+    Eof,
+    Io,
+    Malformed,
+}
+
+impl std::fmt::Display for HttpReadError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            HttpReadError::TooBig => "request too big",
+            HttpReadError::Eof => "connection closed mid-request",
+            HttpReadError::Io => "read failed",
+            HttpReadError::Malformed => "malformed request",
+        };
+        f.write_str(s)
+    }
+}
+
+// Read until `req_bytes` holds one complete HTTP request. Every failure here is
+// something a client can cause at will, so none of them may panic.
+fn http_read_request<R: Read>(
+    reader: &mut R,
+    req_bytes: &mut Vec<u8>,
+) -> Result<(), HttpReadError> {
+    loop {
+        // Grow when full: a request bigger than the initial capacity used to
+        // end up handing `read()` an empty slice, which reads 0 and drops the
+        // connection without ever answering.
+        if req_bytes.len() == req_bytes.capacity() {
+            if req_bytes.capacity() >= HTTP_REQUEST_SIZE_MAX {
+                return Err(HttpReadError::TooBig);
+            }
+            req_bytes.reserve(req_bytes.capacity().max(4096));
+        }
+        let cap = req_bytes.capacity();
+
+        let old_len = req_bytes.len();
+        // Zero the spare capacity so that `read()` gets a real `&mut [u8]`.
+        // This does not reallocate since `len <= capacity`.
+        req_bytes.resize(cap, 0);
+        let read_count = match reader.read(&mut req_bytes[old_len..]) {
+            Ok(read_count) => read_count,
+            Err(_) => {
+                req_bytes.truncate(old_len);
+                return Err(HttpReadError::Io);
+            }
+        };
+        req_bytes.truncate(old_len + read_count);
+        if read_count == 0 {
+            return Err(HttpReadError::Eof);
+        }
+
+        let mut headers = [httparse::EMPTY_HEADER; 1024];
+        let mut req = httparse::Request::new(&mut headers);
+        match req.parse(req_bytes) {
+            Ok(parsed) if !parsed.is_partial() => return Ok(()),
+            Ok(_) => {}
+            Err(_) => return Err(HttpReadError::Malformed),
+        }
+    }
+}
+
 fn http_serve<F>(handler: F) -> io::Result<()>
 where
     F: Fn(httparse::Request<'_, '_>, TcpStream) + Send + Sync + Clone + 'static,
@@ -1715,52 +1807,35 @@ where
             }
 
             let mut req_bytes: Vec<u8> = Vec::with_capacity(10 * 1024); // 10 KiB.
-            loop {
-                // Grow when full: a request bigger than the initial capacity
-                // used to end up handing `read()` an empty slice, which reads 0
-                // and drops the connection without ever answering.
-                if req_bytes.len() == req_bytes.capacity() {
-                    if req_bytes.capacity() >= HTTP_REQUEST_SIZE_MAX {
-                        eprintln!("http: request bigger than {} bytes", HTTP_REQUEST_SIZE_MAX);
-                        return;
-                    }
-                    req_bytes.reserve(req_bytes.capacity());
-                }
-                let cap = req_bytes.capacity();
-
-                let old_len = req_bytes.len();
-                // Zero the spare capacity so that `read()` gets a real `&mut [u8]`.
-                // This does not reallocate since `len <= capacity`.
-                req_bytes.resize(cap, 0);
-                let read_count = match stream.read(&mut req_bytes[old_len..]) {
-                    Ok(read_count) => read_count,
-                    Err(err) => {
-                        eprintln!("http: failed to read request: {}", err);
-                        return;
-                    }
-                };
-                req_bytes.truncate(old_len + read_count);
-                if read_count == 0 {
-                    eprintln!("http: read 0");
-                    return;
-                }
-
-                let mut headers = [httparse::EMPTY_HEADER; 1024];
-                let mut req = httparse::Request::new(&mut headers);
-                let req_parsed = match req.parse(&req_bytes) {
-                    Ok(req_parsed) => req_parsed,
-                    Err(err) => {
-                        eprintln!("http: failed to parse request: {}", err);
-                        return;
-                    }
-                };
-                if !req_parsed.is_partial() {
-                    handler(req, stream);
-                    return;
-                }
+            if let Err(err) = http_read_request(&mut stream, &mut req_bytes) {
+                eprintln!("http: dropping request: {}", err);
+                return;
             }
+
+            let mut headers = [httparse::EMPTY_HEADER; 1024];
+            let mut req = httparse::Request::new(&mut headers);
+            // It parsed once already inside `http_read_request`.
+            if req.parse(&req_bytes).is_err() {
+                return;
+            }
+            handler(req, stream);
         });
     }
+}
+
+// Block until the build generation moves past `seen`, and return the new value.
+//
+// Waiting on the generation rather than on a bare notification is what makes
+// this reliable: a rebuild finishing between two waits used to be lost, and a
+// spurious wakeup used to send a reload event that nothing had asked for.
+fn wait_for_next_generation(mtx_cond: &(Mutex<u64>, Condvar), seen: u64) -> u64 {
+    let (lock, cvar) = mtx_cond;
+    let guard = lock_ignore_poison(lock);
+    let guard = cvar
+        .wait_while(guard, |generation| *generation == seen)
+        .unwrap_or_else(|err| err.into_inner());
+
+    *guard
 }
 
 fn live_reload(
@@ -1776,21 +1851,10 @@ fn live_reload(
     // browser will not consider the stream open before it sees them.
     resp.flush().map_err(|_| ())?;
 
-    let (lock, cvar) = &*mtx_cond;
-    let mut seen = *lock_ignore_poison(lock);
+    let mut seen = *lock_ignore_poison(&mtx_cond.0);
 
     loop {
-        // Wait on the generation rather than on a bare notification: a rebuild
-        // finishing between two waits used to be lost, and a spurious wakeup
-        // used to send a reload event that nothing had asked for.
-        let generation = {
-            let guard = lock_ignore_poison(lock);
-            let guard = cvar
-                .wait_while(guard, |generation| *generation == seen)
-                .unwrap_or_else(|err| err.into_inner());
-            *guard
-        };
-        seen = generation;
+        seen = wait_for_next_generation(&mtx_cond, seen);
 
         write!(resp, "data: foobar\n\n").map_err(|_| ())?;
         resp.flush().map_err(|_| ())?;
