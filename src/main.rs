@@ -7,7 +7,7 @@ use notify::{EventKind, RecursiveMode, Watcher, event::ModifyKind};
 use std::{
     borrow::Cow,
     cmp::Ordering,
-    collections::{BTreeMap, HashMap},
+    collections::{BTreeMap, HashMap, HashSet},
     fs::{self},
     hash::{DefaultHasher, Hash, Hasher},
     io::{self, BufWriter, Read},
@@ -994,7 +994,7 @@ fn md_render_article(
     html_header: &[u8],
     html_footer: &[u8],
     cache: &mut HashMap<u64, Article>,
-) -> anyhow::Result<Article> {
+) -> anyhow::Result<(u64, Article)> {
     let start = Instant::now();
     assert!(!html_header.is_empty());
     assert!(!html_footer.is_empty());
@@ -1004,7 +1004,7 @@ fn md_render_article(
     let hash = hash_article_inputs(&git_stat, html_header, html_footer, &md_content_bytes);
 
     if let Some(article) = cache.get(&hash) {
-        return Ok(article.clone());
+        return Ok((hash, article.clone()));
     }
     let md_content_bytes_len = md_content_bytes.len();
     let md_content = String::from_utf8(md_content_bytes).with_context(|| {
@@ -1156,7 +1156,7 @@ fn md_render_article(
         Instant::now().duration_since(start).as_micros()
     );
 
-    Ok(article)
+    Ok((hash, article))
 }
 
 fn md_render_footnote_definitions(
@@ -1464,6 +1464,7 @@ fn generate_all(cache: &mut HashMap<u64, Article>) -> anyhow::Result<()> {
     let git_stats = git_get_articles_stats()?;
 
     let mut articles: Vec<Article> = Vec::with_capacity(git_stats.len());
+    let mut live_hashes: HashSet<u64> = HashSet::with_capacity(git_stats.len());
     let mut failures = 0usize;
     for gs in git_stats {
         if is_ignored_markdown_file(Path::new(&gs.path_from_git_root)) {
@@ -1471,7 +1472,8 @@ fn generate_all(cache: &mut HashMap<u64, Article>) -> anyhow::Result<()> {
         }
 
         match md_render_article(gs, &html_header, &html_footer, cache) {
-            Ok(a) => {
+            Ok((hash, a)) => {
+                live_hashes.insert(hash);
                 articles.push(a);
             }
             Err(err) => {
@@ -1482,6 +1484,11 @@ fn generate_all(cache: &mut HashMap<u64, Article>) -> anyhow::Result<()> {
             }
         }
     }
+    // Forget the articles that no longer exist in this shape. Without this the
+    // cache keeps every past revision of every article alive for as long as
+    // `watch` runs.
+    cache.retain(|hash, _| live_hashes.contains(hash));
+
     for a in &articles {
         fs::write(&a.html_path, &a.html_output)
             .with_context(|| format!("failed to write {:?}", &a.html_path))?;
