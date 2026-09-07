@@ -13,7 +13,7 @@ use std::{
     io::{self, BufWriter, Read},
     net::{SocketAddr, TcpListener, TcpStream},
     path::{Path, PathBuf},
-    process::Command,
+    process::{Command, ExitCode},
     sync::{Arc, Condvar, Mutex},
     thread::{self},
     time::{Duration, Instant},
@@ -1385,6 +1385,7 @@ fn generate_all(cache: &mut HashMap<u64, Article>) -> anyhow::Result<()> {
     let git_stats = git_get_articles_stats()?;
 
     let mut articles: Vec<Article> = Vec::with_capacity(git_stats.len());
+    let mut failures = 0usize;
     for gs in git_stats {
         if IGNORED_MARKDOWN_FILES.contains(&gs.path_from_git_root.as_str()) {
             continue;
@@ -1395,7 +1396,10 @@ fn generate_all(cache: &mut HashMap<u64, Article>) -> anyhow::Result<()> {
                 articles.push(a);
             }
             Err(err) => {
+                // Keep going so that one broken article does not hide the rest,
+                // but remember it: see the end of this function.
                 eprintln!("err: failed to render article: err={:?}", err);
+                failures += 1;
             }
         }
     }
@@ -1414,6 +1418,11 @@ fn generate_all(cache: &mut HashMap<u64, Article>) -> anyhow::Result<()> {
         articles_count,
         Instant::now().duration_since(start).as_millis()
     );
+
+    if failures > 0 {
+        bail!("{} article(s) failed to render", failures);
+    }
+
     Ok(())
 }
 
@@ -1627,7 +1636,7 @@ fn live_reload(
     }
 }
 
-fn main() {
+fn main() -> ExitCode {
     let mut args = std::env::args().skip(1);
     let arg1 = args.next();
 
@@ -1635,8 +1644,10 @@ fn main() {
 
     let mut cache = HashMap::with_capacity(128);
 
+    let mut exit_code = ExitCode::SUCCESS;
     if let Err(err) = generate_all(&mut cache) {
-        eprintln!("err: {}", err);
+        eprintln!("err: {:?}", err);
+        exit_code = ExitCode::FAILURE;
     }
 
     if let Some(arg) = arg1
@@ -1653,7 +1664,7 @@ fn main() {
             watch(mtx_cond2, &mut cache);
         });
 
-        http_serve(move |req, stream| {
+        if let Err(err) = http_serve(move |req, stream| {
             let mut resp = BufWriter::new(stream);
             match (req.method.unwrap(), req.path.unwrap()) {
                 ("GET", "/blog") => {
@@ -1698,7 +1709,11 @@ fn main() {
                     let _ = resp.write_all(&content);
                 }
             };
-        })
-        .unwrap();
+        }) {
+            eprintln!("err: http server: {}", err);
+            return ExitCode::FAILURE;
+        }
     }
+
+    exit_code
 }
