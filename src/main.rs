@@ -569,6 +569,17 @@ fn md_to_html(md_content: &str) -> anyhow::Result<Vec<u8>> {
 fn md_to_text_rec(node: &Node, out: &mut String) {
     match node {
         Node::Text(text) => out.push_str(&text.value),
+        // Keep the strikethrough markers: the title
+        // `Making my static blog generator ~11~ 33 times faster` turns into
+        // the meaningless `... 11 33 times faster` without them.
+        Node::Delete(delete) => {
+            out.push('~');
+            for child in &delete.children {
+                md_to_text_rec(child, out);
+            }
+            out.push('~');
+        }
+
         Node::InlineCode(code) => out.push_str(&code.value),
         Node::Code(code) => out.push_str(&code.value),
         other => {
