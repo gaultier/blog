@@ -1432,7 +1432,13 @@ where
 
                 let old_len = req_bytes.len();
                 let buf: &mut [u8] = unsafe { std::mem::transmute(req_bytes.spare_capacity_mut()) };
-                let read_count = stream.read(buf).unwrap();
+                let read_count = match stream.read(buf) {
+                    Ok(read_count) => read_count,
+                    Err(err) => {
+                        eprintln!("http: failed to read request: {}", err);
+                        return;
+                    }
+                };
                 if read_count == 0 {
                     eprintln!("http: read 0");
                     return;
@@ -1443,7 +1449,13 @@ where
 
                 let mut headers = [httparse::EMPTY_HEADER; 1024];
                 let mut req = httparse::Request::new(&mut headers);
-                let req_parsed = req.parse(&req_bytes).unwrap();
+                let req_parsed = match req.parse(&req_bytes) {
+                    Ok(req_parsed) => req_parsed,
+                    Err(err) => {
+                        eprintln!("http: failed to parse request: {}", err);
+                        return;
+                    }
+                };
                 if !req_parsed.is_partial() {
                     handler(req, stream);
                     return;
@@ -1504,11 +1516,11 @@ fn main() {
             let mut resp = BufWriter::new(stream);
             match (req.method.unwrap(), req.path.unwrap()) {
                 ("GET", "/blog") => {
-                    write!(
+                    // The client can vanish at any point: never panic on a write.
+                    let _ = write!(
                         resp,
                         "HTTP/1.1 301\r\nLocation: /blog/index.html\r\nConnection: Close\r\n\r\n"
-                    )
-                    .unwrap();
+                    );
                 }
                 ("GET", "/blog/live-reload") => {
                     let _ = live_reload(resp, mtx_cond.clone());
@@ -1519,7 +1531,7 @@ fn main() {
                         Some(path) => path,
                         None => {
                             eprintln!("refused path: url_path={}", url_path);
-                            write!(resp, "HTTP/1.1 404\r\nConnection: Close\r\n\r\n").unwrap();
+                            let _ = write!(resp, "HTTP/1.1 404\r\nConnection: Close\r\n\r\n");
                             return;
                         }
                     };
@@ -1531,19 +1543,19 @@ fn main() {
                                 "file not found: url_path={} path={:?} err={}",
                                 url_path, &path, err
                             );
-                            write!(resp, "HTTP/1.1 404\r\nConnection: Close\r\n\r\n").unwrap();
+                            let _ = write!(resp, "HTTP/1.1 404\r\nConnection: Close\r\n\r\n");
                             return;
                         }
                     };
 
-                    write!(
+                    let _ = write!(
                         resp,
                         "HTTP/1.1 200\r\nContent-Length: {}\r\nContent-Type: {}\r\n\r\n",
                         content.len(),
                         get_content_type(&path)
-                    )
-                    .unwrap();
-                    resp.write_all(&content).unwrap();
+                    );
+                    let _ = resp.write_all(&content);
+
                 }
             };
         })
