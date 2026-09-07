@@ -1537,14 +1537,44 @@ fn watch(mtx_cond: Arc<(Mutex<u64>, Condvar)>, cache: &mut HashMap<u64, Article>
     println!("end of file watch ");
 }
 
+// Minimal percent-decoding: a browser encodes spaces and non-ASCII bytes in
+// asset names, and the file on disk is not called `my%20file.png`.
+fn percent_decode(s: &str) -> Option<String> {
+    if !s.contains('%') {
+        return Some(s.to_owned());
+    }
+
+    let bytes = s.as_bytes();
+    let mut res = Vec::with_capacity(bytes.len());
+    let mut i = 0;
+    while i < bytes.len() {
+        if bytes[i] == b'%' {
+            res.push(u8::from_str_radix(s.get(i + 1..i + 3)?, 16).ok()?);
+            i += 3;
+        } else {
+            res.push(bytes[i]);
+            i += 1;
+        }
+    }
+
+    String::from_utf8(res).ok()
+}
+
 // Resolve a URL path to a file inside `root`, or `None` if it points outside of
 // it. Everything but plain file/directory names is refused rather than
 // resolved: there is nothing above the blog root worth serving.
 fn http_resolve_path(root: &Path, url_path: &str) -> Option<PathBuf> {
+    // A query string or a fragment is not part of the path.
+    let url_path = url_path
+        .split_once(['?', '#'])
+        .map_or(url_path, |(path, _)| path);
     let rel = url_path.strip_prefix("/blog/")?;
+    // Decode before validating the components, so that an escaped `..` is
+    // caught by the loop below rather than sneaking through it.
+    let rel = percent_decode(rel)?;
 
     let mut res = root.to_path_buf();
-    for comp in Path::new(rel).components() {
+    for comp in Path::new(&rel).components() {
         match comp {
             std::path::Component::Normal(c) => res.push(c),
             _ => return None,
