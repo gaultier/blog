@@ -1446,7 +1446,14 @@ fn check_langs() {
     }
 }
 
-fn watch(mtx_cond: Arc<(Mutex<()>, Condvar)>, cache: &mut HashMap<u64, Article>) {
+// A panic while holding the lock poisons it. The data it guards is a counter
+// that is still perfectly valid, and refusing to serve live-reload for the rest
+// of the session because one rebuild panicked helps nobody.
+fn lock_ignore_poison<T>(lock: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
+    lock.lock().unwrap_or_else(|err| err.into_inner())
+}
+
+fn watch(mtx_cond: Arc<(Mutex<u64>, Condvar)>, cache: &mut HashMap<u64, Article>) {
     let (etx, erx) = std::sync::mpsc::channel::<notify::Result<notify::Event>>();
     let mut watcher = notify::recommended_watcher(etx).unwrap();
     watcher
@@ -1475,7 +1482,7 @@ fn watch(mtx_cond: Arc<(Mutex<()>, Condvar)>, cache: &mut HashMap<u64, Article>)
         }
 
         let (lock, cvar) = &*mtx_cond;
-        let _unused = lock.lock().unwrap();
+        let mut generation = lock_ignore_poison(lock);
         for path in event.paths {
             // A watched path always has a final component, but do not bet the
             // watcher thread on it.
@@ -1491,6 +1498,7 @@ fn watch(mtx_cond: Arc<(Mutex<()>, Condvar)>, cache: &mut HashMap<u64, Article>)
                 if let Err(err) = generate_all(cache) {
                     eprintln!("err: {:?}", err);
                 }
+                *generation += 1;
                 cvar.notify_all();
             }
             if path.extension() == Some("js".as_ref())
@@ -1505,6 +1513,7 @@ fn watch(mtx_cond: Arc<(Mutex<()>, Condvar)>, cache: &mut HashMap<u64, Article>)
             {
                 println!("🔄 asset changed: {}", file_name_str);
 
+                *generation += 1;
                 cvar.notify_all();
             }
 
@@ -1519,6 +1528,7 @@ fn watch(mtx_cond: Arc<(Mutex<()>, Condvar)>, cache: &mut HashMap<u64, Article>)
                     eprintln!("err: {:?}", err);
                 }
 
+                *generation += 1;
                 cvar.notify_all();
             }
         }
@@ -1645,19 +1655,33 @@ where
 
 fn live_reload(
     mut resp: BufWriter<TcpStream>,
-    mtx_cond: Arc<(Mutex<()>, Condvar)>,
+    mtx_cond: Arc<(Mutex<u64>, Condvar)>,
 ) -> Result<(), ()> {
     write!(
         resp,
         "HTTP/1.1 200\r\nCache-Control: no-cache\r\nContent-Type: text/event-stream\r\n\r\n"
     )
     .map_err(|_| ())?;
+    // The headers sit in the `BufWriter` until something flushes it, and the
+    // browser will not consider the stream open before it sees them.
+    resp.flush().map_err(|_| ())?;
+
+    let (lock, cvar) = &*mtx_cond;
+    let mut seen = *lock_ignore_poison(lock);
 
     loop {
-        let (lock, cvar) = &*mtx_cond;
-        let guard = lock.lock().map_err(|_| ())?;
+        // Wait on the generation rather than on a bare notification: a rebuild
+        // finishing between two waits used to be lost, and a spurious wakeup
+        // used to send a reload event that nothing had asked for.
+        let generation = {
+            let guard = lock_ignore_poison(lock);
+            let guard = cvar
+                .wait_while(guard, |generation| *generation == seen)
+                .unwrap_or_else(|err| err.into_inner());
+            *guard
+        };
+        seen = generation;
 
-        drop(cvar.wait(guard).map_err(|_| ())?);
         write!(resp, "data: foobar\n\n").map_err(|_| ())?;
         resp.flush().map_err(|_| ())?;
         println!("🔃 sse event sent");
@@ -1685,7 +1709,8 @@ fn main() -> ExitCode {
             .and_then(|d| d.canonicalize())
             .expect("failed to resolve the current directory");
 
-        let mtx_cond = Arc::new((Mutex::new(()), Condvar::new()));
+        let mtx_cond = Arc::new((Mutex::new(0u64), Condvar::new()));
+
         let mtx_cond2 = Arc::clone(&mtx_cond);
 
         thread::spawn(move || {
