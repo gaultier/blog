@@ -841,8 +841,10 @@ fn md_render_toc(content: &mut Vec<u8>, titles: &[Title]) -> anyhow::Result<()> 
             r##"
   <li>
     <a href="#{}">{}</a>"##,
-            title.slug, &title.text,
+            title.slug,
+            text_sanitize_for_html(&title.text, false),
         )?;
+
     }
 
     // Final cleanup: close all remaining open tags.
