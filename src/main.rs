@@ -974,7 +974,6 @@ fn md_render_article(
     })?;
     let md_content_article = &md_content[metadata_delim_end..];
 
-
     let md_path = PathBuf::from(&git_stat.path_from_git_root);
     let html_path = md_path.with_extension("html");
     let md_ast = match markdown::to_mdast(
@@ -1454,62 +1453,77 @@ fn watch(mtx_cond: Arc<(Mutex<()>, Condvar)>, cache: &mut HashMap<u64, Article>)
         .watch(Path::new("."), RecursiveMode::NonRecursive)
         .unwrap();
     for res in erx {
-        match res {
-            Ok(event) => match event.kind {
-                EventKind::Any => {}
-                EventKind::Access(_access_kind) => {}
-                EventKind::Modify(ModifyKind::Data(_)) => {
-                    let (lock, cvar) = &*mtx_cond;
-                    let _unused = lock.lock().unwrap();
-                    for path in event.paths {
-                        let file_name = path.file_name().unwrap();
-                        if file_name == AsRef::<Path>::as_ref("header.html")
-                            || file_name == AsRef::<Path>::as_ref("footer.html")
-                        {
-                            println!("🔄 header/footer changed: {}", file_name.to_str().unwrap());
-                            if let Err(err) = generate_all(cache) {
-                                eprintln!("err: {}", err);
-                            }
-                            cvar.notify_all();
-                        }
-                        if path.extension() == Some("js".as_ref())
-                            || path.extension() == Some("css".as_ref())
-                            || path.extension() == Some("svg".as_ref())
-                            || path.extension() == Some("png".as_ref())
-                            || path.extension() == Some("webm".as_ref())
-                            || path.extension() == Some("mp4".as_ref())
-                            || path.extension() == Some("jpeg".as_ref())
-                            || path.extension() == Some("ico".as_ref())
-                            || path.extension() == Some("gif".as_ref())
-                        {
-                            println!("🔄 asset changed: {}", file_name.to_str().unwrap());
+        let event = match res {
+            Ok(event) => event,
+            Err(e) => {
+                println!("watch error: {:?}", e);
+                continue;
+            }
+        };
 
-                            cvar.notify_all();
-                        }
+        // Many editors save by writing a temporary file and renaming it over
+        // the target, which never produces `Modify(Data(..))`: on macOS
+        // FSEvents it shows up as `Create` or `Modify(Name(..))`. Only
+        // listening for data modifications missed those saves entirely.
+        let interesting = matches!(
+            event.kind,
+            EventKind::Create(_)
+                | EventKind::Modify(ModifyKind::Any | ModifyKind::Data(_) | ModifyKind::Name(_))
+        );
+        if !interesting {
+            continue;
+        }
 
-                        if path.extension() == Some("md".as_ref())
-                            // Ignore some files:
-                            && !path
-                                .file_name()
-                                .is_some_and(|name| IGNORED_MARKDOWN_FILES.iter().any(|ignored| name == *ignored))
-                        {
-                            println!("🔄 md file changed: {}", file_name.to_str().unwrap());
-                            if let Err(err) = generate_all(cache) {
-                                eprintln!("err: {}", err);
-                            }
+        let (lock, cvar) = &*mtx_cond;
+        let _unused = lock.lock().unwrap();
+        for path in event.paths {
+            // A watched path always has a final component, but do not bet the
+            // watcher thread on it.
+            let Some(file_name) = path.file_name() else {
+                continue;
+            };
+            let file_name_str = file_name.to_string_lossy();
 
-                            cvar.notify_all();
-                        }
-                    }
+            if file_name == AsRef::<Path>::as_ref("header.html")
+                || file_name == AsRef::<Path>::as_ref("footer.html")
+            {
+                println!("🔄 header/footer changed: {}", file_name_str);
+                if let Err(err) = generate_all(cache) {
+                    eprintln!("err: {:?}", err);
                 }
-                EventKind::Modify(_) => {}
-                EventKind::Remove(_remove_kind) => {}
-                EventKind::Create(_create_kind) => {}
-                EventKind::Other => {}
-            },
-            Err(e) => println!("watch error: {:?}", e),
+                cvar.notify_all();
+            }
+            if path.extension() == Some("js".as_ref())
+                || path.extension() == Some("css".as_ref())
+                || path.extension() == Some("svg".as_ref())
+                || path.extension() == Some("png".as_ref())
+                || path.extension() == Some("webm".as_ref())
+                || path.extension() == Some("mp4".as_ref())
+                || path.extension() == Some("jpeg".as_ref())
+                || path.extension() == Some("ico".as_ref())
+                || path.extension() == Some("gif".as_ref())
+            {
+                println!("🔄 asset changed: {}", file_name_str);
+
+                cvar.notify_all();
+            }
+
+            if path.extension() == Some("md".as_ref())
+                // Ignore some files:
+                && !IGNORED_MARKDOWN_FILES
+                    .iter()
+                    .any(|ignored| file_name == AsRef::<Path>::as_ref(ignored))
+            {
+                println!("🔄 md file changed: {}", file_name_str);
+                if let Err(err) = generate_all(cache) {
+                    eprintln!("err: {:?}", err);
+                }
+
+                cvar.notify_all();
+            }
         }
     }
+
     println!("end of file watch ");
 }
 
