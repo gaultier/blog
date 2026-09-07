@@ -341,13 +341,18 @@ fn git_get_articles_stats() -> anyhow::Result<Vec<GitStat>> {
                     assert!(!path_old.is_empty());
                     assert!(!path_new.is_empty());
 
+                    // Renaming a file does not publish a new article: keep the
+                    // date it was first added under its old name.
+                    let old = res.remove(path_old);
                     let git_stat = GitStat {
-                        creation_date: date_trimmed.to_owned(),
+                        creation_date: old
+                            .map(|old| old.creation_date)
+                            .unwrap_or_else(|| date_trimmed.to_owned()),
                         modification_date: date_trimmed.to_owned(),
                         path_from_git_root: path_new.to_owned(),
                     };
-                    res.remove(path_old);
                     res.insert(path_new.to_owned(), git_stat);
+
                 }
                 _ => {
                     bail!("invalid combination in git log entry: `{}`", line);
