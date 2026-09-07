@@ -1944,3 +1944,700 @@ fn main() -> ExitCode {
 
     exit_code
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Cursor;
+
+    // ---------------------------------------------------------------- helpers
+
+    fn parse_md(md: &str) -> Node {
+        markdown::to_mdast(
+            md,
+            &ParseOptions {
+                constructs: markdown::Constructs {
+                    gfm_autolink_literal: false,
+                    ..markdown::Constructs::gfm()
+                },
+                gfm_strikethrough_single_tilde: true,
+                ..Default::default()
+            },
+        )
+        .unwrap()
+    }
+
+    fn render_md(md: &str) -> anyhow::Result<String> {
+        let mut out = Vec::new();
+        md_html_append(md, &mut out)?;
+        Ok(String::from_utf8(out).unwrap())
+    }
+
+    fn lint_md(md: &str) -> anyhow::Result<()> {
+        md_lint_rec(&parse_md(md), Path::new("test.md"))
+    }
+
+    fn collect_titles(md: &str) -> Vec<Title> {
+        let mut titles = Vec::new();
+        let mut counters = BTreeMap::new();
+        md_collect_titles(&parse_md(md), &mut counters, &mut titles).unwrap();
+        titles
+    }
+
+    fn test_title(text: &str, depth: u8, start_md_offset: usize) -> Title {
+        Title {
+            text: text.to_owned(),
+            depth,
+            start_md_offset,
+            slug: html_slug(text),
+        }
+    }
+
+    fn render_toc(titles: &[Title]) -> String {
+        let mut out = Vec::new();
+        md_render_toc(&mut out, titles).unwrap();
+        String::from_utf8(out).unwrap()
+    }
+
+    // Build an article the way `md_render_article` does, so the tests exercise
+    // the real title conversions.
+    fn test_article(html_path: &str, title_md: &str, created: &str, modified: &str) -> Article {
+        Article {
+            git_stat: GitStat {
+                creation_date: created.to_owned(),
+                modification_date: modified.to_owned(),
+                path_from_git_root: html_path.replace(".html", ".md"),
+            },
+            html_title: String::from_utf8(md_to_html(title_md).unwrap()).unwrap(),
+            text_title: md_to_text(title_md).unwrap(),
+            html_path: PathBuf::from(html_path),
+            tags: Vec::new(),
+            html_output: Vec::new(),
+        }
+    }
+
+    // Check that every `<ul>`/`<li>` is closed, in the right order.
+    fn assert_tags_balanced(html: &str) {
+        let mut stack: Vec<&str> = Vec::new();
+        let mut rest = html;
+        while let Some(pos) = rest.find('<') {
+            rest = &rest[pos..];
+            if rest.starts_with("<ul>") {
+                stack.push("ul");
+            } else if rest.starts_with("<li>") {
+                stack.push("li");
+            } else if rest.starts_with("</ul>") {
+                assert_eq!(Some("ul"), stack.pop(), "misnested </ul> in:\n{}", html);
+            } else if rest.starts_with("</li>") {
+                assert_eq!(Some("li"), stack.pop(), "misnested </li> in:\n{}", html);
+            }
+            rest = &rest[1..];
+        }
+        assert!(stack.is_empty(), "unclosed {:?} in:\n{}", stack, html);
+    }
+
+    fn repo_root() -> PathBuf {
+        // Tests run with the crate root as the working directory.
+        std::env::current_dir().unwrap().canonicalize().unwrap()
+    }
+
+    // ------------------------------------------------------- 1. path traversal
+
+    #[test]
+    fn point_1_serving_is_confined_to_the_blog_root() {
+        let root = repo_root();
+
+        // Real files under the root resolve.
+        assert_eq!(
+            Some(root.join("Cargo.toml")),
+            http_resolve_path(&root, "/blog/Cargo.toml")
+        );
+        assert_eq!(
+            Some(root.join("src").join("main.rs")),
+            http_resolve_path(&root, "/blog/src/main.rs")
+        );
+
+        // Traversal is refused rather than resolved.
+        assert_eq!(None, http_resolve_path(&root, "/blog/../Cargo.toml"));
+        assert_eq!(
+            None,
+            http_resolve_path(&root, "/blog/../../../../etc/passwd")
+        );
+        assert_eq!(None, http_resolve_path(&root, "/blog/./../Cargo.toml"));
+
+        // An absolute path with no `/blog/` prefix is not a blog path at all;
+        // it used to be handed straight to `fs::read`.
+        assert_eq!(None, http_resolve_path(&root, "/etc/passwd"));
+        assert_eq!(None, http_resolve_path(&root, "/etc/blog/passwd"));
+    }
+
+    // ------------------------------------------- 2. malformed requests
+
+    #[test]
+    fn point_2_a_malformed_request_is_an_error_not_a_panic() {
+        let mut req_bytes = Vec::with_capacity(1024);
+        let mut reader = Cursor::new(b"this is not http\r\n\r\n".to_vec());
+        assert_eq!(
+            Err(HttpReadError::Malformed),
+            http_read_request(&mut reader, &mut req_bytes)
+        );
+
+        // A client hanging up mid-request is an error, not a panic either.
+        let mut req_bytes = Vec::with_capacity(1024);
+        let mut reader = Cursor::new(b"GET /blog/index.html HTTP/1.1\r\n".to_vec());
+        assert_eq!(
+            Err(HttpReadError::Eof),
+            http_read_request(&mut reader, &mut req_bytes)
+        );
+
+        // And a well-formed request still goes through.
+        let mut req_bytes = Vec::with_capacity(1024);
+        let mut reader = Cursor::new(b"GET /blog/index.html HTTP/1.1\r\nHost: x\r\n\r\n".to_vec());
+        assert_eq!(Ok(()), http_read_request(&mut reader, &mut req_bytes));
+    }
+
+    // ------------------------------------- 3. reading into a real buffer
+
+    // Hands out one byte at a time, so the request spans many `read` calls.
+    struct DripReader {
+        data: Vec<u8>,
+        pos: usize,
+    }
+
+    impl Read for DripReader {
+        fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+            if self.pos >= self.data.len() || buf.is_empty() {
+                return Ok(0);
+            }
+            buf[0] = self.data[self.pos];
+            self.pos += 1;
+            Ok(1)
+        }
+    }
+
+    #[test]
+    fn point_3_a_request_split_across_reads_is_reassembled_exactly() {
+        let req = b"GET /blog/index.html HTTP/1.1\r\nHost: x\r\nAccept: */*\r\n\r\n";
+        let mut reader = DripReader {
+            data: req.to_vec(),
+            pos: 0,
+        };
+        let mut req_bytes = Vec::with_capacity(1024);
+
+        assert_eq!(Ok(()), http_read_request(&mut reader, &mut req_bytes));
+        // Byte-for-byte: no uninitialized slack, no stray padding.
+        assert_eq!(req.as_slice(), req_bytes.as_slice());
+    }
+
+    // -------------------------------------------- 4. request buffer growth
+
+    #[test]
+    fn point_4_a_request_larger_than_the_initial_buffer_still_parses() {
+        let mut req = String::from("GET /blog/index.html HTTP/1.1\r\n");
+        for i in 0..400 {
+            req.push_str(&format!("X-Padding-{}: {}\r\n", i, "y".repeat(64)));
+        }
+        req.push_str("\r\n");
+        assert!(req.len() > 10 * 1024, "the test request must exceed 10 KiB");
+
+        let mut reader = Cursor::new(req.clone().into_bytes());
+        let mut req_bytes = Vec::with_capacity(10 * 1024);
+
+        assert_eq!(Ok(()), http_read_request(&mut reader, &mut req_bytes));
+        assert_eq!(req.len(), req_bytes.len());
+    }
+
+    #[test]
+    fn point_4_an_endless_request_is_cut_off() {
+        struct Endless;
+        impl Read for Endless {
+            fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+                buf.fill(b'x');
+                Ok(buf.len())
+            }
+        }
+
+        let mut req_bytes = Vec::with_capacity(10 * 1024);
+        assert_eq!(
+            Err(HttpReadError::TooBig),
+            http_read_request(&mut Endless, &mut req_bytes)
+        );
+        assert!(req_bytes.len() <= HTTP_REQUEST_SIZE_MAX * 2);
+    }
+
+    // ------------------------------------------------ 5 & 6. feed titles
+
+    #[test]
+    fn points_5_and_6_feed_titles_are_plain_text_escaped_once() {
+        let mut articles = vec![
+            test_article(
+                "quotes.html",
+                r#"Perhaps Rust needs "defer""#,
+                "2024-01-01T00:00:00+00:00",
+                "2024-01-02T00:00:00+00:00",
+            ),
+            test_article(
+                "code.html",
+                "In Rust, `let _ = ...` is special",
+                "2024-01-03T00:00:00+00:00",
+                "2024-01-04T00:00:00+00:00",
+            ),
+        ];
+        let xml = String::from_utf8(rss_build(&mut articles).unwrap()).unwrap();
+
+        // Escaped exactly once. `&amp;quot;` was the double-escaped output.
+        assert!(
+            xml.contains("<title>Perhaps Rust needs &quot;defer&quot;</title>"),
+            "{}",
+            xml
+        );
+        assert!(!xml.contains("&amp;quot;"), "{}", xml);
+
+        // An Atom title is `type="text"`, so no markup may reach it.
+        assert!(
+            xml.contains("<title>In Rust, let _ = ... is special</title>"),
+            "{}",
+            xml
+        );
+        assert!(!xml.contains("&lt;code&gt;"), "{}", xml);
+    }
+
+    // ------------------------------------------------ 7. table of contents
+
+    #[test]
+    fn point_7_toc_escapes_heading_text() {
+        let html = render_toc(&[test_title("Light & Dark mode", 2, 0)]);
+        assert!(html.contains("Light &amp; Dark mode"), "{}", html);
+        assert!(!html.contains("Light & Dark mode"), "{}", html);
+    }
+
+    // ------------------------------------------------- 8. document title
+
+    #[test]
+    fn point_8_the_document_title_is_escaped_plain_text() {
+        // Exactly what `md_render_article` writes into `<head><title>`.
+        let title_of =
+            |md: &str| text_sanitize_for_html(&md_to_text(md).unwrap(), false).into_owned();
+
+        // Markdown syntax does not belong in a browser tab.
+        assert_eq!(
+            "In Rust, let _ = ... is special",
+            title_of("In Rust, `let _ = ...` is special")
+        );
+        // Nor does an unescaped `&`.
+        assert_eq!("Tom &amp; Jerry", title_of("Tom & Jerry"));
+    }
+
+    #[test]
+    fn point_8_strikethrough_survives_flattening_to_text() {
+        // Dropping the tildes leaves a title that reads as nonsense.
+        assert_eq!(
+            "Making my blog ~11~ 33 times faster",
+            md_to_text("Making my blog ~11~ 33 times faster").unwrap()
+        );
+    }
+
+    // ------------------------------------------------ 9. toc nesting
+
+    #[test]
+    fn point_9_toc_survives_headings_that_do_not_nest() {
+        // `##` first and `#` after: this underflowed `current - base`.
+        assert_tags_balanced(&render_toc(&[
+            test_title("Deep first", 2, 0),
+            test_title("Shallow after", 1, 10),
+        ]));
+
+        // A skipped level must not open a `<ul>` outside of any `<li>`.
+        let html = render_toc(&[test_title("Two", 2, 0), test_title("Four", 4, 10)]);
+        assert_tags_balanced(&html);
+        assert!(!html.contains("<ul>\n<ul>"), "{}", html);
+
+        // Descending several levels at once, then back up.
+        assert_tags_balanced(&render_toc(&[
+            test_title("A", 2, 0),
+            test_title("B", 5, 1),
+            test_title("C", 2, 2),
+        ]));
+
+        // And the ordinary shape still nests.
+        let html = render_toc(&[
+            test_title("A", 2, 0),
+            test_title("B", 3, 1),
+            test_title("C", 3, 2),
+            test_title("D", 2, 3),
+        ]);
+        assert_tags_balanced(&html);
+        assert!(html.contains("<ul>"), "{}", html);
+    }
+
+    #[test]
+    fn point_9_an_empty_toc_renders_nothing() {
+        assert_eq!("", render_toc(&[]));
+    }
+
+    // ------------------------------------------------- 10. cache key
+
+    #[test]
+    fn point_10_the_cache_key_covers_the_article_identity() {
+        let a = GitStat {
+            creation_date: "2024-01-01T00:00:00+00:00".to_owned(),
+            modification_date: "2024-01-02T00:00:00+00:00".to_owned(),
+            path_from_git_root: "a.md".to_owned(),
+        };
+        let mut different_path = a.clone();
+        different_path.path_from_git_root = "b.md".to_owned();
+        let mut different_date = a.clone();
+        different_date.creation_date = "2023-01-01T00:00:00+00:00".to_owned();
+
+        let (header, footer, body) = (b"header".as_slice(), b"footer".as_slice(), b"same body");
+
+        let key = hash_article_inputs(&a, header, footer, body);
+        assert_eq!(
+            key,
+            hash_article_inputs(&a, header, footer, body),
+            "the key must be stable"
+        );
+        assert_ne!(
+            key,
+            hash_article_inputs(&different_path, header, footer, body),
+            "two articles with the same body are not interchangeable"
+        );
+        assert_ne!(
+            key,
+            hash_article_inputs(&different_date, header, footer, body),
+            "the rendered page embeds the dates"
+        );
+    }
+
+    // ------------------------------------------------ 11. feed <updated>
+
+    #[test]
+    fn point_11_the_feed_updated_is_the_latest_modification() {
+        let mut articles = vec![
+            // Published first, but edited most recently.
+            test_article(
+                "old.html",
+                "Old",
+                "2024-01-01T00:00:00+00:00",
+                "2026-06-01T00:00:00+00:00",
+            ),
+            // Published last, edited long ago: `.last()` used to pick this one.
+            test_article(
+                "new.html",
+                "New",
+                "2025-01-01T00:00:00+00:00",
+                "2025-01-02T00:00:00+00:00",
+            ),
+        ];
+        let xml = String::from_utf8(rss_build(&mut articles).unwrap()).unwrap();
+
+        let feed_updated = xml
+            .lines()
+            .find(|line| line.starts_with("<updated>"))
+            .unwrap();
+        assert_eq!("<updated>2026-06-01T00:00:00+00:00</updated>", feed_updated);
+    }
+
+    // ------------------------------------------------ 12. git log parsing
+
+    #[test]
+    fn point_12_a_rename_keeps_the_original_creation_date() {
+        let log = concat!(
+            "'2019-09-04T08:41:29+02:00'\n",
+            "\n",
+            "A\tadvent_of_code_5.md\n",
+            "'2019-09-05T11:45:48+02:00'\n",
+            "\n",
+            "R100\tadvent_of_code_5.md\tadvent_of_code_2018_5.md\n",
+        );
+
+        let stats = git_parse_log(log).unwrap();
+        assert_eq!(1, stats.len());
+        assert_eq!("advent_of_code_2018_5.md", stats[0].path_from_git_root);
+        assert_eq!("2019-09-04T08:41:29+02:00", stats[0].creation_date);
+        assert_eq!("2019-09-05T11:45:48+02:00", stats[0].modification_date);
+    }
+
+    #[test]
+    fn point_12_add_modify_and_delete_are_tracked() {
+        let log = concat!(
+            "'2024-01-01T00:00:00+00:00'\n",
+            "\n",
+            "A\tkept.md\n",
+            "A\tgone.md\n",
+            "'2024-02-01T00:00:00+00:00'\n",
+            "\n",
+            "M\tkept.md\n",
+            "D\tgone.md\n",
+        );
+
+        let stats = git_parse_log(log).unwrap();
+        assert_eq!(1, stats.len());
+        assert_eq!("kept.md", stats[0].path_from_git_root);
+        assert_eq!("2024-01-01T00:00:00+00:00", stats[0].creation_date);
+        assert_eq!("2024-02-01T00:00:00+00:00", stats[0].modification_date);
+    }
+
+    // -------------------------------------- 13. renderer errors, not panics
+
+    #[test]
+    fn point_13_a_heading_with_inline_markup_renders() {
+        // This used to trip `assert_eq!(1, heading.children.len())`.
+        let html = render_md("# Using `foo` here\n").unwrap();
+        assert!(html.contains("<code>foo</code>"), "{}", html);
+    }
+
+    #[test]
+    fn point_13_unsupported_nodes_are_reported_not_panicked_on() {
+        // `Node::Definition`, previously `todo!()`.
+        assert!(render_md("[ref]: /blog/somewhere\n").is_err());
+        // `Node::Break`, likewise.
+        assert!(render_md("one  \ntwo\n").is_err());
+    }
+
+    // ---------------------------------------------- 15. metadata delimiter
+
+    #[test]
+    fn point_15_the_metadata_delimiter_is_a_line_of_its_own() {
+        assert_eq!(
+            Some("\nBody\n"),
+            md_strip_metadata("Title: A\nTags: b\n---\n\nBody\n")
+        );
+
+        // A `---` inside the title used to become the split point and swallow
+        // the beginning of the article.
+        assert_eq!(
+            Some("\nBody\n"),
+            md_strip_metadata("Title: A --- B\nTags: c\n---\n\nBody\n")
+        );
+
+        // No delimiter at all is reported rather than guessed at.
+        assert_eq!(None, md_strip_metadata("Title: A\nTags: b\n\nBody\n"));
+    }
+
+    // ------------------------------------------------- 16. watch events
+
+    #[test]
+    fn point_16_rename_and_create_events_count_as_changes() {
+        use notify::event::{
+            AccessKind, CreateKind, DataChange, MetadataKind, ModifyKind, RemoveKind, RenameMode,
+        };
+
+        // A save that goes through a temporary file and a rename.
+        assert!(watch_event_is_interesting(&EventKind::Create(
+            CreateKind::File
+        )));
+        assert!(watch_event_is_interesting(&EventKind::Modify(
+            ModifyKind::Name(RenameMode::To)
+        )));
+        // A plain in-place write, which was the only kind handled before.
+        assert!(watch_event_is_interesting(&EventKind::Modify(
+            ModifyKind::Data(DataChange::Content)
+        )));
+        assert!(watch_event_is_interesting(&EventKind::Modify(
+            ModifyKind::Any
+        )));
+
+        // Reading a file, or touching only its metadata, is not a change.
+        assert!(!watch_event_is_interesting(&EventKind::Access(
+            AccessKind::Read
+        )));
+        assert!(!watch_event_is_interesting(&EventKind::Modify(
+            ModifyKind::Metadata(MetadataKind::Any)
+        )));
+        assert!(!watch_event_is_interesting(&EventKind::Remove(
+            RemoveKind::File
+        )));
+    }
+
+    // ------------------------------------------------- 17. live reload
+
+    #[test]
+    fn point_17_a_rebuild_before_the_wait_is_not_lost() {
+        let mtx_cond = Arc::new((Mutex::new(0u64), Condvar::new()));
+
+        // The rebuild lands before any client waits. A bare `cvar.wait` slept
+        // straight through this and the browser kept the stale page.
+        {
+            let (lock, cvar) = &*mtx_cond;
+            *lock_ignore_poison(lock) += 1;
+            cvar.notify_all();
+        }
+
+        assert_eq!(1, wait_for_next_generation(&mtx_cond, 0));
+    }
+
+    #[test]
+    fn point_17_a_rebuild_during_the_wait_wakes_the_client() {
+        let mtx_cond = Arc::new((Mutex::new(7u64), Condvar::new()));
+
+        let writer = Arc::clone(&mtx_cond);
+        let handle = thread::spawn(move || {
+            thread::sleep(Duration::from_millis(50));
+            let (lock, cvar) = &*writer;
+            *lock_ignore_poison(lock) += 1;
+            cvar.notify_all();
+        });
+
+        assert_eq!(8, wait_for_next_generation(&mtx_cond, 7));
+        handle.join().unwrap();
+    }
+
+    #[test]
+    fn point_17_a_poisoned_lock_does_not_take_down_the_clients() {
+        let mtx_cond = Arc::new((Mutex::new(0u64), Condvar::new()));
+
+        let poisoner = Arc::clone(&mtx_cond);
+        let _ = thread::spawn(move || {
+            let _guard = poisoner.0.lock().unwrap();
+            panic!("a rebuild blew up while holding the lock");
+        })
+        .join();
+        assert!(mtx_cond.0.is_poisoned());
+
+        // The counter is still perfectly valid, so clients keep working.
+        {
+            let (lock, cvar) = &*mtx_cond;
+            *lock_ignore_poison(lock) += 1;
+            cvar.notify_all();
+        }
+        assert_eq!(1, wait_for_next_generation(&mtx_cond, 0));
+    }
+
+    // ------------------------------------------------------ minor points
+
+    #[test]
+    fn minor_url_paths_are_decoded_and_query_strings_ignored() {
+        assert_eq!(Some("a b.png".to_owned()), percent_decode("a%20b.png"));
+        assert_eq!(Some("é".to_owned()), percent_decode("%C3%A9"));
+        assert_eq!(Some("plain".to_owned()), percent_decode("plain"));
+        assert_eq!(None, percent_decode("%zz"));
+        assert_eq!(None, percent_decode("%2"));
+
+        let root = repo_root();
+        assert_eq!(
+            Some(root.join("Cargo.toml")),
+            http_resolve_path(&root, "/blog/Cargo.toml?v=2")
+        );
+        assert_eq!(
+            Some(root.join("Cargo.toml")),
+            http_resolve_path(&root, "/blog/Cargo.toml#section")
+        );
+
+        // An escaped traversal is decoded first, then refused by the component
+        // check -- not passed through as a literal file name.
+        assert_eq!(None, http_resolve_path(&root, "/blog/%2e%2e/Cargo.toml"));
+    }
+
+    #[test]
+    fn minor_image_url_and_alt_are_escaped() {
+        let html = render_md("![a \"quoted\" alt](/img/a&b.png)\n").unwrap();
+        assert!(
+            html.contains(r#"alt="a &quot;quoted&quot; alt""#),
+            "{}",
+            html
+        );
+        assert!(html.contains(r#"src="/img/a&amp;b.png""#), "{}", html);
+    }
+
+    #[test]
+    fn minor_tag_names_are_escaped() {
+        let mut article = test_article(
+            "a.html",
+            "A",
+            "2024-01-01T00:00:00+00:00",
+            "2024-01-01T00:00:00+00:00",
+        );
+        article.tags = vec!["C & C++".to_owned()];
+
+        let html =
+            String::from_utf8(tags_page_build(&[article], b"<header>", b"<footer>").unwrap())
+                .unwrap();
+
+        assert!(html.contains("C &amp; C++"), "{}", html);
+        assert!(!html.contains(">C & C++<"), "{}", html);
+    }
+
+    #[test]
+    fn minor_tags_differing_only_in_case_are_rejected() {
+        let mut lower = test_article(
+            "a.html",
+            "A",
+            "2024-01-01T00:00:00+00:00",
+            "2024-01-01T00:00:00+00:00",
+        );
+        lower.tags = vec!["rust".to_owned()];
+        let mut upper = test_article(
+            "b.html",
+            "B",
+            "2024-01-02T00:00:00+00:00",
+            "2024-01-02T00:00:00+00:00",
+        );
+        upper.tags = vec!["Rust".to_owned()];
+
+        assert!(tags_page_build(&[lower, upper], b"<header>", b"<footer>").is_err());
+    }
+
+    #[test]
+    fn minor_the_spelling_lint_matches_whole_words() {
+        // The misspellings the lint exists for.
+        assert!(lint_md("It uses dtrace here.").is_err());
+        assert!(lint_md("A 100KB file.").is_err());
+        assert!(lint_md("Only 4 kb left.").is_err());
+
+        // Not misspellings: `kb` inside a word, and the correct spellings.
+        assert!(lint_md("At the workbench.").is_ok());
+        assert!(lint_md("It uses DTrace, 4 kB and 8 KiB.").is_ok());
+    }
+
+    #[test]
+    fn minor_anchors_are_deduplicated_on_the_slug() {
+        // `Foo!` and `Foo?` are different titles that slug identically, so
+        // counting per title text produced two `id="foo"`.
+        let titles = collect_titles("# Foo!\n\n# Foo?\n\n# Foo!\n");
+        let slugs: Vec<&str> = titles.iter().map(|t| t.slug.as_str()).collect();
+
+        assert_eq!(vec!["foo", "foo-1", "foo-2"], slugs);
+    }
+
+    #[test]
+    fn minor_malformed_git_log_is_an_error_not_a_panic() {
+        // Missing the empty line that follows the date.
+        assert!(git_parse_log("'2024-01-01T00:00:00+00:00'\nA\ta.md\n").is_err());
+        // A modification to a path that was never added.
+        assert!(git_parse_log("'2024-01-01T00:00:00+00:00'\n\nM\tghost.md\n").is_err());
+        // An action the parser does not know.
+        assert!(git_parse_log("'2024-01-01T00:00:00+00:00'\n\nZ\ta.md\n").is_err());
+        // An empty log is not an error.
+        assert!(git_parse_log("").unwrap().is_empty());
+    }
+
+    #[test]
+    fn minor_ignored_markdown_files_match_on_the_file_name() {
+        assert!(is_ignored_markdown_file(Path::new("README.md")));
+        assert!(is_ignored_markdown_file(Path::new("./todo.md")));
+        // The generator and the watcher used to disagree about this one.
+        assert!(is_ignored_markdown_file(Path::new("posts/index.md")));
+
+        assert!(!is_ignored_markdown_file(Path::new("an_article.md")));
+        assert!(!is_ignored_markdown_file(Path::new("readme.md")));
+    }
+
+    #[test]
+    fn minor_content_type_never_panics() {
+        assert_eq!(
+            "text/html; charset=utf8",
+            get_content_type(Path::new("a.html"))
+        );
+        assert_eq!("image/png", get_content_type(Path::new("a.png")));
+        assert_eq!("text/plain", get_content_type(Path::new("no_extension")));
+
+        // A file name that is not valid UTF-8 used to hit `to_str().unwrap()`.
+        #[cfg(unix)]
+        {
+            use std::os::unix::ffi::OsStrExt;
+            let name = std::ffi::OsStr::from_bytes(b"a.\xff\xfe");
+            assert_eq!("text/plain", get_content_type(Path::new(name)));
+        }
+    }
+}
