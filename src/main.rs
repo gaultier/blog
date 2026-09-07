@@ -952,14 +952,28 @@ fn md_render_article(
 
     let (md_root_title, tags) = md_parse_metadata(&md_content)?;
 
-    let metadata_delim = "---";
-    let metadata_delim_pos = md_content.find(metadata_delim).ok_or_else(|| {
+    // The delimiter closing the metadata header is a line of its own, right
+    // after the `Title:` and `Tags:` lines. Looking for the first `---`
+    // anywhere in the document would also match one inside the title, or a
+    // thematic break in an article whose header is malformed, and silently
+    // truncate everything before it.
+    let mut offset = 0usize;
+    let mut metadata_delim_end = None;
+    for (i, line) in md_content.split_inclusive('\n').enumerate() {
+        if i >= 2 && line.trim_ascii() == "---" {
+            metadata_delim_end = Some(offset + line.len());
+            break;
+        }
+        offset += line.len();
+    }
+    let metadata_delim_end = metadata_delim_end.ok_or_else(|| {
         anyhow!(
             "no metadata delimiter found: path={}",
             &git_stat.path_from_git_root
         )
     })?;
-    let (_, md_content_article) = md_content.split_at(metadata_delim_pos + metadata_delim.len());
+    let md_content_article = &md_content[metadata_delim_end..];
+
 
     let md_path = PathBuf::from(&git_stat.path_from_git_root);
     let html_path = md_path.with_extension("html");
