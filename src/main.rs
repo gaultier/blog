@@ -684,9 +684,11 @@ fn md_to_html_rec(
             write!(
                 content,
                 r#"<img src="{}" alt="{}" />"#,
-                image.url, image.alt
+                text_sanitize_for_html(&image.url, false),
+                text_sanitize_for_html(&image.alt, false),
             )?;
         }
+
         Node::ImageReference(_) => bail!(
             "unsupported markdown node: ImageReference position={:?}",
             node.position()
