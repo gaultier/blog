@@ -1431,21 +1431,22 @@ where
                 }
 
                 let old_len = req_bytes.len();
-                let buf: &mut [u8] = unsafe { std::mem::transmute(req_bytes.spare_capacity_mut()) };
-                let read_count = match stream.read(buf) {
+                // Zero the spare capacity so that `read()` gets a real `&mut [u8]`.
+                // This does not reallocate since `len <= capacity`.
+                req_bytes.resize(cap, 0);
+                let read_count = match stream.read(&mut req_bytes[old_len..]) {
                     Ok(read_count) => read_count,
                     Err(err) => {
                         eprintln!("http: failed to read request: {}", err);
                         return;
                     }
                 };
+                req_bytes.truncate(old_len + read_count);
                 if read_count == 0 {
                     eprintln!("http: read 0");
                     return;
                 }
-                unsafe {
-                    req_bytes.set_len(old_len + read_count);
-                }
+
 
                 let mut headers = [httparse::EMPTY_HEADER; 1024];
                 let mut req = httparse::Request::new(&mut headers);
