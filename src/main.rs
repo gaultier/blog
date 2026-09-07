@@ -1652,12 +1652,13 @@ fn http_resolve_path(root: &Path, url_path: &str) -> Option<PathBuf> {
 }
 
 fn get_content_type(path: &Path) -> &'static str {
-    let extension = match path.extension() {
+    // A file name is not required to be UTF-8; fall back rather than panic.
+    let extension = match path.extension().and_then(|e| e.to_str()) {
         None => return "text/plain",
         Some(e) => e,
     };
 
-    match extension.to_str().unwrap() {
+    match extension {
         "js" => "application/javascript",
         "gif" => "image/gif",
         "jpg" => "image/jpeg",
