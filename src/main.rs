@@ -1204,13 +1204,14 @@ fn generate_rss(articles: &mut [Article]) -> anyhow::Result<()> {
     let mut sb = Vec::with_capacity(32000);
     let blog_uuid = uuid::Builder::from_bytes(FEED_UUID).into_uuid();
 
+    // `articles` is sorted by creation date, and the most recently created
+    // article is not necessarily the most recently modified one.
     let last_modification_date = articles
-        .last()
-        .as_ref()
-        .ok_or(anyhow!("no last article"))?
-        .git_stat
-        .modification_date
-        .as_str();
+        .iter()
+        .map(|a| a.git_stat.modification_date.as_str())
+        .max()
+        .ok_or(anyhow!("no article to build the feed from"))?;
+
     writeln!(
         sb,
         r#"<?xml version="1.0" encoding="utf-8"?>
