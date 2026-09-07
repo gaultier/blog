@@ -1056,7 +1056,8 @@ fn md_render_article(
         write!(
             sb,
             r#"<a href="/blog/articles-by-tag.html#{}" class="tag">{}</a> "#,
-            id, tag
+            id,
+            text_sanitize_for_html(tag, false)
         )?;
     }
     writeln!(sb, r#"</div>"#)?;
@@ -1201,7 +1202,7 @@ fn generate_tags_page(
             sb,
             "<li id=\"{}\"><span class=\"tag\">{}</span><ul>",
             html_slug(tag),
-            tag
+            text_sanitize_for_html(tag, false)
         )?;
 
         for a in articles {
@@ -1370,7 +1371,8 @@ fn generate_home_page(
             write!(
                 sb,
                 " <a href=\"/blog/articles-by-tag.html#{}\" class=\"tag\">{}</a>",
-                slug, tag
+                slug,
+                text_sanitize_for_html(tag, false)
             )?;
         }
         sb.extend(b"</div></li>");
