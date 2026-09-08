@@ -2056,10 +2056,10 @@ mod tests {
         std::env::current_dir().unwrap().canonicalize().unwrap()
     }
 
-    // ------------------------------------------------------- 1. path traversal
+    // --- path traversal
 
     #[test]
-    fn point_1_serving_is_confined_to_the_blog_root() {
+    fn serving_is_confined_to_the_blog_root() {
         let root = repo_root();
 
         // Real files under the root resolve.
@@ -2086,10 +2086,10 @@ mod tests {
         assert_eq!(None, http_resolve_path(&root, "/etc/blog/passwd"));
     }
 
-    // ------------------------------------------- 2. malformed requests
+    // --- malformed requests
 
     #[test]
-    fn point_2_a_malformed_request_is_an_error_not_a_panic() {
+    fn a_malformed_request_is_an_error_not_a_panic() {
         let mut req_bytes = Vec::with_capacity(1024);
         let mut reader = Cursor::new(b"this is not http\r\n\r\n".to_vec());
         assert_eq!(
@@ -2111,7 +2111,7 @@ mod tests {
         assert_eq!(Ok(()), http_read_request(&mut reader, &mut req_bytes));
     }
 
-    // ------------------------------------- 3. reading into a real buffer
+    // --- reading into a real buffer
 
     // Hands out one byte at a time, so the request spans many `read` calls.
     struct DripReader {
@@ -2131,7 +2131,7 @@ mod tests {
     }
 
     #[test]
-    fn point_3_a_request_split_across_reads_is_reassembled_exactly() {
+    fn a_request_split_across_reads_is_reassembled_exactly() {
         let req = b"GET /blog/index.html HTTP/1.1\r\nHost: x\r\nAccept: */*\r\n\r\n";
         let mut reader = DripReader {
             data: req.to_vec(),
@@ -2144,10 +2144,10 @@ mod tests {
         assert_eq!(req.as_slice(), req_bytes.as_slice());
     }
 
-    // -------------------------------------------- 4. request buffer growth
+    // --- request buffer growth
 
     #[test]
-    fn point_4_a_request_larger_than_the_initial_buffer_still_parses() {
+    fn a_request_larger_than_the_initial_buffer_still_parses() {
         let mut req = String::from("GET /blog/index.html HTTP/1.1\r\n");
         for i in 0..400 {
             req.push_str(&format!("X-Padding-{}: {}\r\n", i, "y".repeat(64)));
@@ -2163,7 +2163,7 @@ mod tests {
     }
 
     #[test]
-    fn point_4_an_endless_request_is_cut_off() {
+    fn an_endless_request_is_cut_off() {
         struct Endless;
         impl Read for Endless {
             fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
@@ -2181,10 +2181,10 @@ mod tests {
         assert_eq!(HTTP_REQUEST_SIZE_MAX, req_bytes.len());
     }
 
-    // ------------------------------------------------ 5 & 6. feed titles
+    // --- feed titles
 
     #[test]
-    fn points_5_and_6_feed_titles_are_plain_text_escaped_once() {
+    fn feed_titles_are_plain_text_escaped_once() {
         let mut articles = vec![
             test_article(
                 "quotes.html",
@@ -2218,19 +2218,19 @@ mod tests {
         assert!(!xml.contains("&lt;code&gt;"), "{}", xml);
     }
 
-    // ------------------------------------------------ 7. table of contents
+    // --- table of contents
 
     #[test]
-    fn point_7_toc_escapes_heading_text() {
+    fn toc_escapes_heading_text() {
         let html = render_toc(&[test_title("Light & Dark mode", 2, 0)]);
         assert!(html.contains("Light &amp; Dark mode"), "{}", html);
         assert!(!html.contains("Light & Dark mode"), "{}", html);
     }
 
-    // ------------------------------------------------- 8. document title
+    // --- document title
 
     #[test]
-    fn point_8_the_document_title_is_escaped_plain_text() {
+    fn the_document_title_is_escaped_plain_text() {
         // Exactly what `md_render_article` writes into `<head><title>`.
         let title_of =
             |md: &str| text_sanitize_for_html(&md_to_text(md).unwrap(), false).into_owned();
@@ -2245,7 +2245,7 @@ mod tests {
     }
 
     #[test]
-    fn point_8_strikethrough_survives_flattening_to_text() {
+    fn strikethrough_survives_flattening_to_text() {
         // Dropping the tildes leaves a title that reads as nonsense.
         assert_eq!(
             "Making my blog ~11~ 33 times faster",
@@ -2253,7 +2253,7 @@ mod tests {
         );
     }
 
-    // ------------------------------------------------ 9. toc nesting
+    // --- toc nesting
 
     #[test]
     fn heading_lint_rejects_a_top_level_heading() {
@@ -2278,7 +2278,7 @@ mod tests {
     }
 
     #[test]
-    fn point_9_toc_survives_headings_that_do_not_nest() {
+    fn toc_survives_headings_that_do_not_nest() {
         // `md_lint` rejects all of these before the renderer sees them; this
         // pins that the renderer cannot panic or misnest if one slips through.
         // `##` first and `#` after: this underflowed `current - base`.
@@ -2312,14 +2312,14 @@ mod tests {
     }
 
     #[test]
-    fn point_9_an_empty_toc_renders_nothing() {
+    fn an_empty_toc_renders_nothing() {
         assert_eq!("", render_toc(&[]));
     }
 
-    // ------------------------------------------------- 10. cache key
+    // --- cache key
 
     #[test]
-    fn point_10_the_cache_key_covers_the_article_identity() {
+    fn the_cache_key_covers_the_article_identity() {
         let a = GitStat {
             creation_date: "2024-01-01T00:00:00+00:00".to_owned(),
             modification_date: "2024-01-02T00:00:00+00:00".to_owned(),
@@ -2350,10 +2350,10 @@ mod tests {
         );
     }
 
-    // ------------------------------------------------ 11. feed <updated>
+    // --- feed <updated>
 
     #[test]
-    fn point_11_the_feed_updated_is_the_latest_modification() {
+    fn the_feed_updated_is_the_latest_modification() {
         let mut articles = vec![
             // Published first, but edited most recently.
             test_article(
@@ -2379,10 +2379,10 @@ mod tests {
         assert_eq!("<updated>2026-06-01T00:00:00+00:00</updated>", feed_updated);
     }
 
-    // ------------------------------------------------ 12. git log parsing
+    // --- git log parsing
 
     #[test]
-    fn point_12_a_rename_keeps_the_original_creation_date() {
+    fn a_rename_keeps_the_original_creation_date() {
         let log = concat!(
             "'2019-09-04T08:41:29+02:00'\n",
             "\n",
@@ -2400,7 +2400,7 @@ mod tests {
     }
 
     #[test]
-    fn point_12_add_modify_and_delete_are_tracked() {
+    fn add_modify_and_delete_are_tracked() {
         let log = concat!(
             "'2024-01-01T00:00:00+00:00'\n",
             "\n",
@@ -2419,27 +2419,27 @@ mod tests {
         assert_eq!("2024-02-01T00:00:00+00:00", stats[0].modification_date);
     }
 
-    // -------------------------------------- 13. renderer errors, not panics
+    // --- renderer errors, not panics
 
     #[test]
-    fn point_13_a_heading_with_inline_markup_renders() {
+    fn a_heading_with_inline_markup_renders() {
         // This used to trip `assert_eq!(1, heading.children.len())`.
         let html = render_md("# Using `foo` here\n").unwrap();
         assert!(html.contains("<code>foo</code>"), "{}", html);
     }
 
     #[test]
-    fn point_13_unsupported_nodes_are_reported_not_panicked_on() {
+    fn unsupported_nodes_are_reported_not_panicked_on() {
         // `Node::Definition`, previously `todo!()`.
         assert!(render_md("[ref]: /blog/somewhere\n").is_err());
         // `Node::Break`, likewise.
         assert!(render_md("one  \ntwo\n").is_err());
     }
 
-    // ---------------------------------------------- 15. metadata delimiter
+    // --- metadata delimiter
 
     #[test]
-    fn point_15_the_metadata_delimiter_is_a_line_of_its_own() {
+    fn the_metadata_delimiter_is_a_line_of_its_own() {
         assert_eq!(
             Some("\nBody\n"),
             md_strip_metadata("Title: A\nTags: b\n---\n\nBody\n")
@@ -2456,10 +2456,10 @@ mod tests {
         assert_eq!(None, md_strip_metadata("Title: A\nTags: b\n\nBody\n"));
     }
 
-    // ------------------------------------------------- 16. watch events
+    // --- watch events
 
     #[test]
-    fn point_16_rename_and_create_events_count_as_changes() {
+    fn rename_and_create_events_count_as_changes() {
         use notify::event::{
             AccessKind, CreateKind, DataChange, MetadataKind, ModifyKind, RemoveKind, RenameMode,
         };
@@ -2491,10 +2491,10 @@ mod tests {
         )));
     }
 
-    // ------------------------------------------------- 17. live reload
+    // --- live reload
 
     #[test]
-    fn point_17_a_rebuild_before_the_wait_is_not_lost() {
+    fn a_rebuild_before_the_wait_is_not_lost() {
         let mtx_cond = Arc::new((Mutex::new(0u64), Condvar::new()));
 
         // The rebuild lands before any client waits. A bare `cvar.wait` slept
@@ -2509,7 +2509,7 @@ mod tests {
     }
 
     #[test]
-    fn point_17_a_rebuild_during_the_wait_wakes_the_client() {
+    fn a_rebuild_during_the_wait_wakes_the_client() {
         let mtx_cond = Arc::new((Mutex::new(7u64), Condvar::new()));
 
         let writer = Arc::clone(&mtx_cond);
@@ -2524,10 +2524,10 @@ mod tests {
         handle.join().unwrap();
     }
 
-    // ------------------------------------------------------ minor points
+    // ---
 
     #[test]
-    fn minor_url_paths_are_decoded_and_query_strings_ignored() {
+    fn url_paths_are_decoded_and_query_strings_ignored() {
         assert_eq!(Some("a b.png".to_owned()), percent_decode("a%20b.png"));
         assert_eq!(Some("é".to_owned()), percent_decode("%C3%A9"));
         assert_eq!(Some("plain".to_owned()), percent_decode("plain"));
@@ -2550,7 +2550,7 @@ mod tests {
     }
 
     #[test]
-    fn minor_image_url_and_alt_are_escaped() {
+    fn image_url_and_alt_are_escaped() {
         let html = render_md("![a \"quoted\" alt](/img/a&b.png)\n").unwrap();
         assert!(
             html.contains(r#"alt="a &quot;quoted&quot; alt""#),
@@ -2561,7 +2561,7 @@ mod tests {
     }
 
     #[test]
-    fn minor_tag_names_are_escaped() {
+    fn tag_names_are_escaped() {
         let mut article = test_article(
             "a.html",
             "A",
@@ -2579,7 +2579,7 @@ mod tests {
     }
 
     #[test]
-    fn minor_tags_differing_only_in_case_are_rejected() {
+    fn tags_differing_only_in_case_are_rejected() {
         let mut lower = test_article(
             "a.html",
             "A",
@@ -2599,7 +2599,7 @@ mod tests {
     }
 
     #[test]
-    fn minor_the_spelling_lint_matches_whole_words() {
+    fn the_spelling_lint_matches_whole_words() {
         // The misspellings the lint exists for.
         assert!(lint_md("It uses dtrace here.").is_err());
         assert!(lint_md("A 100KB file.").is_err());
@@ -2618,7 +2618,7 @@ mod tests {
     }
 
     #[test]
-    fn minor_anchors_are_deduplicated_on_the_slug() {
+    fn anchors_are_deduplicated_on_the_slug() {
         // `Foo!` and `Foo?` are different titles that slug identically, so
         // counting per title text produced two `id="foo"`.
         let titles = collect_titles("# Foo!\n\n# Foo?\n\n# Foo!\n");
@@ -2628,7 +2628,7 @@ mod tests {
     }
 
     #[test]
-    fn minor_malformed_git_log_is_an_error_not_a_panic() {
+    fn malformed_git_log_is_an_error_not_a_panic() {
         // Missing the empty line that follows the date.
         assert!(git_parse_log("'2024-01-01T00:00:00+00:00'\nA\ta.md\n").is_err());
         // A modification to a path that was never added.
@@ -2640,7 +2640,7 @@ mod tests {
     }
 
     #[test]
-    fn minor_ignored_markdown_files_match_on_the_file_name() {
+    fn ignored_markdown_files_match_on_the_file_name() {
         assert!(is_ignored_markdown_file(Path::new("README.md")));
         assert!(is_ignored_markdown_file(Path::new("./todo.md")));
         // The generator and the watcher used to disagree about this one.
@@ -2651,7 +2651,7 @@ mod tests {
     }
 
     #[test]
-    fn minor_content_type_never_panics() {
+    fn content_type_never_panics() {
         assert_eq!(
             "text/html; charset=utf8",
             get_content_type(Path::new("a.html"))
