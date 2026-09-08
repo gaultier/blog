@@ -1757,18 +1757,18 @@ impl std::fmt::Display for HttpReadError {
 
 // Read until `req_bytes` holds one complete HTTP request. Every failure here is
 // something a client can cause at will, so none of them may panic.
-fn http_read_request<R: Read>(
-    reader: &mut R,
-    req_bytes: &mut Vec<u8>,
-) -> Result<(), HttpReadError> {
+fn http_read_request<R: Read>(reader: R, req_bytes: &mut Vec<u8>) -> Result<(), HttpReadError> {
+    // The equivalent of Go's `io.LimitReader`: hands out at most this many
+    // bytes and then reports EOF, which bounds the request exactly instead of
+    // to whatever the buffer capacity happened to grow to.
+    let mut reader = reader.take(HTTP_REQUEST_SIZE_MAX as u64);
+
     loop {
         // Grow when full: a request bigger than the initial capacity used to
         // end up handing `read()` an empty slice, which reads 0 and drops the
-        // connection without ever answering.
+        // connection without ever answering. `take` is what bounds this, so
+        // the capacity itself needs no limit.
         if req_bytes.len() == req_bytes.capacity() {
-            if req_bytes.capacity() >= HTTP_REQUEST_SIZE_MAX {
-                return Err(HttpReadError::TooBig);
-            }
             req_bytes.reserve(req_bytes.capacity().max(4096));
         }
         let cap = req_bytes.capacity();
@@ -1786,7 +1786,13 @@ fn http_read_request<R: Read>(
         };
         req_bytes.truncate(old_len + read_count);
         if read_count == 0 {
-            return Err(HttpReadError::Eof);
+            // `take` signals the limit as a plain EOF, so tell the two apart:
+            // a client that hung up is not a client that flooded us.
+            return Err(if reader.limit() == 0 {
+                HttpReadError::TooBig
+            } else {
+                HttpReadError::Eof
+            });
         }
 
         let mut headers = [httparse::EMPTY_HEADER; 1024];
@@ -2175,7 +2181,8 @@ mod tests {
             Err(HttpReadError::TooBig),
             http_read_request(&mut Endless, &mut req_bytes)
         );
-        assert!(req_bytes.len() <= HTTP_REQUEST_SIZE_MAX * 2);
+        // Exactly the limit, not "however far the capacity had doubled".
+        assert_eq!(HTTP_REQUEST_SIZE_MAX, req_bytes.len());
     }
 
     // ------------------------------------------------ 5 & 6. feed titles
