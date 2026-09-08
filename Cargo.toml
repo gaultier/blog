@@ -14,5 +14,12 @@ notify = "8.2.0"
 # RSS feed.
 uuid = {version="1.21.0", features=["v5"]}
 
+# A panic is a bug, and this program has no state worth unwinding for. Aborting
+# in dev too means the debug binary fails the same way the released one does,
+# verified: it exits 134 (SIGABRT) rather than 101. Cargo forces unwind for test
+# targets regardless, so `cargo test` still reports failures one at a time.
+[profile.dev]
+panic = "abort"
+
 [profile.release]
 panic = "abort"
