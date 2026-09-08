@@ -57,6 +57,8 @@ const CUSTOM_LANGS: [&str; 5] = ["awk", "dtrace", "gnuplot", "odin", "toml"];
 // single connection can make us allocate.
 const HTTP_REQUEST_SIZE_MAX: usize = 1024 * 1024; // 1 MiB.
 const HTTP_READ_TIMEOUT: Duration = Duration::from_secs(30);
+// How long an idle live-reload client waits before sending a keepalive.
+const LIVE_RELOAD_KEEPALIVE: Duration = Duration::from_secs(30);
 const IGNORED_MARKDOWN_FILES: [&str; 3] = ["README.md", "todo.md", "index.md"];
 
 struct Title {
@@ -1838,19 +1840,25 @@ where
     }
 }
 
-// Block until the build generation moves past `seen`, and return the new value.
+// Block until the build generation moves past `seen`, and return the new value,
+// or `None` if `timeout` elapsed with nothing rebuilt.
 //
 // Waiting on the generation rather than on a bare notification is what makes
 // this reliable: a rebuild finishing between two waits used to be lost, and a
 // spurious wakeup used to send a reload event that nothing had asked for.
-fn wait_for_next_generation(mtx_cond: &(Mutex<u64>, Condvar), seen: u64) -> u64 {
+fn wait_for_next_generation(
+    mtx_cond: &(Mutex<u64>, Condvar),
+    seen: u64,
+    timeout: Duration,
+) -> Option<u64> {
     let (lock, cvar) = mtx_cond;
     let guard = lock.lock().unwrap();
-    let guard = cvar
-        .wait_while(guard, |generation| *generation == seen)
+    let (guard, _) = cvar
+        .wait_timeout_while(guard, timeout, |generation| *generation == seen)
         .unwrap();
 
-    *guard
+    // A timeout leaves the generation exactly where it was.
+    (*guard != seen).then_some(*guard)
 }
 
 fn live_reload(
@@ -1869,11 +1877,23 @@ fn live_reload(
     let mut seen = *mtx_cond.0.lock().unwrap();
 
     loop {
-        seen = wait_for_next_generation(&mtx_cond, seen);
-
-        write!(resp, "data: foobar\n\n").map_err(|_| ())?;
-        resp.flush().map_err(|_| ())?;
-        println!("🔃 sse event sent");
+        match wait_for_next_generation(&mtx_cond, seen, LIVE_RELOAD_KEEPALIVE) {
+            Some(generation) => {
+                seen = generation;
+                write!(resp, "data: foobar\n\n").map_err(|_| ())?;
+                resp.flush().map_err(|_| ())?;
+                println!("🔃 sse event sent");
+            }
+            None => {
+                // Nothing was rebuilt. A line starting with `:` is a comment
+                // that SSE clients ignore; it stops intermediaries dropping an
+                // idle stream, and the write failing is how a closed tab gets
+                // noticed instead of parking this thread on it until the next
+                // rebuild.
+                write!(resp, ": keepalive\n\n").map_err(|_| ())?;
+                resp.flush().map_err(|_| ())?;
+            }
+        }
     }
 }
 
@@ -2505,7 +2525,10 @@ mod tests {
             cvar.notify_all();
         }
 
-        assert_eq!(1, wait_for_next_generation(&mtx_cond, 0));
+        assert_eq!(
+            Some(1),
+            wait_for_next_generation(&mtx_cond, 0, Duration::from_secs(30))
+        );
     }
 
     #[test]
@@ -2520,8 +2543,32 @@ mod tests {
             cvar.notify_all();
         });
 
-        assert_eq!(8, wait_for_next_generation(&mtx_cond, 7));
+        assert_eq!(
+            Some(8),
+            wait_for_next_generation(&mtx_cond, 7, Duration::from_secs(30))
+        );
         handle.join().unwrap();
+    }
+
+    #[test]
+    fn a_quiet_period_times_out_instead_of_blocking_forever() {
+        let mtx_cond = Arc::new((Mutex::new(3u64), Condvar::new()));
+
+        // Nothing rebuilds. The wait must come back on its own so the caller
+        // can send a keepalive and notice a client that has gone away.
+        let start = Instant::now();
+        let timeout = Duration::from_millis(80);
+        assert_eq!(None, wait_for_next_generation(&mtx_cond, 3, timeout));
+        assert!(start.elapsed() >= timeout, "returned before the timeout");
+
+        // The generation is untouched, so the next wait still reports the next
+        // rebuild rather than swallowing it.
+        {
+            let (lock, cvar) = &*mtx_cond;
+            *lock.lock().unwrap() += 1;
+            cvar.notify_all();
+        }
+        assert_eq!(Some(4), wait_for_next_generation(&mtx_cond, 3, timeout));
     }
 
     // ---
