@@ -111,24 +111,32 @@ fn hash_article_inputs(
     hasher.finish()
 }
 
-fn md_lint_rec(node: &Node, md_path: &Path) -> anyhow::Result<()> {
+// Lint an article body. The `<h1>` is rendered from the `Title:` metadata, so
+// the body starts one level below it: the first heading must be `##`, and each
+// heading may go at most one level deeper than the previous one.
+fn md_lint(node: &Node, md_path: &Path) -> anyhow::Result<()> {
+    let mut previous_heading_depth = 1u8;
+    md_lint_rec(node, md_path, &mut previous_heading_depth)
+}
+
+fn md_lint_rec(node: &Node, md_path: &Path, previous_heading_depth: &mut u8) -> anyhow::Result<()> {
     match node {
         Node::Root(x) => {
             for child in &x.children {
-                md_lint_rec(child, md_path)?;
+                md_lint_rec(child, md_path, previous_heading_depth)?;
             }
             Ok(())
         }
         Node::Blockquote(x) => {
             for child in &x.children {
-                md_lint_rec(child, md_path)?;
+                md_lint_rec(child, md_path, previous_heading_depth)?;
             }
             Ok(())
         }
         Node::FootnoteDefinition(_) | Node::MdxJsxFlowElement(_) => Ok(()),
         Node::List(x) => {
             for child in &x.children {
-                md_lint_rec(child, md_path)?;
+                md_lint_rec(child, md_path, previous_heading_depth)?;
             }
             Ok(())
         }
@@ -140,13 +148,13 @@ fn md_lint_rec(node: &Node, md_path: &Path) -> anyhow::Result<()> {
         | Node::InlineCode(_) => Ok(()),
         Node::Delete(x) => {
             for child in &x.children {
-                md_lint_rec(child, md_path)?;
+                md_lint_rec(child, md_path, previous_heading_depth)?;
             }
             Ok(())
         }
         Node::Emphasis(x) => {
             for child in &x.children {
-                md_lint_rec(child, md_path)?;
+                md_lint_rec(child, md_path, previous_heading_depth)?;
             }
             Ok(())
         }
@@ -178,7 +186,7 @@ fn md_lint_rec(node: &Node, md_path: &Path) -> anyhow::Result<()> {
         Node::LinkReference(_) => Ok(()),
         Node::Strong(x) => {
             for child in &x.children {
-                md_lint_rec(child, md_path)?;
+                md_lint_rec(child, md_path, previous_heading_depth)?;
             }
             Ok(())
         }
@@ -227,40 +235,58 @@ fn md_lint_rec(node: &Node, md_path: &Path) -> anyhow::Result<()> {
         }
         Node::Math(_) | Node::MdxFlowExpression(_) => Ok(()),
         Node::Heading(x) => {
+            if x.depth < 2 {
+                bail!(
+                    "heading must be `##` or deeper, the `#` is rendered from the `Title:` metadata: file={:?} position={:?}",
+                    md_path.to_str(),
+                    x.position
+                );
+            }
+            if x.depth > *previous_heading_depth + 1 {
+                bail!(
+                    "heading jumps from depth {} to {}, it may only go one level deeper at a time: file={:?} position={:?}",
+                    previous_heading_depth,
+                    x.depth,
+                    md_path.to_str(),
+                    x.position
+                );
+            }
+            *previous_heading_depth = x.depth;
+
             for child in &x.children {
-                md_lint_rec(child, md_path)?;
+                md_lint_rec(child, md_path, previous_heading_depth)?;
             }
             Ok(())
         }
         Node::Table(x) => {
             for child in &x.children {
-                md_lint_rec(child, md_path)?;
+                md_lint_rec(child, md_path, previous_heading_depth)?;
             }
             Ok(())
         }
         Node::ThematicBreak(_) => Ok(()),
         Node::TableRow(x) => {
             for child in &x.children {
-                md_lint_rec(child, md_path)?;
+                md_lint_rec(child, md_path, previous_heading_depth)?;
             }
             Ok(())
         }
         Node::TableCell(x) => {
             for child in &x.children {
-                md_lint_rec(child, md_path)?;
+                md_lint_rec(child, md_path, previous_heading_depth)?;
             }
             Ok(())
         }
         Node::ListItem(x) => {
             for child in &x.children {
-                md_lint_rec(child, md_path)?;
+                md_lint_rec(child, md_path, previous_heading_depth)?;
             }
             Ok(())
         }
         Node::Definition(_) => Ok(()),
         Node::Paragraph(x) => {
             for child in &x.children {
-                md_lint_rec(child, md_path)?;
+                md_lint_rec(child, md_path, previous_heading_depth)?;
             }
             Ok(())
         }
@@ -963,11 +989,11 @@ fn md_render_toc(content: &mut Vec<u8>, titles: &[Title]) -> anyhow::Result<()> 
     let mut open_depths: Vec<u8> = vec![base_depth];
 
     for (i, title) in titles.iter().enumerate() {
-        // An article may start at `##` and later use `#`, and it may jump from
-        // `##` straight to `####`. Neither should be trusted to describe the
-        // nesting: clamp to the base level, and open at most one level at a
-        // time so that a nested <ul> always sits inside the <li> it belongs to.
-        let depth = title.depth.max(base_depth);
+        // `md_lint` rejects an article whose headings start below `##` or skip
+        // a level, so the stack below just follows them. It still opens one
+        // level at a time and pops instead of subtracting depths, so even
+        // unlinted input cannot make it underflow or misnest.
+        let depth = title.depth;
         let current_depth = open_depths.last().copied().unwrap_or(base_depth);
 
         if depth > current_depth {
@@ -1063,7 +1089,7 @@ fn md_render_article(
         ),
     };
 
-    md_lint_rec(&md_ast, &md_path)?;
+    md_lint(&md_ast, &md_path)?;
 
     let mut sb: Vec<u8> = Vec::with_capacity(md_content_bytes_len * 8);
     let html_root_title = String::from_utf8(md_to_html(md_root_title)?).with_context(|| {
@@ -1961,7 +1987,7 @@ mod tests {
     }
 
     fn lint_md(md: &str) -> anyhow::Result<()> {
-        md_lint_rec(&parse_md(md), Path::new("test.md"))
+        md_lint(&parse_md(md), Path::new("test.md"))
     }
 
     fn collect_titles(md: &str) -> Vec<Title> {
@@ -2227,8 +2253,33 @@ mod tests {
     // ------------------------------------------------ 9. toc nesting
 
     #[test]
+    fn heading_lint_rejects_a_top_level_heading() {
+        // The `<h1>` is rendered from the `Title:` metadata, so the body may
+        // not introduce another one.
+        assert!(lint_md("# Not allowed\n").is_err());
+        assert!(lint_md("## Allowed\n").is_ok());
+    }
+
+    #[test]
+    fn heading_lint_requires_headings_to_nest_one_level_at_a_time() {
+        // Skipping a level down.
+        assert!(lint_md("## Two\n\n#### Four\n").is_err());
+        // The first heading is one level below the metadata title, so it must
+        // be `##` and not deeper.
+        assert!(lint_md("### Three first\n").is_err());
+
+        // Descending one at a time is fine.
+        assert!(lint_md("## Two\n\n### Three\n\n#### Four\n").is_ok());
+        // And coming back up may skip as many levels as it likes.
+        assert!(lint_md("## Two\n\n### Three\n\n#### Four\n\n## Two again\n").is_ok());
+    }
+
+    #[test]
     fn point_9_toc_survives_headings_that_do_not_nest() {
+        // `md_lint` rejects all of these before the renderer sees them; this
+        // pins that the renderer cannot panic or misnest if one slips through.
         // `##` first and `#` after: this underflowed `current - base`.
+
         assert_tags_balanced(&render_toc(&[
             test_title("Deep first", 2, 0),
             test_title("Shallow after", 1, 10),
