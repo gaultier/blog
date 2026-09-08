@@ -1565,13 +1565,6 @@ fn check_langs() {
     }
 }
 
-// A panic while holding the lock poisons it. The data it guards is a counter
-// that is still perfectly valid, and refusing to serve live-reload for the rest
-// of the session because one rebuild panicked helps nobody.
-fn lock_ignore_poison<T>(lock: &Mutex<T>) -> std::sync::MutexGuard<'_, T> {
-    lock.lock().unwrap_or_else(|err| err.into_inner())
-}
-
 // Many editors save by writing a temporary file and renaming it over the
 // target, which never produces `Modify(Data(..))`: on macOS FSEvents it shows
 // up as `Create` or `Modify(Name(..))`. Only listening for data modifications
@@ -1604,7 +1597,10 @@ fn watch(mtx_cond: Arc<(Mutex<u64>, Condvar)>, cache: &mut HashMap<u64, Article>
         }
 
         let (lock, cvar) = &*mtx_cond;
-        let mut generation = lock_ignore_poison(lock);
+        // Poisoning takes a panic that unwinds, and the release profile aborts.
+        // In a debug build a panic here would have killed the watcher anyway,
+        // leaving nothing to notify anyone about.
+        let mut generation = lock.lock().unwrap();
         for path in event.paths {
             // A watched path always has a final component, but do not bet the
             // watcher thread on it.
@@ -1849,10 +1845,10 @@ where
 // spurious wakeup used to send a reload event that nothing had asked for.
 fn wait_for_next_generation(mtx_cond: &(Mutex<u64>, Condvar), seen: u64) -> u64 {
     let (lock, cvar) = mtx_cond;
-    let guard = lock_ignore_poison(lock);
+    let guard = lock.lock().unwrap();
     let guard = cvar
         .wait_while(guard, |generation| *generation == seen)
-        .unwrap_or_else(|err| err.into_inner());
+        .unwrap();
 
     *guard
 }
@@ -1870,7 +1866,7 @@ fn live_reload(
     // browser will not consider the stream open before it sees them.
     resp.flush().map_err(|_| ())?;
 
-    let mut seen = *lock_ignore_poison(&mtx_cond.0);
+    let mut seen = *mtx_cond.0.lock().unwrap();
 
     loop {
         seen = wait_for_next_generation(&mtx_cond, seen);
@@ -2505,7 +2501,7 @@ mod tests {
         // straight through this and the browser kept the stale page.
         {
             let (lock, cvar) = &*mtx_cond;
-            *lock_ignore_poison(lock) += 1;
+            *lock.lock().unwrap() += 1;
             cvar.notify_all();
         }
 
@@ -2520,33 +2516,12 @@ mod tests {
         let handle = thread::spawn(move || {
             thread::sleep(Duration::from_millis(50));
             let (lock, cvar) = &*writer;
-            *lock_ignore_poison(lock) += 1;
+            *lock.lock().unwrap() += 1;
             cvar.notify_all();
         });
 
         assert_eq!(8, wait_for_next_generation(&mtx_cond, 7));
         handle.join().unwrap();
-    }
-
-    #[test]
-    fn point_17_a_poisoned_lock_does_not_take_down_the_clients() {
-        let mtx_cond = Arc::new((Mutex::new(0u64), Condvar::new()));
-
-        let poisoner = Arc::clone(&mtx_cond);
-        let _ = thread::spawn(move || {
-            let _guard = poisoner.0.lock().unwrap();
-            panic!("a rebuild blew up while holding the lock");
-        })
-        .join();
-        assert!(mtx_cond.0.is_poisoned());
-
-        // The counter is still perfectly valid, so clients keep working.
-        {
-            let (lock, cvar) = &*mtx_cond;
-            *lock_ignore_poison(lock) += 1;
-            cvar.notify_all();
-        }
-        assert_eq!(1, wait_for_next_generation(&mtx_cond, 0));
     }
 
     // ------------------------------------------------------ minor points
