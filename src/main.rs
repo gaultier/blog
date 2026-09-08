@@ -186,36 +186,23 @@ fn md_lint_rec(node: &Node, md_path: &Path) -> anyhow::Result<()> {
             // Spellings that are always wrong: `DTrace`, `KiB` and `kB` have
             // one correct casing each.
             let incorrect = ["dtrace", "dTrace", "Dtrace", "Kib", "kb", "KB", "Kb"];
-            for inc in incorrect {
-                let mut base = 0usize;
-                while let Some(pos) = text.value[base..].find(inc) {
-                    let start = base + pos;
-                    let end = start + inc.len();
-                    base = end;
-
-                    // Only whole words count: `KB` must not match `workbench`,
-                    // while `100KB` must still be caught, so digits do not
-                    // count as part of a word here.
-                    let letter_before = text.value[..start]
-                        .chars()
-                        .next_back()
-                        .is_some_and(char::is_alphabetic);
-                    let letter_after = text.value[end..]
-                        .chars()
-                        .next()
-                        .is_some_and(char::is_alphabetic);
-                    if letter_before || letter_after {
-                        continue;
-                    }
-
+            // Splitting on non-letters yields maximal runs of letters, which is
+            // exactly the notion of "word" this lint wants: `workbench` is one
+            // word and never matches `kb`, while the `KB` in `100KB` and the
+            // `dtrace` in `dtrace-based` are words of their own. Note that
+            // `split_whitespace` would not do: it keeps the digits and the
+            // punctuation attached.
+            for word in text.value.split(|c: char| !c.is_alphabetic()) {
+                if incorrect.contains(&word) {
                     bail!(
                         "incorrect spelling `{}`: file={:?} position={:?}",
-                        inc,
+                        word,
                         md_path.to_str(),
                         text.position
                     );
                 }
             }
+
             Ok(())
         }
 
@@ -2585,9 +2572,16 @@ mod tests {
         assert!(lint_md("A 100KB file.").is_err());
         assert!(lint_md("Only 4 kb left.").is_err());
 
+        // Punctuation and digits bound a word just like whitespace does, so
+        // these are caught even though `split_whitespace` would not see them.
+        assert!(lint_md("A dtrace-based tool.").is_err());
+        assert!(lint_md("Reads at 100KB/s.").is_err());
+        assert!(lint_md("(dtrace)").is_err());
+
         // Not misspellings: `kb` inside a word, and the correct spellings.
         assert!(lint_md("At the workbench.").is_ok());
         assert!(lint_md("It uses DTrace, 4 kB and 8 KiB.").is_ok());
+        assert!(lint_md("A 100 kB/s link and an 8 KiB buffer.").is_ok());
     }
 
     #[test]
