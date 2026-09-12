@@ -156,7 +156,7 @@ So if the Europe region wants to insert the same UUID as the Asia region, the tw
 <p><img src="crdb_opt_5.png" alt="Latency histogram" /></p>
 <p>And then I started using it everywhere, and every time, the <code>INSERT</code> went from a stable ~250ms to ~5ms, even when we insert several values at once:</p>
 <p><img src="crdb_opt_5_1.png" alt="Other case" /></p>
-<p>And more. Essentially, if a <code>REGIONAL BY ROW</code> table as no unique constraint, apart from the primary key, which is a UUID, it is eligible for this optimization.</p>
+<p>And more. Essentially, if a <code>REGIONAL BY ROW</code> table has no unique constraint, apart from the primary key, which is a UUID, it is eligible for this optimization.</p>
 <p>Pretty cool given that it's a trivial, and more importantly, trivially correct, change.</p>
 <p>There's one big caveat though: if any other column in the <code>INSERT</code> has a unique constraint, the cross-region check must happen, and this trick buys us nothing.</p>
 <p>And finally, if for some reason the application logic and queries cannot be easily modified, CockroachDB offers a setting to turn off unique checks, to achieve the same. But I would not recommend doing that.</p>
