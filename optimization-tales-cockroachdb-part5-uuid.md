@@ -12,7 +12,7 @@ So here it is: in [Kratos](https://github.com/ory/kratos), all database ids are 
 Since an id has to be unique (this is the primary key in the table), the naive way to check unicity in a multi-region setup, when `INSERT`-ing a new entry:
 
 ```sql 
-INSERT INTO my_table (id, some_column) VALUES ('d32223a5-34fd-468a-ab43-aef455d16e0c', 'foo');
+INSERT INTO my_table (id, some_column, crdb_region) VALUES ('d32223a5-34fd-468a-ab43-aef455d16e0c', 'foo', 'eu-west3');
 ```
 
 is to ask each region (in parallel): do you know this (uu)id already? If all of them reply with 'no', then we are good and we can use it for a new entry.
@@ -32,7 +32,7 @@ Note that we are taking a (minuscule) risk: if there is indeed, by some massive 
 Our `INSERT` now becomes: `
 
 ```sql 
-INSERT INTO my_table (id, some_column) VALUES (gen_random_uuid(), 'foo') RETURNING id;
+INSERT INTO my_table (id, some_column, crdb_region) VALUES (gen_random_uuid(), 'foo', 'eu-west3') RETURNING id;
 ```
 
 So, the best example of this optimization taking place is this change, where a very frequent `INSERT` went from ~250 ms (typical latency between regions) to ~5ms, simply by moving the UUID generation from the application to the database:

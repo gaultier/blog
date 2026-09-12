@@ -87,7 +87,7 @@ Do not edit it by hand.
     <span>Sql</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-sql"><span class="line-number"></span><span class="code-hl">INSERT INTO my_table (id, some_column) VALUES ('d32223a5-34fd-468a-ab43-aef455d16e0c', 'foo');</span>
+  <code class="language-sql"><span class="line-number"></span><span class="code-hl">INSERT INTO my_table (id, some_column, crdb_region) VALUES ('d32223a5-34fd-468a-ab43-aef455d16e0c', 'foo', 'eu-west3');</span>
 </code></pre>
 <p>is to ask each region (in parallel): do you know this (uu)id already? If all of them reply with 'no', then we are good and we can use it for a new entry.</p>
 <p>You might be wondering: isn't there a TOCTOU window here? Could a remote region use this ID for an <code>INSERT</code> right after telling us it is not yet used, thus racing with our own <code>INSERT</code>? Well, thankfully no: a write in SQL (<code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code>, etc) first sends a write intent to other regions (when there is a unique constraint on a field in the record), saying &quot;I would like to do this write, is that ok?&quot;, and only then it tries to write the record, and the write is committed only when all regions have confirmed there is no constraint violation.</p>
@@ -103,7 +103,7 @@ Do not edit it by hand.
     <span>Sql</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-sql"><span class="line-number"></span><span class="code-hl">INSERT INTO my_table (id, some_column) VALUES (gen_random_uuid(), 'foo') RETURNING id;</span>
+  <code class="language-sql"><span class="line-number"></span><span class="code-hl">INSERT INTO my_table (id, some_column, crdb_region) VALUES (gen_random_uuid(), 'foo', 'eu-west3') RETURNING id;</span>
 </code></pre>
 <p>So, the best example of this optimization taking place is this change, where a very frequent <code>INSERT</code> went from ~250 ms (typical latency between regions) to ~5ms, simply by moving the UUID generation from the application to the database:</p>
 <p><img src="crdb_opt_5.png" alt="Latency histogram" /></p>
