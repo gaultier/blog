@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 <title>Philippe Gaultier's blog</title>
 <link href="https://gaultier.github.io/blog"/>
-<updated>2026-09-12T12:10:26+02:00</updated>
+<updated>2026-09-12T12:13:35+02:00</updated>
 <author>
   <name>Philippe Gaultier</name>
 </author>
@@ -445,7 +445,7 @@
 <title>Optimization tales in production with CockroachDB: UUID generation (part 5)</title>
 <link href="https://gaultier.github.io/blog/optimization-tales-cockroachdb-part5-uuid.html"/>
 <id>urn:uuid:4e041a78-daa2-59d8-b3d9-93069a9081c3</id>
-<updated>2026-09-12T12:10:26+02:00</updated>
+<updated>2026-09-12T12:13:35+02:00</updated>
 <published>2026-09-12T11:27:51+02:00</published>
 </entry>
     </feed>
