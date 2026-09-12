@@ -105,7 +105,7 @@ Do not edit it by hand.
 , there is essentially no chance of collision, it is unique by construction given a good enough random number generator, so why both asking the other regions, when the answer will be in 99.9999999[...]9999% of the cases: 'this id is unknown to me'?</p>
 <p>Indeed, and that's why we use UUIDs (v4) in the first place, for unicity by construction.</p>
 <p>The good news is, CRDB developers know that and for this reason, they provide the built-in function <code>gen_random_uuid()</code> which, as you might expect, generates a UUID v4, but more importantly, <em>skips</em> the unique check for this field. That's huge: it means that if there are no other unique constraints on the table, we now can do an <code>INSERT</code> in multi-region mode <em>instantly</em>, without contacting the remote regions at all!</p>
-<p>Note that we are taking a (minuscule) risk: if there is indeed, by some massive cosmic bad luck, truly a collision between UUIDs, we would not notice it. But that chance is so mathematically unprobable, that this is a tradeoff we are willing to do.</p>
+<p>Note that we are taking a (minuscule) risk: if there is indeed, by some massive cosmic bad luck, truly a collision between UUIDs, and the same UUID already exist in another region, we would not notice it. But that chance is so mathematically unprobable, that this is a tradeoff we are willing to do. And there is some solace: if the UUID does exist in our local region, we <em>would</em> notice, because the unique check is still performed there (and it's quite cheap).</p>
 <p>Our <code>INSERT</code> now becomes: `</p>
 <pre>
   <div class="code-header">
@@ -120,6 +120,7 @@ Do not edit it by hand.
 <p><img src="crdb_opt_5_1.png" alt="Other case" /></p>
 <p>Pretty cool given that it's a trivial, and more importantly, trivially correct, change.</p>
 <p>There's one big caveat though: if any other column in the <code>INSERT</code> has a unique constraint, the cross-region check must happen, and this trick buys us nothing.</p>
+<p>And finally, if for some reason the application logic and queries cannot be easily modified, CockroachDB offers a setting to turn off unique checks, to achieve the same. But I would not recommend doing that.</p>
 <h2 id="conclusion">
   <a class="title" href="#conclusion">Conclusion</a>
   <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>

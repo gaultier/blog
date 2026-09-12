@@ -27,7 +27,7 @@ Indeed, and that's why we use UUIDs (v4) in the first place, for unicity by cons
 
 The good news is, CRDB developers know that and for this reason, they provide the built-in function `gen_random_uuid()` which, as you might expect, generates a UUID v4, but more importantly, *skips* the unique check for this field. That's huge: it means that if there are no other unique constraints on the table, we now can do an `INSERT` in multi-region mode *instantly*, without contacting the remote regions at all! 
 
-Note that we are taking a (minuscule) risk: if there is indeed, by some massive cosmic bad luck, truly a collision between UUIDs, we would not notice it. But that chance is so mathematically unprobable, that this is a tradeoff we are willing to do.
+Note that we are taking a (minuscule) risk: if there is indeed, by some massive cosmic bad luck, truly a collision between UUIDs, and the same UUID already exist in another region, we would not notice it. But that chance is so mathematically unprobable, that this is a tradeoff we are willing to do. And there is some solace: if the UUID does exist in our local region, we *would* notice, because the unique check is still performed there (and it's quite cheap).
 
 Our `INSERT` now becomes: `
 
@@ -48,6 +48,9 @@ Pretty cool given that it's a trivial, and more importantly, trivially correct, 
 
 
 There's one big caveat though: if any other column in the `INSERT` has a unique constraint, the cross-region check must happen, and this trick buys us nothing.
+
+
+And finally, if for some reason the application logic and queries cannot be easily modified, CockroachDB offers a setting to turn off unique checks, to achieve the same. But I would not recommend doing that.
 
 ## Conclusion
 
