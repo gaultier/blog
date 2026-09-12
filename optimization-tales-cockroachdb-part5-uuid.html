@@ -99,7 +99,7 @@ Do not edit it by hand.
 </details>
 
 <p><em>This is part 5 of a series of optimization tales using CockroachDB. See <a href="/blog/optimization-tales-cockroachdb-part1.html">part 1</a>, <a href="/blog/optimization-tales-cockroachdb-part2-slow-logout.html">part 2</a>, <a href="/blog/optimization-tales-cockroachdb-part3-slow-list-messages.html">part 3</a>, <a href="/blog/optimization-tales-cockroachdb-part4-slow-list-users.html">part 4</a>.</em></p>
-<p>I am ashamed to say that I discovered this trick very recently. It's so simple and yet powerful, and it's the building block for more optimizations I did later.</p>
+<p>I am ashamed to say that I discovered this trick very recently. It's so simple and yet powerful, and it yields a <strong>50x</strong> speed-up for free.</p>
 <h2 id="the-slowness">
   <a class="title" href="#the-slowness">The slowness</a>
   <a class="hash-anchor" href="#the-slowness" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -120,7 +120,7 @@ Do not edit it by hand.
 <p>You might be wondering: isn't there a TOCTOU window here? Could a remote region use this ID for an <code>INSERT</code> right after telling us it is not yet used, thus racing with our own <code>INSERT</code>?</p>
 <p>Well, thankfully no, due to the isolation (the I in ACID) guarantee: our <code>INSERT</code> runs in an implicit <code>SERIALIZABLE</code> transaction.
 When there is a unique constraint on a field in the record, our region issues a read to every remote region in parallel to inspect whether this id already exists.</p>
-<p>If a concurrent <code>INSERT</code> with the same <code>id</code> is attempted in a remote region, that region observes a read-write conflict on the same key interval (in this case, the interval is of length 1: it's the actual UUID value) and forces the second writer to restart its transaction from the top. Thus, only one transaction, i.e. one write, can win the race and claim this id for itself. The other concurrent write will retry, and ultimately see a unique constraint error.</p>
+<p>If a concurrent <code>INSERT</code> with the same <code>id</code> is attempted in a remote region, that region observes a read-write conflict on the same key interval (in this case, the interval is of length 1) and forces the second writer to restart its transaction from the top. Thus, only one transaction, i.e. one write, can win the race and claim this id for itself. The other concurrent write will retry, and ultimately see a unique constraint error.</p>
 <p>Important to note: this is a read-write conflict, not a write-write conflict. In CockroachDB, the primary key of a <code>REGIONAL BY ROW</code> table is prefixed with the region.
 So if the Europe region wants to insert the same UUID as the Asia region, the two keys are for example:</p>
 <ul>
@@ -156,6 +156,7 @@ So if the Europe region wants to insert the same UUID as the Asia region, the tw
 <p><img src="crdb_opt_5.png" alt="Latency histogram" /></p>
 <p>And then I started using it everywhere, and every time, the <code>INSERT</code> went from a stable ~250ms to ~5ms, even when we insert several values at once:</p>
 <p><img src="crdb_opt_5_1.png" alt="Other case" /></p>
+<p>And more. Essentially, if a <code>REGIONAL BY ROW</code> table as no unique constraint, apart from the primary key, which is a UUID, it is eligible for this optimization.</p>
 <p>Pretty cool given that it's a trivial, and more importantly, trivially correct, change.</p>
 <p>There's one big caveat though: if any other column in the <code>INSERT</code> has a unique constraint, the cross-region check must happen, and this trick buys us nothing.</p>
 <p>And finally, if for some reason the application logic and queries cannot be easily modified, CockroachDB offers a setting to turn off unique checks, to achieve the same. But I would not recommend doing that.</p>
@@ -165,7 +166,7 @@ So if the Europe region wants to insert the same UUID as the Asia region, the tw
 </h2>
 <p>Given that I work on a complex, 10-year-old production system with lots of customers and no allowance for downtime, the only optimizations that are acceptable are the ones that:</p>
 <ul>
-<li><strong>demonstrably</strong> improve the performance without having to deploy it for real: For that I typically use query plans, documentation, benchmarks, prior similar optimizations, etc</li>
+<li><strong>demonstrably</strong> improve the performance without having to deploy it for real: For that I typically use query plans, documentation, benchmarks, prior similar optimizations, etc. For this particular optimization, I compared the query plan (using <code>EXPLAIN ANALYZE</code>) before and after. Before: the plan contains <code>lookup join (semi) on &lt;table&gt; with lookup condition: (crdb_region IN ('europe-west1', 'us-east1', 'us-west1')) AND (column1 = id)</code>. After, there is no constraint check anymore.</li>
 <li>are <strong>verifiably correct</strong>: Here I use tests ideally with 100% coverage, capturing what SQL queries are generated by the new code, snapshotting API responses before/after to verify that there are no observable differences, etc</li>
 <li>are observable by the customer (in some cases, we are the customer, e.g. for internal services): if it does not benefit anyone, if no one can see or measure the before/after effect, why even do it? Typically I use production traces for that, which show what endpoint and operation it would benefit, and the current latency. Sometimes I inspect the latency of SQL queries in production as well, but traces already include that, and more, so in my view traces are superior.</li>
 </ul>
