@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 <title>Philippe Gaultier's blog</title>
 <link href="https://gaultier.github.io/blog"/>
-<updated>2026-09-12T12:58:57+02:00</updated>
+<updated>2026-09-12T13:04:00+02:00</updated>
 <author>
   <name>Philippe Gaultier</name>
 </author>
@@ -13,7 +13,7 @@
 <title>Getting started with Scheme by solving an Advent of Code 2018 challenge</title>
 <link href="https://gaultier.github.io/blog/advent_of_code_2018_5.html"/>
 <id>urn:uuid:b3c0c1c1-e36f-51fd-9356-99f8686e7329</id>
-<updated>2026-03-04T17:13:39+01:00</updated>
+<updated>2026-09-12T13:04:00+02:00</updated>
 <published>2019-09-04T08:41:29+02:00</published>
 </entry>
     
@@ -69,7 +69,7 @@
 <title>Roll your own memory profiling: it&#39;s actually not hard</title>
 <link href="https://gaultier.github.io/blog/roll_your_own_memory_profiling.html"/>
 <id>urn:uuid:5344c109-864c-5db2-97a9-24834e053169</id>
-<updated>2026-03-04T16:24:07+01:00</updated>
+<updated>2026-09-12T13:04:00+02:00</updated>
 <published>2023-11-23T11:26:11+01:00</published>
 </entry>
     
@@ -93,7 +93,7 @@
 <title>Body of work</title>
 <link href="https://gaultier.github.io/blog/body_of_work.html"/>
 <id>urn:uuid:b6ce21d7-32d4-5b52-a4f3-435887fe9ba4</id>
-<updated>2026-05-18T10:20:43+02:00</updated>
+<updated>2026-09-12T13:04:00+02:00</updated>
 <published>2023-12-19T14:27:40+01:00</published>
 </entry>
     
@@ -117,7 +117,7 @@
 <title>A small trick to improve technical discussions by sharing code</title>
 <link href="https://gaultier.github.io/blog/a_small_trick_to_improve_technical_discussions_by_sharing_code.html"/>
 <id>urn:uuid:ec2664b2-2153-5f24-a222-21f87171b57b</id>
-<updated>2026-03-04T16:24:07+01:00</updated>
+<updated>2026-09-12T13:04:00+02:00</updated>
 <published>2024-03-07T10:48:39+01:00</published>
 </entry>
     
@@ -125,7 +125,7 @@
 <title>How to rewrite a C++ codebase successfully</title>
 <link href="https://gaultier.github.io/blog/how_to_rewrite_a_cpp_codebase_successfully.html"/>
 <id>urn:uuid:70495e98-9416-5945-9178-1b77e690ea86</id>
-<updated>2026-03-04T16:24:07+01:00</updated>
+<updated>2026-09-12T13:04:00+02:00</updated>
 <published>2024-05-03T14:46:42+02:00</published>
 </entry>
     
@@ -141,7 +141,7 @@
 <title>Odin and musl: Cross-compiling Odin programs for the Raspberry Pi Zero</title>
 <link href="https://gaultier.github.io/blog/odin_and_musl.html"/>
 <id>urn:uuid:5fa076c9-2d59-5651-8337-9f2fb85d9e3e</id>
-<updated>2025-07-07T21:11:35+02:00</updated>
+<updated>2026-09-12T13:04:00+02:00</updated>
 <published>2024-09-10T12:59:04+02:00</published>
 </entry>
     
@@ -165,7 +165,7 @@
 <title>Tip of the day #2: A safer arena allocator</title>
 <link href="https://gaultier.github.io/blog/tip_of_the_day_2.html"/>
 <id>urn:uuid:dd624149-10e7-5563-af44-efda307fa041</id>
-<updated>2025-07-07T21:23:20+02:00</updated>
+<updated>2026-09-12T13:04:00+02:00</updated>
 <published>2024-10-29T16:15:48+01:00</published>
 </entry>
     
@@ -197,7 +197,7 @@
 <title>Way too many ways to wait on a child process with a timeout</title>
 <link href="https://gaultier.github.io/blog/way_too_many_ways_to_wait_for_a_child_process_with_a_timeout.html"/>
 <id>urn:uuid:38fa76b5-00c5-5e17-9753-74b7d0ea1ec0</id>
-<updated>2026-03-04T17:13:39+01:00</updated>
+<updated>2026-09-12T13:04:00+02:00</updated>
 <published>2024-11-09T16:04:32+01:00</published>
 </entry>
     
@@ -229,7 +229,7 @@
 <title>Making my debug build run 100x faster so that it is finally usable</title>
 <link href="https://gaultier.github.io/blog/making_my_debug_build_run_100_times_faster.html"/>
 <id>urn:uuid:a5f75104-e439-59db-b54f-c7f65d76b339</id>
-<updated>2026-03-04T16:24:07+01:00</updated>
+<updated>2026-09-12T13:04:00+02:00</updated>
 <published>2025-02-17T09:20:47+01:00</published>
 </entry>
     
@@ -245,7 +245,7 @@
 <title>Making my static blog generator ~11~ 33 times faster</title>
 <link href="https://gaultier.github.io/blog/making_my_static_blog_generator_11_times_faster.html"/>
 <id>urn:uuid:d29b6ec2-f895-5f2f-896f-2f343766fc85</id>
-<updated>2026-03-06T16:14:05+01:00</updated>
+<updated>2026-09-12T13:04:00+02:00</updated>
 <published>2025-02-19T15:13:54+01:00</published>
 </entry>
     
@@ -285,7 +285,7 @@
 <title>An optimization and debugging story with Go and DTrace</title>
 <link href="https://gaultier.github.io/blog/an_optimization_and_debugging_story_go_dtrace.html"/>
 <id>urn:uuid:f88592d4-3a30-5f83-aea7-ec456edbc848</id>
-<updated>2026-05-12T11:20:13+02:00</updated>
+<updated>2026-09-12T13:04:00+02:00</updated>
 <published>2025-07-01T16:06:16+02:00</published>
 </entry>
     
@@ -293,7 +293,7 @@
 <title>A subtle bug with Go&#39;s errgroup</title>
 <link href="https://gaultier.github.io/blog/subtle_bug_with_go_errgroup.html"/>
 <id>urn:uuid:91dd6f95-7f4d-5706-91b5-f2cbf6b89f09</id>
-<updated>2026-03-04T16:24:07+01:00</updated>
+<updated>2026-09-12T13:04:00+02:00</updated>
 <published>2025-08-09T10:07:00+02:00</published>
 </entry>
     
@@ -341,7 +341,7 @@
 <title>A million ways to die from a data race in Go</title>
 <link href="https://gaultier.github.io/blog/a_million_ways_to_data_race_in_go.html"/>
 <id>urn:uuid:a13c572e-50c1-5844-90f1-55aef92bda42</id>
-<updated>2025-12-15T09:12:45+01:00</updated>
+<updated>2026-09-12T13:04:00+02:00</updated>
 <published>2025-11-21T13:38:45+01:00</published>
 </entry>
     
@@ -389,7 +389,7 @@
 <title>How to make your own static site generator</title>
 <link href="https://gaultier.github.io/blog/how_to_make_your_own_static_site_generator.html"/>
 <id>urn:uuid:11e1f1d7-6105-5048-967d-7f57942f6260</id>
-<updated>2026-03-15T17:16:35+01:00</updated>
+<updated>2026-09-12T13:04:00+02:00</updated>
 <published>2026-03-08T17:52:42+01:00</published>
 </entry>
     
