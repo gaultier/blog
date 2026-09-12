@@ -7,7 +7,7 @@ Tags: SQL, Optimization, CockroachDB
 I am ashamed to say that I discovered this trick very recently. It's so simple and yet powerful, and it's the building block for more optimizations I did later. 
 
 
-So here it is: in [Kratos](https://github.com/ory/kratos), all database ids are UUIDs v4, meaning: 16 random bytes. And most of our tables are `REGIONAL BY ROW`, meaning: the data is sharded by region, and we can ensure at the database level that data for an entity (including all of its related data in JOIN tables) is located in one region. Which is fantastic for compliance and regulatory reasons!
+So here it is: in [Kratos](https://github.com/ory/kratos), all database ids are UUIDs v4, meaning: 122 random bits[^1]. And most of our tables are `REGIONAL BY ROW`, meaning: the data is sharded by region, and we can ensure at the database level that data for an entity (including all of its related data in JOIN tables) is located in one region. Which is fantastic for compliance and regulatory reasons!
 
 Since an id has to be unique (this is the primary key in the table), the naive way to check unicity in a multi-region setup, when `INSERT`-ing a new entry:
 
@@ -21,7 +21,7 @@ You might be wondering: isn't there a TOCTOU window here? Could a remote region 
 
 All of this yields: when we do an `INSERT` on a `REGIONAL BY ROW` table, even if it's just randomly generated values that have no chance of already existing, we wait for all regions to answer, and that takes in our setup around 250ms. Each time. That sucks.
 
-An astute reader may now be asking: well, if this value is 16 random bytes, there is essentially no chance of collision, it is unique by construction given a good enough random number generator, so why both asking the other regions, when the answer will be in 99.9999999[...]9999% of the cases: 'this id is unknown to me'?
+An astute reader may now be asking: well, if this value is 122 random bits[^1], there is essentially no chance of collision, it is unique by construction given a good enough random number generator, so why both asking the other regions, when the answer will be in 99.9999999[...]9999% of the cases: 'this id is unknown to me'?
 
 Indeed, and that's why we use UUIDs (v4) in the first place, for unicity by construction. 
 
@@ -32,7 +32,7 @@ Note that we are taking a (minuscule) risk: if there is indeed, by some massive 
 Our `INSERT` now becomes: `
 
 ```sql 
-INSERT INTO my_table (id, some_column) VALUES (gen_random_uuid(), 'foo');
+INSERT INTO my_table (id, some_column) VALUES (gen_random_uuid(), 'foo') RETURNING id;
 ```
 
 So, the best example of this optimization taking place is this change, where a very frequent `INSERT` went from ~250 ms (typical latency between regions) to ~5ms, simply by moving the UUID generation from the application to the database:
@@ -52,3 +52,5 @@ Pretty cool given that it's a trivial, and more importantly, trivially correct, 
 
 Otherwise they stay on the cutting floor. To date I have deployed 40+ optimizations to the production system and all of them had a visible impact, and none of them had to be rolled back.
 
+
+[^1]: From Wikipedia: "a random version-4 UUID will have six predetermined variant and version bits, leaving 122 bits for the randomly generated part, for a total of 2^122, or 5.3×10^36 (5.3 undecillion) possible version-4, variant-1 UUID".

@@ -79,7 +79,8 @@ Do not edit it by hand.
 </div>
 <p><em>This is part 5 of a series of optimization tales using CockroachDB. See <a href="/blog/optimization-tales-cockroachdb-part1.html">part 1</a>, <a href="/blog/optimization-tales-cockroachdb-part2-slow-logout.html">part2</a>, <a href="/blog/optimization-tales-cockroachdb-part3-slow-list-messages.html">part 3</a>, <a href="/blog/optimization-tales-cockroachdb-part4-slow-list-users.html">part 4</a>.</em></p>
 <p>I am ashamed to say that I discovered this trick very recently. It's so simple and yet powerful, and it's the building block for more optimizations I did later.</p>
-<p>So here it is: in <a href="https://github.com/ory/kratos">Kratos</a>, all database ids are UUIDs v4, meaning: 16 random bytes. And most of our tables are <code>REGIONAL BY ROW</code>, meaning: the data is sharded by region, and we can ensure at the database level that data for an entity (including all of its related data in JOIN tables) is located in one region. Which is fantastic for compliance and regulatory reasons!</p>
+<p>So here it is: in <a href="https://github.com/ory/kratos">Kratos</a>, all database ids are UUIDs v4, meaning: 122 random bits<sup class="footnote-ref"><a href="#fn-1" id="fnref-1" data-footnote-ref>1</a></sup>
+. And most of our tables are <code>REGIONAL BY ROW</code>, meaning: the data is sharded by region, and we can ensure at the database level that data for an entity (including all of its related data in JOIN tables) is located in one region. Which is fantastic for compliance and regulatory reasons!</p>
 <p>Since an id has to be unique (this is the primary key in the table), the naive way to check unicity in a multi-region setup, when <code>INSERT</code>-ing a new entry:</p>
 <pre>
   <div class="code-header">
@@ -91,7 +92,8 @@ Do not edit it by hand.
 <p>is to ask each region (in parallel): do you know this (uu)id already? If all of them reply with 'no', then we are good and we can use it for a new entry.</p>
 <p>You might be wondering: isn't there a TOCTOU window here? Could a remote region use this ID for an <code>INSERT</code> right after telling us it is not yet used, thus racing with our own <code>INSERT</code>? Well, thankfully no: a write in SQL (<code>INSERT</code>, <code>UPDATE</code>, <code>DELETE</code>, etc) first sends a write intent to other regions (when there is a unique constraint on a field in the record), saying &quot;I would like to do this write, is that ok?&quot;, and only then it tries to write the record, and the write is committed only when all regions have confirmed there is no constraint violation.</p>
 <p>All of this yields: when we do an <code>INSERT</code> on a <code>REGIONAL BY ROW</code> table, even if it's just randomly generated values that have no chance of already existing, we wait for all regions to answer, and that takes in our setup around 250ms. Each time. That sucks.</p>
-<p>An astute reader may now be asking: well, if this value is 16 random bytes, there is essentially no chance of collision, it is unique by construction given a good enough random number generator, so why both asking the other regions, when the answer will be in 99.9999999[...]9999% of the cases: 'this id is unknown to me'?</p>
+<p>An astute reader may now be asking: well, if this value is 122 random bits<sup class="footnote-ref"><a href="#fn-1" id="fnref-1" data-footnote-ref>1</a></sup>
+, there is essentially no chance of collision, it is unique by construction given a good enough random number generator, so why both asking the other regions, when the answer will be in 99.9999999[...]9999% of the cases: 'this id is unknown to me'?</p>
 <p>Indeed, and that's why we use UUIDs (v4) in the first place, for unicity by construction.</p>
 <p>The good news is, CRDB developers know that and for this reason, they provide the built-in function <code>gen_random_uuid()</code> which, as you might expect, generates a UUID v4, but more importantly, <em>skips</em> the unique check for this field. That's huge: it means that if there are no other unique constraints on the table, we now can do an <code>INSERT</code> in multi-region mode <em>instantly</em>, without contacting the remote regions at all!</p>
 <p>Note that we are taking a (minuscule) risk: if there is indeed, by some massive cosmic bad luck, truly a collision between UUIDs, we would not notice it. But that chance is so mathematically unprobable, that this is a tradeoff we are willing to do.</p>
@@ -101,7 +103,7 @@ Do not edit it by hand.
     <span>Sql</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-sql"><span class="line-number"></span><span class="code-hl">INSERT INTO my_table (id, some_column) VALUES (gen_random_uuid(), 'foo');</span>
+  <code class="language-sql"><span class="line-number"></span><span class="code-hl">INSERT INTO my_table (id, some_column) VALUES (gen_random_uuid(), 'foo') RETURNING id;</span>
 </code></pre>
 <p>So, the best example of this optimization taking place is this change, where a very frequent <code>INSERT</code> went from ~250 ms (typical latency between regions) to ~5ms, simply by moving the UUID generation from the application to the database:</p>
 <p><img src="crdb_opt_5.png" alt="Latency histogram" /></p>
@@ -114,6 +116,15 @@ Do not edit it by hand.
 <li>are observable by the customer (in some cases, we are the customer, e.g. for internal services): if it does not benefit anyone, if no one can see or measure the before/after effect, why even do it? Typically I use production traces for that, which show what endpoint and operation it would benefit, and the current latency. Sometimes I inspect the latency of SQL queries in production as well, but traces already include that, and more, so in my view traces are superior.</li>
 </ul>
 <p>Otherwise they stay on the cutting floor. To date I have deployed 40+ optimizations to the production system and all of them had a visible impact, and none of them had to be rolled back.</p>
+<section class="footnotes" data-footnotes>
+<ol>
+<li id="fn-1">
+<p>
+From Wikipedia: &quot;a random version-4 UUID will have six predetermined variant and version bits, leaving 122 bits for the randomly generated part, for a total of 2^122, or 5.3×10^36 (5.3 undecillion) possible version-4, variant-1 UUID&quot;.<a href="#fnref-1" class="footnote-backref" data-footnote-backref data-footnote-backref-idx="1" aria-label="Back to reference 1">↩</a>
+</p>
+</li>
+</ol>
+</section>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <div id="donate">
