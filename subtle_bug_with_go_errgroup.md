@@ -22,7 +22,7 @@ For simplicity, the Have I Been Pawned API in our reproducer is just a text file
 
 One last thing: passwords are (obviously, I hope) never stored in clear, and we instead store a hash using a [password hashing function](https://en.wikipedia.org/wiki/Bcrypt) specially designed to take up a lot of computational power to hinder brute-force attacks. Typically, that can take hundreds of milliseconds or even seconds (depending on the cost factor) for one hash.
 
-For performance, if we have to compute this hash, we try to do other things in parallel. To achieve this, we use an [errgroup](https://pkg.go.dev/golang.org/x/sync/errgroup), which has become pretty common place now in Go: it acts as a pool of concurrent tasks (like a wait group) but also takes care of cancelling all tasks whenever an error occurs. This is handy to avoid doing unecessary expensive computations. 
+For performance, if we have to compute this hash, we try to do other things in parallel. To achieve this, we use an [errgroup](https://pkg.go.dev/golang.org/x/sync/errgroup), which has become pretty common place now in Go: it acts as a pool of concurrent tasks (like a wait group) but also takes care of cancelling all tasks whenever an error occurs. This is handy to avoid doing unnecessary expensive computations. 
 
 Here goes:
 
@@ -193,7 +193,7 @@ http request error: Get "http://localhost:8000/haveibeenpawned.txt": context can
 
 Uh...what? We do not even have a timeout set! How can the context be canceled?
 
-At that point, a great collegue of mine helped me debug and found the issue. He sent me this one line from the `errgroup` [documentation](https://pkg.go.dev/golang.org/x/sync/errgroup#Group.WithContext):
+At that point, a great colleague of mine helped me debug and found the issue. He sent me this one line from the `errgroup` [documentation](https://pkg.go.dev/golang.org/x/sync/errgroup#Group.WithContext):
 
 > The derived Context is canceled the first time a function passed to Go returns a non-nil error or the first time Wait returns, whichever occurs first. 
 

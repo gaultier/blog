@@ -271,7 +271,7 @@ Chicken Scheme. For example, to get the first element of a list, we use the <cod
   </div>
   <code class="language-scheme"><span class="line-number"></span><span class="code-hl">(define my-list (list 1 2 3))</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">;; Note that this doest **not** mutate `my-list`</span>
+<span class="line-number"></span><span class="code-hl">;; Note that this does **not** mutate `my-list`</span>
 <span class="line-number"></span><span class="code-hl">(car my-list)</span>
 </code></pre>
 <p>But it won't work on the empty list:</p>
@@ -439,7 +439,7 @@ ourselves with the remainder of <code>input</code>, which is the equivalent of '
 fold (sometimes called reduce)!</p>
 <p>Let's replace our custom recursion by <code>fold</code>. <code>chem-react</code> becomes the reduction
 function. It becomes simpler because <code>fold</code> will not call it on the empty list,
-so we only need to patter match <code>acc</code> (which is the empty list at the beginning):</p>
+so we only need to pattern match <code>acc</code> (which is the empty list at the beginning):</p>
 <pre>
   <div class="code-header">
     <span>Scheme</span>
@@ -617,7 +617,7 @@ acceptable amount of time.</p>
 <p>Can't we use strings and not lists?</p>
 </blockquote>
 <p>Yes, of course. However we need to be careful about how strings are implemented
-and what we we do with those. Most runtimes (e.g the JVM) use immutable strings,
+and what we do with those. Most runtimes (e.g the JVM) use immutable strings,
 meaning we could end up allocating thousands of big strings, and being quite slow.</p>
 <h2 id="conclusion">
   <a class="title" href="#conclusion">Conclusion</a>

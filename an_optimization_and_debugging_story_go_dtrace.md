@@ -88,7 +88,7 @@ pid$target::*NewMigrationBox:return
 
 Explanation: `timestamp` is an automatically defined variable that stores the current monotonic time at the nanosecond granularity. When we enter the function, we read the current timestamp and store it in a thread-local variable `t` (with the `self->t` syntax). When we exit the function, we do the same again, compute the difference in terms of milliseconds, store it as a clause-local variable (with `this->duration`), and record it in a linear histogram with a minimum of 0 and a maximum of 800 (in milliseconds).
 
-Due to the M:N concurrency model of Go,  in the general case, multiple goroutines run on the same thread concurrently, which means the thread-local variable `self->t` gets overriden by multiple goroutines all the time, and we observe as a result some non-sensical durations (negative or very high). The DTrace histogram is a nice way to see outliers and exclude them. The real fix would be to not use thread-local variables but instead goroutine-local variables... Which does not come out of the box with DTrace.
+Due to the M:N concurrency model of Go, in the general case, multiple goroutines run on the same thread concurrently, which means the thread-local variable `self->t` gets overridden by multiple goroutines all the time, and we observe as a result some non-sensical durations (negative or very high). The DTrace histogram is a nice way to see outliers and exclude them. The real fix would be to not use thread-local variables but instead goroutine-local variables... Which does not come out of the box with DTrace.
 
 Fortunately I later found a way to avoid this pitfall, see the [addendum](#553173937-addendum-a-goroutine-aware-d-script) at the end.
 
@@ -406,7 +406,7 @@ I encourage you, if you write a custom sorting function, to carefully read which
 
 ## Addendum: A goroutine-aware D script
 
-At the beginning I mentioned that `self->t = timestamp` means we are storing the current timestamp in a thread-local variable. However, since in the general case, multiple goroutines run on the same thread concurrently, this variable gets overriden by multiple goroutines all the time, and we observe as a result some non-sensical durations (negative or very high). I also mentioned that the fix would be to store this variable in a *goroutine-aware* way instead.
+At the beginning I mentioned that `self->t = timestamp` means we are storing the current timestamp in a thread-local variable. However, since in the general case, multiple goroutines run on the same thread concurrently, this variable gets overridden by multiple goroutines all the time, and we observe as a result some non-sensical durations (negative or very high). I also mentioned that the fix would be to store this variable in a *goroutine-aware* way instead.
 
 Well, the good news is, there is a way!
 

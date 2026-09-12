@@ -216,7 +216,7 @@ We have 3 unique call stacks that allocate, in the same order as they appear in 
 - `a` <- `main`
 - `b` <- `main`
 
-Since our program is a Position Independant Executable (PIE), the loader picks a random address for where to load our program in virtual memory. Consequently, addresses collected from within our program have this offset added to them and this offset is different every run. Thankfully, the `MAPPED_LIBRARIES` section lists address ranges (the first column of each line in that section) for each library that gets loaded. 
+Since our program is a Position Independent Executable (PIE), the loader picks a random address for where to load our program in virtual memory. Consequently, addresses collected from within our program have this offset added to them and this offset is different every run. Thankfully, the `MAPPED_LIBRARIES` section lists address ranges (the first column of each line in that section) for each library that gets loaded. 
 
 As such, `pprof` only needs to find for each address the relevant range, subtract the start of the range from this address, and it has the real address in our executable. It then runs `addr2line` or similar to get the code location. 
 
@@ -360,7 +360,7 @@ static void *arena_alloc(arena_t *a, size_t size, size_t align, size_t count) {
 We now have to implement `mem_profile_record_alloc` and exporting the profile to the text format, and we are done.
 
 
-When recording an allocation, we need to capture the call stack, so we walk the stack upwards until we reach a frame address that is 0 or does not have the alignement of a pointer (8); at which point we know not to dereference it and go further.
+When recording an allocation, we need to capture the call stack, so we walk the stack upwards until we reach a frame address that is 0 or does not have the alignment of a pointer (8); at which point we know not to dereference it and go further.
 
 This will break if we disable frame pointers when compiling (`-fomit-frame-pointer`) which is in my opinion always a bad idea. There are other ways to get a call stack fortunately but they all are more involved and potentially slower. Note that this approach probably only works on x86_64, no idea how ARM does that. Here is a [deep dive](https://hacks.mozilla.org/2022/06/everything-is-broken-shipping-rust-minidump-at-mozilla/) on getting a stack trace in different environments.
 

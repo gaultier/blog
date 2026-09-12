@@ -321,7 +321,7 @@ Do not edit it by hand.
 <li><code>a</code> &lt;- <code>main</code></li>
 <li><code>b</code> &lt;- <code>main</code></li>
 </ul>
-<p>Since our program is a Position Independant Executable (PIE), the loader picks a random address for where to load our program in virtual memory. Consequently, addresses collected from within our program have this offset added to them and this offset is different every run. Thankfully, the <code>MAPPED_LIBRARIES</code> section lists address ranges (the first column of each line in that section) for each library that gets loaded.</p>
+<p>Since our program is a Position Independent Executable (PIE), the loader picks a random address for where to load our program in virtual memory. Consequently, addresses collected from within our program have this offset added to them and this offset is different every run. Thankfully, the <code>MAPPED_LIBRARIES</code> section lists address ranges (the first column of each line in that section) for each library that gets loaded.</p>
 <p>As such, <code>pprof</code> only needs to find for each address the relevant range, subtract the start of the range from this address, and it has the real address in our executable. It then runs <code>addr2line</code> or similar to get the code location.</p>
 <p>Finally we can use <code>pprof</code> to extract human-readable information from this text file:</p>
 <pre>
@@ -471,7 +471,7 @@ Do not edit it by hand.
 <span class="line-number"></span><span class="code-hl">}</span>
 </code></pre>
 <p>We now have to implement <code>mem_profile_record_alloc</code> and exporting the profile to the text format, and we are done.</p>
-<p>When recording an allocation, we need to capture the call stack, so we walk the stack upwards until we reach a frame address that is 0 or does not have the alignement of a pointer (8); at which point we know not to dereference it and go further.</p>
+<p>When recording an allocation, we need to capture the call stack, so we walk the stack upwards until we reach a frame address that is 0 or does not have the alignment of a pointer (8); at which point we know not to dereference it and go further.</p>
 <p>This will break if we disable frame pointers when compiling (<code>-fomit-frame-pointer</code>) which is in my opinion always a bad idea. There are other ways to get a call stack fortunately but they all are more involved and potentially slower. Note that this approach probably only works on x86_64, no idea how ARM does that. Here is a <a href="https://hacks.mozilla.org/2022/06/everything-is-broken-shipping-rust-minidump-at-mozilla/">deep dive</a> on getting a stack trace in different environments.</p>
 <pre>
   <div class="code-header">

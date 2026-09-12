@@ -329,7 +329,7 @@ get_articles_creation_and_modification_date :: proc() -> ([]GitStat, os2.Error) 
 
 A few things of interest:
 
-- Odin has first class support for allocators so we allocate everything in this function with the temporary allocator. It is backed by an arena and emptied at the start and end of the function. Only the final result is allocated with the standard allocator. That way, even if Git starts spewing lots of data, as soon as we exit the function, all of that is gone, in one call, and the the program carries on with only the necessary data heap-allocated.
+- Odin has first class support for allocators so we allocate everything in this function with the temporary allocator. It is backed by an arena and emptied at the start and end of the function. Only the final result is allocated with the standard allocator. That way, even if Git starts spewing lots of data, as soon as we exit the function, all of that is gone, in one call, and the program carries on with only the necessary data heap-allocated.
 - In this program, the main allocator and the temporary allocator are both arenas. The memory usage is a constant ~ 4 MiB, mainly located in the Odin standard library. The memory usage of my code is around ~ 65 KiB.
 - A `map` is a bit of an overkill for ~30 entries, but it's fine, and we expect the number of articles to grow
 
@@ -348,7 +348,7 @@ GitStat{creation_date = "2023-11-23T11:26:11+01:00", modification_date = "2025-0
 Alright, so how does our new implementation fare compared to the old one?
 
 
-First, we can confirm with `strace` that the time spent on waiting for subprocesses (mainly Git) shrinked:
+First, we can confirm with `strace` that the time spent on waiting for subprocesses (mainly Git) shrank:
 
 ```shell
 $ strace --summary-only ./src.bin

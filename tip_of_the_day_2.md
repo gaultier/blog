@@ -139,7 +139,7 @@ Wouldn't it be simpler to issue 3 `mmap` calls with the right permissions from t
 
 Note, we can alternatively create the whole allocation as `PROT_NONE` and then mark the real (user-visible) allocation as `PROT_READ | PROT_WRITE`, that also works.
 
-So that's it, a poor man Adress Sanitizer in a few lines of code.
+So that's it, a poor man's Address Sanitizer in a few lines of code.
 
 
 ## Variations

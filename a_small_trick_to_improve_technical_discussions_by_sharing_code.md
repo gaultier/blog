@@ -52,7 +52,7 @@ And we also need to get the absolute path to the current file:
 
 Note that since the current directory might be one or several directories deep relative to the root of the git repository, we need to fix this path, because the git web UI expects a path from the root of the git repository.
 
-The easiest way to do so is using `git ls-files --full-name` to convert the absolute path to the path from the root of the repostory.
+The easiest way to do so is using `git ls-files --full-name` to convert the absolute path to the path from the root of the repository.
 
 There are many ways in Neovim to call out to a command in a subprocess, here's one of them, to get the output of the command:
 

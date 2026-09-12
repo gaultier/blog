@@ -44,9 +44,9 @@ pid$target::*rand*: /self->t/ {}
 - [ ] SHA1 multi-block hash
 - [ ] How CGO calls are implemented in assembly
 - [ ] Weird and surprising things about x64 assembly
-  + non symetric mnemonics (`cmp 1, rax` vs `cmp rax, 1`)
+  + non symmetric mnemonics (`cmp 1, rax` vs `cmp rax, 1`)
   + some different mnemonics encode to the same bytes (`jne`, `jz`)
-  + diffent calling convention for functions & system calls in the SysV ABI (4th argument)
+  + different calling convention for functions & system calls in the SysV ABI (4th argument)
   + no (to my knowledge) mnemonic accepts 2 immediates or effective addresses as operands  e.g. `cmp 1, 0`
   + some less than optimal encodings are forced to avoid accidentally using RIP relative addressing, e.g. `lea rax, [r13]` gets encoded as `lea rax, [r13 + 0]`
   + Some operands size are small and force using a move-to-register e.g. `add rax, 1<<32` is illegal, need `mov rbx, 1<<32; add rax, rbx`

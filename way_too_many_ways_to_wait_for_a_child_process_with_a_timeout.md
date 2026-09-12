@@ -45,7 +45,7 @@ $ ueb true
 # This retries 10 times since the command always fails, waiting more and more time between each try, and finally returns the last exit code of the command (1).
 $ ueb false
 
-# This retries a few times (~ 4 times), until the waiting time exceeds the duration of the sub-program. It exits with `0` since from the POV of our program, the sub-program finally finished in its alloted time.
+# This retries a few times (~ 4 times), until the waiting time exceeds the duration of the sub-program. It exits with `0` since from the POV of our program, the sub-program finally finished in its allotted time.
 $ ueb sleep 1
 
 
@@ -621,7 +621,7 @@ Anyways, their own system is called [port](https://www.illumos.org/man/3C/port_c
 
 Incidentally, this approach is exactly what `liburing` does in a [unit test](https://github.com/axboe/liburing/blob/fd3e498/test/waitid.c#L58).
 
-Alternatively, we can only queue the `waitid` and use `io_uring_wait_cqe_timeout` to mimick `poll(..., timeout)`:
+Alternatively, we can only queue the `waitid` and use `io_uring_wait_cqe_timeout` to mimic `poll(..., timeout)`:
 
 ```c
 #define _DEFAULT_SOURCE
@@ -702,7 +702,7 @@ One caveat for io_uring: it's only supported on modern kernels (5.1+).
 
 Another caveat: some cloud providers e.g. Google Cloud disable `io_uring` due to security concerns when running untrusted code. So it's not ubiquitous.
 
-## Eigth approach: Threads
+## Eighth approach: Threads
 
 Readers have [pointed out](https://news.ycombinator.com/vote?id=42107420&how=up&auth=20ac3216e63a60ca250d82b6a051d7dfaa9f18c9&goto=item%3Fid%3D42103200#42107420) that threads are also a solution, albeit a suboptimal one. Here's the approach:
 
@@ -719,14 +719,14 @@ Also, we could make the thread spawning logic a bit more efficient by not spawni
 
 Now, this approach works but is kind of cumbersome (as noted by the readers), because threads interact in surprising ways with signals (yay, another thing to watch out for!) so we may have to set up signal masks to block/ignore some, and we must take care of not introducing data-races due to the global variables.
 
-Unless the problem is embarassingly parallel and the threads share nothing (e.g.: dividing an array into pieces and each thread gets its own piece to work on), I am reminded of the adage: "You had two problems. You reach out for X. You now have 3 problems". And threads are often the X.
+Unless the problem is embarrassingly parallel and the threads share nothing (e.g.: dividing an array into pieces and each thread gets its own piece to work on), I am reminded of the adage: "You had two problems. You reach out for X. You now have 3 problems". And threads are often the X.
 
 Still, it's a useful tool in the toolbox.
 
 
 ## Ninth approach: Active polling.
 
-That's looping in user code with micro-sleeping to actively poll on the child status in a non-blocking way, for example using `wait(..., WNOHANG)`. Unless you have a very bizzare use case and you know what you are doing, please do not do this. This is unnecessary, bad for power consumption, and all we achieve is noticing late that the child ended. This approach is just here for completeness.
+That's looping in user code with micro-sleeping to actively poll on the child status in a non-blocking way, for example using `wait(..., WNOHANG)`. Unless you have a very bizarre use case and you know what you are doing, please do not do this. This is unnecessary, bad for power consumption, and all we achieve is noticing late that the child ended. This approach is just here for completeness.
 
 ## Conclusion
 

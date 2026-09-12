@@ -131,7 +131,7 @@ It works for any code, be it existing code on the main branch, or experimental c
 </code></pre>
 <p><em>From this point on explanations are git specific, but I'm sure other VCSes have similar features.</em></p>
 <p>Note that since the current directory might be one or several directories deep relative to the root of the git repository, we need to fix this path, because the git web UI expects a path from the root of the git repository.</p>
-<p>The easiest way to do so is using <code>git ls-files --full-name</code> to convert the absolute path to the path from the root of the repostory.</p>
+<p>The easiest way to do so is using <code>git ls-files --full-name</code> to convert the absolute path to the path from the root of the repository.</p>
 <p>There are many ways in Neovim to call out to a command in a subprocess, here's one of them, to get the output of the command:</p>
 <pre>
   <div class="code-header">

@@ -446,7 +446,7 @@ So first we'll encounter the delete/rename commit for this file, and then later 
 </code></pre>
 <p>A few things of interest:</p>
 <ul>
-<li>Odin has first class support for allocators so we allocate everything in this function with the temporary allocator. It is backed by an arena and emptied at the start and end of the function. Only the final result is allocated with the standard allocator. That way, even if Git starts spewing lots of data, as soon as we exit the function, all of that is gone, in one call, and the the program carries on with only the necessary data heap-allocated.</li>
+<li>Odin has first class support for allocators so we allocate everything in this function with the temporary allocator. It is backed by an arena and emptied at the start and end of the function. Only the final result is allocated with the standard allocator. That way, even if Git starts spewing lots of data, as soon as we exit the function, all of that is gone, in one call, and the program carries on with only the necessary data heap-allocated.</li>
 <li>In this program, the main allocator and the temporary allocator are both arenas. The memory usage is a constant ~ 4 MiB, mainly located in the Odin standard library. The memory usage of my code is around ~ 65 KiB.</li>
 <li>A <code>map</code> is a bit of an overkill for ~30 entries, but it's fine, and we expect the number of articles to grow</li>
 </ul>
@@ -464,7 +464,7 @@ So first we'll encounter the delete/rename commit for this file, and then later 
 <span class="line-number"></span><span class="code-hl">[...]</span>
 </code></pre>
 <p>Alright, so how does our new implementation fare compared to the old one?</p>
-<p>First, we can confirm with <code>strace</code> that the time spent on waiting for subprocesses (mainly Git) shrinked:</p>
+<p>First, we can confirm with <code>strace</code> that the time spent on waiting for subprocesses (mainly Git) shrank:</p>
 <pre>
   <div class="code-header">
     <span>Shell</span>

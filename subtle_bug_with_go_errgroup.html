@@ -118,7 +118,7 @@ Do not edit it by hand.
 </ul>
 <p>For simplicity, the Have I Been Pawned API in our reproducer is just a text file with passwords in clear.</p>
 <p>One last thing: passwords are (obviously, I hope) never stored in clear, and we instead store a hash using a <a href="https://en.wikipedia.org/wiki/Bcrypt">password hashing function</a> specially designed to take up a lot of computational power to hinder brute-force attacks. Typically, that can take hundreds of milliseconds or even seconds (depending on the cost factor) for one hash.</p>
-<p>For performance, if we have to compute this hash, we try to do other things in parallel. To achieve this, we use an <a href="https://pkg.go.dev/golang.org/x/sync/errgroup">errgroup</a>, which has become pretty common place now in Go: it acts as a pool of concurrent tasks (like a wait group) but also takes care of cancelling all tasks whenever an error occurs. This is handy to avoid doing unecessary expensive computations.</p>
+<p>For performance, if we have to compute this hash, we try to do other things in parallel. To achieve this, we use an <a href="https://pkg.go.dev/golang.org/x/sync/errgroup">errgroup</a>, which has become pretty common place now in Go: it acts as a pool of concurrent tasks (like a wait group) but also takes care of cancelling all tasks whenever an error occurs. This is handy to avoid doing unnecessary expensive computations.</p>
 <p>Here goes:</p>
 <pre>
   <div class="code-header">
@@ -292,7 +292,7 @@ Do not edit it by hand.
   <code class="language-plaintext"><span class="line-number"></span><span class="code-hl">http request error: Get &quot;http://localhost:8000/haveibeenpawned.txt&quot;: context canceled</span>
 </code></pre>
 <p>Uh...what? We do not even have a timeout set! How can the context be canceled?</p>
-<p>At that point, a great collegue of mine helped me debug and found the issue. He sent me this one line from the <code>errgroup</code> <a href="https://pkg.go.dev/golang.org/x/sync/errgroup#Group.WithContext">documentation</a>:</p>
+<p>At that point, a great colleague of mine helped me debug and found the issue. He sent me this one line from the <code>errgroup</code> <a href="https://pkg.go.dev/golang.org/x/sync/errgroup#Group.WithContext">documentation</a>:</p>
 <blockquote>
 <p>The derived Context is canceled the first time a function passed to Go returns a non-nil error or the first time Wait returns, whichever occurs first.</p>
 </blockquote>

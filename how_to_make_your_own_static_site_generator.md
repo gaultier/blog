@@ -487,7 +487,7 @@ Caching is I think a spectrum, some operations are so cheap and fast that cachin
 Finally, caching should not be a band-aid for general slowness. If some operation is unnecessarily slow, try to optimize it first, and ensure it is really needed. For example, I initially had the search index encoded as JSON, and it took ~600 ms to build and marshal it. I optimized it to only take ~10 ms. In the end, I realized I don't need a search index at all and removed all of this code. Do less, go faster.
 
 
-This suprised me: in most cases, we all deal with data that's just not that big, and linear operations (array, linear scan), are often just fast enough, especially with SIMD and the CPU prefetcher.
+This surprised me: in most cases, we all deal with data that's just not that big, and linear operations (array, linear scan), are often just fast enough, especially with SIMD and the CPU prefetcher.
 
 
 ## Light & Dark mode

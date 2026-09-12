@@ -163,7 +163,7 @@ Chicken Scheme. For example, to get the first element of a list, we use the `car
 ```scheme
 (define my-list (list 1 2 3))
 
-;; Note that this doest **not** mutate `my-list`
+;; Note that this does **not** mutate `my-list`
 (car my-list)
 ```
 
@@ -330,7 +330,7 @@ fold (sometimes called reduce)!
 
 Let's replace our custom recursion by `fold`. `chem-react` becomes the reduction
 function. It becomes simpler because `fold` will not call it on the empty list,
-so we only need to patter match `acc` (which is the empty list at the beginning): 
+so we only need to pattern match `acc` (which is the empty list at the beginning): 
 
 
 ```scheme
@@ -504,7 +504,7 @@ acceptable amount of time.
 > Can't we use strings and not lists?
 
 Yes, of course. However we need to be careful about how strings are implemented
-and what we we do with those. Most runtimes (e.g the JVM) use immutable strings,
+and what we do with those. Most runtimes (e.g the JVM) use immutable strings,
 meaning we could end up allocating thousands of big strings, and being quite slow.
 
 ## Conclusion

@@ -393,7 +393,7 @@ So...found it? Still nothing? Well, let's be good developers and add a test for 
 ```rust
 #[test]
 fn bar() {
-    // This mimicks how C/C++ code would call our function.
+    // This mimics how C/C++ code would call our function.
     let mut bar_c = MaybeUninit::<BarC>::uninit();
     let input = [0, 1, 2];
     unsafe {

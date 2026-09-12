@@ -11,7 +11,7 @@ I have purchased some time ago a Raspberry Pi Zero 2, and I found myself wanting
 Here's the story of how I did it. If you do not work with Odin but do work a lot with cross-compilation, like I do at work, all of these techniques will be, I believe, very valuable anyway.
 
 *Note: ARM64 is sometimes also called AARCH64 interchangeably.*
-*Note 2: The Rapsberry Pi Zero 1 is based on ARM (32 bits). The Raspberry Pi Zero 2 is based on ARM64 (64 bits). If you have a Raspberry Pi Zero 1, this article still applies, just adjust the target when cross-compiling.*
+*Note 2: The Raspberry Pi Zero 1 is based on ARM (32 bits). The Raspberry Pi Zero 2 is based on ARM64 (64 bits). If you have a Raspberry Pi Zero 1, this article still applies, just adjust the target when cross-compiling.*
 
 ## Inciting incident
 
