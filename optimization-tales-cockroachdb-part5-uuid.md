@@ -21,7 +21,7 @@ INSERT INTO my_table (id, some_column) VALUES ('d32223a5-34fd-468a-ab43-aef455d1
 
 is to ask each region (in parallel): do you know this (uu)id already? If all of them reply with 'no', then we are good and we can use it for a new entry.
 
-You might be wondering: isn't there a TOCTOU window here? Could a remote region use this ID for an `INSERT` right after telling us it is not yet used, thus racing with our own `INSERT`? Well, thankfully no: a write in SQL (`INSERT`, `UPDATE`, `DELETE`, etc) first sends a write intent to other regions (when there is a unique constraint on a field in the record), saying "I would like to do this write, is that ok?", and only then it tries to write the record, and the write is committed only when all regions have confirmed there is no constraint violation.
+You might be wondering: isn't there a TOCTOU window here? Could a remote region use this ID for an `INSERT` right after telling us it is not yet used, thus racing with our own `INSERT`? Well, thankfully no, due to ACID guarantees: our `INSERT` runs in an implicit `SERIALIZABLE` transaction which streams write intents to the remote regions (when there is a unique constraint on a field in the record). As soon as a remote region sees this intent, it forces any concurrent write on the same 'range' of records to retry its transaction from the top. Thus, only one write can win the race and claim this id for itself. The other concurrent write will retry, and then see a unique constraint error.
 
 All of this yields: when we do an `INSERT` on a `REGIONAL BY ROW` table, even if it's just randomly generated values that have no chance of already existing, we wait for all regions to answer, and that takes around 250ms in our setup. Each time. That sucks.
 
