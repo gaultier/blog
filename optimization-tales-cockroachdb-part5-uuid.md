@@ -9,7 +9,13 @@ I am ashamed to say that I discovered this trick very recently. It's so simple a
 
 So here it is: in [Kratos](https://github.com/ory/kratos), all database ids are UUIDs v4, meaning: 16 random bytes. And most of our tables are `REGIONAL BY ROW`, meaning: the data is sharded by region, and we can ensure at the database level that data for an entity (including all of its related data in JOIN tables) is located in one region. Which is fantastic for compliance and regulatory reasons!
 
-Since an id has to be unique (this is the primary key in the table), the naive way to check unicity in a multi-region setup, when `INSERT`-ing a new entry, is to ask each region (in parallel): do you know this (uu)id already? If all of them reply with 'no', then we are good and we can use it for a new entry. 
+Since an id has to be unique (this is the primary key in the table), the naive way to check unicity in a multi-region setup, when `INSERT`-ing a new entry:
+
+```sql 
+INSERT INTO my_table (id, some_column) VALUES ('d32223a5-34fd-468a-ab43-aef455d16e0c', 'foo');
+```
+
+is to ask each region (in parallel): do you know this (uu)id already? If all of them reply with 'no', then we are good and we can use it for a new entry.
 
 You might be wondering: isn't there a TOCTOU window here? Could a remote region use this ID for an `INSERT` right after telling us it is not yet used, thus racing with our own `INSERT`? Well, thankfully no: a write in SQL (`INSERT`, `UPDATE`, `DELETE`, etc) first sends a write intent to other regions (when there is a unique constraint on a field in the record), saying "I would like to do this write, is that ok?", and only then it tries to write the record, and the write is committed only when all regions have confirmed there is no constraint violation.
 
@@ -23,6 +29,11 @@ The good news is, CRDB developers know that and for this reason, they provide th
 
 Note that we are taking a (minuscule) risk: if there is indeed, by some massive cosmic bad luck, truly a collision between UUIDs, we would not notice it. But that chance is so mathematically unprobable, that this is a tradeoff we are willing to do.
 
+Our `INSERT` now becomes: `
+
+```sql 
+INSERT INTO my_table (id, some_column) VALUES (gen_random_uuid(), 'foo');
+```
 
 So, the best example of this optimization taking place is this change, where a very frequent `INSERT` went from ~250 ms (typical latency between regions) to ~5ms, simply by moving the UUID generation from the application to the database:
 
