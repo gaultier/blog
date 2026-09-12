@@ -116,7 +116,19 @@ Do not edit it by hand.
   <code class="language-sql"><span class="line-number"></span><span class="code-hl">INSERT INTO my_table (id, some_column) VALUES ('d32223a5-34fd-468a-ab43-aef455d16e0c', 'foo');</span>
 </code></pre>
 <p>is to ask each region (in parallel): do you know this (uu)id already? If all of them reply with 'no', then we are good and we can use it for a new entry.</p>
-<p>You might be wondering: isn't there a TOCTOU window here? Could a remote region use this ID for an <code>INSERT</code> right after telling us it is not yet used, thus racing with our own <code>INSERT</code>? Well, thankfully no, due to ACID guarantees: our <code>INSERT</code> runs in an implicit <code>SERIALIZABLE</code> transaction which streams write intents to the remote regions (when there is a unique constraint on a field in the record). As soon as a remote region sees this intent, it forces any concurrent write on the same 'range' of records to retry its transaction from the top. Thus, only one write can win the race and claim this id for itself. The other concurrent write will retry, and then see a unique constraint error.</p>
+<hr />
+<p>You might be wondering: isn't there a TOCTOU window here? Could a remote region use this ID for an <code>INSERT</code> right after telling us it is not yet used, thus racing with our own <code>INSERT</code>?</p>
+<p>Well, thankfully no, due to the isolation (the I in ACID) guarantee: our <code>INSERT</code> runs in an implicit <code>SERIALIZABLE</code> transaction.
+When there is a unique constraint on a field in the record, our region issues a read to every remote region in parallel to inspect whether this id already exists.</p>
+<p>If a concurrent <code>INSERT</code> with the same <code>id</code> is attempted in a remote region, that region observes a read-write conflict on the same key interval (in this case, the interval is of length 1: it's the actual UUID value) and forces the second writer to restart its transaction from the top. Thus, only one transaction, i.e. one write, can win the race and claim this id for itself. The other concurrent write will retry, and ultimately see a unique constraint error.</p>
+<p>Important to note: this is a read-write conflict, not a write-write conflict. In CockroachDB, the primary key of a <code>REGIONAL BY ROW</code> table is prefixed with the region.
+So if the Europe region wants to insert the same UUID as the Asia region, the two keys are for example:</p>
+<ul>
+<li><code>('eu-west',   'd32223a5-34fd-468a-ab43-aef455d16e0c')</code></li>
+<li><code>('asia-east', 'd32223a5-34fd-468a-ab43-aef455d16e0c')</code></li>
+</ul>
+<p>which are two different tuples and thus do not conflict. If CockroachDB did not issue the cross-region read from Europe to Asia for the key <code>('asia-east', 'd32223a5-34fd-468a-ab43-aef455d16e0c')</code>, which ultimately yields the read-write conflict inside Asia, then there would be no conflict at all, both rows would be inserted, and no one would notice.</p>
+<hr />
 <p>All of this yields: when we do an <code>INSERT</code> on a <code>REGIONAL BY ROW</code> table, even if it's just randomly generated values that have no chance of already existing, we wait for all regions to answer, and that takes around 250ms in our setup. Each time. That sucks.</p>
 <h2 id="the-optimization">
   <a class="title" href="#the-optimization">The optimization</a>
