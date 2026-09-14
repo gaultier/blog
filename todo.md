@@ -1,5 +1,6 @@
 ## Ideas for articles
 
+- [ ] CRDB Optimization part 6: the slow partial index
 - [ ] DTrace + CGO lack of `:return` probe fire:
 ```d
 pid$target::*cryptoSource*Uint64*:entry {self->t=1}
