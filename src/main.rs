@@ -28,11 +28,12 @@ const FEED_UUID: [u8; 16] = [
     0x9c, 0x06, 0x5c, 0x53, 0x31, 0xbc, 0x40, 0x49, 0xa7, 0x95, 0x93, 0x68, 0x02, 0xa6, 0xb1, 0xdf,
 ];
 
+// Kept sorted and disjoint from `CUSTOM_LANGS`; `check_langs` asserts both.
 const STANDARD_LANGS: [&str; 21] = [
     "c",
-    "css",
     "cmake",
     "cpp",
+    "css",
     "diff",
     "dockerfile",
     "go",
@@ -61,6 +62,29 @@ const HTTP_READ_TIMEOUT: Duration = Duration::from_secs(30);
 const LIVE_RELOAD_KEEPALIVE: Duration = Duration::from_secs(30);
 const IGNORED_MARKDOWN_FILES: [&str; 3] = ["README.md", "todo.md", "index.md"];
 
+// Compile-time checks on the constants above. They cost nothing at runtime and
+// they fail before the program ever runs, which is the earliest a broken
+// assumption can possibly be caught.
+//
+// `FEED_UUID` is the namespace every article UUID is derived from, and it is
+// published verbatim as the feed `<id>`: it must be a well-formed RFC 4122
+// version 4 UUID, which is not visible by reading the 16 bytes above.
+const _: () = assert!(FEED_UUID[6] >> 4 == 4, "feed UUID is not version 4");
+const _: () = assert!(
+    FEED_UUID[8] & 0xc0 == 0x80,
+    "feed UUID does not use the RFC 4122 variant"
+);
+// Links are written as `{BASE_URL}/{path}`, so a trailing `/` would yield
+// `https://.../blog//article.html`.
+const _: () = assert!(!BASE_URL.is_empty());
+const _: () = assert!(BASE_URL.as_bytes()[BASE_URL.len() - 1] != b'/');
+// `http_read_request` grows its buffer in steps of at least 4 KiB and stops at
+// this limit, so a limit below one step could never be reached exactly.
+const _: () = assert!(HTTP_REQUEST_SIZE_MAX >= 4096);
+// A zero timeout would turn both of these into busy loops.
+const _: () = assert!(HTTP_READ_TIMEOUT.as_secs() > 0);
+const _: () = assert!(LIVE_RELOAD_KEEPALIVE.as_secs() > 0);
+
 struct Title {
     text: String,
     depth: u8,
@@ -86,15 +110,73 @@ struct Article {
     html_output: Vec<u8>,
 }
 
+impl GitStat {
+    // Everything that is true of a `GitStat` no matter where it came from.
+    // Called at each boundary it crosses rather than only where it is built:
+    // the git log, the cache and the three page generators all reach for these
+    // fields, and each of them is a place the invariant could be broken.
+    fn assert_invariants(&self) {
+        assert!(!self.path_from_git_root.is_empty());
+        assert!(self.path_from_git_root.ends_with(".md"));
+
+        // ISO 8601, the shape `git log --format=%aI` emits. Every consumer
+        // splits on the `T` to render the day on its own.
+        assert!(self.creation_date.contains('T'));
+        assert!(self.modification_date.contains('T'));
+
+        // An article cannot have been modified before it existed. This is the
+        // one relation between the two dates, and the only reason the feed can
+        // use them for `<published>` and `<updated>`.
+        assert!(
+            self.creation_date <= self.modification_date,
+            "modified before created: path={} created={} modified={}",
+            self.path_from_git_root,
+            self.creation_date,
+            self.modification_date
+        );
+    }
+}
+
+impl Article {
+    // The identity of a rendered article. `html_output` is deliberately not
+    // checked here: an article is built empty by the tests and filled in by
+    // `md_render_article`, which asserts it separately once it has content.
+    fn assert_invariants(&self) {
+        self.git_stat.assert_invariants();
+
+        assert!(!self.html_title.is_empty());
+        assert!(!self.text_title.is_empty());
+        assert_eq!(
+            Some("html"),
+            self.html_path.extension().and_then(|e| e.to_str())
+        );
+        // The page is named after the markdown it was rendered from: this is
+        // what makes the link written into the home page and the feed resolve.
+        assert_eq!(
+            self.html_path.with_extension("md").to_string_lossy(),
+            self.git_stat.path_from_git_root
+        );
+    }
+}
+
 // Match on the file name, not on the path: the generator and the watcher used
 // to disagree about what "ignored" meant, so a file in a subdirectory was an
 // article to one of them and noise to the other.
 fn is_ignored_markdown_file(path: &Path) -> bool {
-    path.file_name().is_some_and(|name| {
+    assert!(!path.as_os_str().is_empty());
+
+    let res = path.file_name().is_some_and(|name| {
         IGNORED_MARKDOWN_FILES
             .iter()
             .any(|ignored| name == AsRef::<Path>::as_ref(ignored))
-    })
+    });
+
+    // Only a path with a final component can be ignored, and every entry of
+    // `IGNORED_MARKDOWN_FILES` is a markdown file.
+    assert!(!res || path.file_name().is_some());
+    assert!(!res || path.extension() == Some("md".as_ref()));
+
+    res
 }
 
 fn hash_article_inputs(
@@ -103,6 +185,13 @@ fn hash_article_inputs(
     html_footer: &[u8],
     md_content: &[u8],
 ) -> u64 {
+    // The same preconditions as `md_render_article`, asserted on both sides of
+    // the call: a cache key built from an empty header or footer would collide
+    // with the key of an article rendered before they were read.
+    assert!(!html_header.is_empty());
+    assert!(!html_footer.is_empty());
+    git_stat.assert_invariants();
+
     let mut hasher = DefaultHasher::new();
     // The rendered article embeds the path and both dates, so they belong in
     // the key: two articles with the same body are not interchangeable.
@@ -117,11 +206,29 @@ fn hash_article_inputs(
 // the body starts one level below it: the first heading must be `##`, and each
 // heading may go at most one level deeper than the previous one.
 fn md_lint(node: &Node, md_path: &Path) -> anyhow::Result<()> {
+    assert!(matches!(node, Node::Root(_)), "linting starts at the root");
+    assert_eq!(Some("md"), md_path.extension().and_then(|e| e.to_str()));
+
+    // The `<h1>` rendered from the metadata is the heading every article body
+    // nests under.
     let mut previous_heading_depth = 1u8;
-    md_lint_rec(node, md_path, &mut previous_heading_depth)
+    let res = md_lint_rec(node, md_path, &mut previous_heading_depth);
+
+    // `md_lint_rec` only ever moves this to the depth of a heading it accepted.
+    assert!(previous_heading_depth >= 1);
+    assert!(previous_heading_depth <= 6);
+
+    res
 }
 
 fn md_lint_rec(node: &Node, md_path: &Path, previous_heading_depth: &mut u8) -> anyhow::Result<()> {
+    // Markdown heading depths run from 1 to 6, and this tracks the last one
+    // accepted. Checked on the way in of every node, not only of a heading: a
+    // sibling that corrupted it would otherwise be blamed on the next heading.
+    assert!(*previous_heading_depth >= 1);
+    assert!(*previous_heading_depth <= 6);
+    assert!(!md_path.as_os_str().is_empty());
+
     match node {
         Node::Root(x) => {
             for child in &x.children {
@@ -253,6 +360,10 @@ fn md_lint_rec(node: &Node, md_path: &Path, previous_heading_depth: &mut u8) -> 
                     x.position
                 );
             }
+            // Both checks above rejected everything outside this range, and
+            // markdown cannot produce a heading deeper than 6.
+            assert!(x.depth >= 2);
+            assert!(x.depth <= 6);
             *previous_heading_depth = x.depth;
 
             for child in &x.children {
@@ -336,6 +447,12 @@ fn git_get_articles_stats() -> anyhow::Result<Vec<GitStat>> {
 
     let res = git_parse_log(&String::from_utf8_lossy(&output.stdout))?;
 
+    // Asserted again on this side of the parse: `git log` was asked for `*.md`
+    // only, and these dates are about to key the render cache.
+    for stat in &res {
+        stat.assert_invariants();
+    }
+
     println!(
         "🗄️ git stats: {} files in {} ms",
         res.len(),
@@ -394,6 +511,10 @@ fn git_parse_log(output_str: &str) -> anyhow::Result<Vec<GitStat>> {
                         "expected path in delete action in git log to already be known: {}",
                         path
                     ))?;
+                    // The negative space of the `M` arm below: once deleted, a
+                    // path is unknown again, and a later `M` on it is an error
+                    // rather than a resurrection.
+                    assert!(!res.contains_key(path));
                 }
                 (Some("A"), Some(path), None) => {
                     ensure!(!path.is_empty(), "empty path in git log entry: `{}`", line);
@@ -402,6 +523,9 @@ fn git_parse_log(output_str: &str) -> anyhow::Result<Vec<GitStat>> {
                         modification_date: date_trimmed.to_owned(),
                         path_from_git_root: path.to_owned(),
                     };
+                    // An article that was just added has not been modified
+                    // since: the two dates are the same commit.
+                    assert_eq!(git_stat.creation_date, git_stat.modification_date);
                     res.insert(path.to_owned(), git_stat);
                 }
                 (Some("M"), Some(path), None) => {
@@ -418,6 +542,10 @@ fn git_parse_log(output_str: &str) -> anyhow::Result<Vec<GitStat>> {
                     );
                     // Update the modification date.
                     entry.modification_date = date_trimmed.to_owned();
+                    // The `ensure!` above rejected a log that went backwards,
+                    // so this can only have moved the date forward, and never
+                    // behind the creation date.
+                    assert!(entry.creation_date <= entry.modification_date);
                 }
                 (Some(action), Some(path_old), Some(path_new)) if action.starts_with("R") => {
                     ensure!(
@@ -436,6 +564,9 @@ fn git_parse_log(output_str: &str) -> anyhow::Result<Vec<GitStat>> {
                         modification_date: date_trimmed.to_owned(),
                         path_from_git_root: path_new.to_owned(),
                     };
+                    // The creation date carried over from the old name is the
+                    // date of an earlier commit than this rename.
+                    assert!(git_stat.creation_date <= git_stat.modification_date);
                     res.insert(path_new.to_owned(), git_stat);
                 }
                 _ => {
@@ -443,6 +574,13 @@ fn git_parse_log(output_str: &str) -> anyhow::Result<Vec<GitStat>> {
                 }
             }
         }
+    }
+
+    // Postconditions, checked once over the whole log rather than at each of
+    // the four actions that can break them.
+    for (path, stat) in &res {
+        assert_eq!(path, &stat.path_from_git_root);
+        stat.assert_invariants();
     }
 
     Ok(res.into_values().collect())
@@ -462,6 +600,8 @@ fn md_collect_titles(
         }
         Node::Heading(heading) => {
             let depth = heading.depth;
+            assert!(depth >= 1);
+            assert!(depth <= 6);
             // A heading is not necessarily one text node: it can hold inline
             // code, a link, or emphasis. Flatten it to plain text for the slug
             // and the table of contents.
@@ -489,6 +629,13 @@ fn md_collect_titles(
             } else {
                 slug
             };
+            // The slug is about to become an `id` attribute and the target of
+            // a `#` link. `html_slug` asserts these same properties on its own
+            // side of the call: this is the reading end of that pair.
+            assert!(!slug.starts_with('-'));
+            assert!(!slug.ends_with('-'));
+            assert!(!slug.contains("--"));
+
             titles.push(Title {
                 text: content,
                 depth,
@@ -532,6 +679,15 @@ fn md_parse_metadata(md_content: &str) -> anyhow::Result<(&str, Vec<&str>)> {
         .ok_or(anyhow!("missing `Tags: ` in tags line in article metadata"))?;
     let tags: Vec<&str> = tags_str.split(", ").map(|s| s.trim_ascii()).collect();
 
+    // Both are embedded in HTML as-is by the caller, so they leave here
+    // trimmed. `split` always yields at least one item, even for an empty
+    // `Tags:` line.
+    assert_eq!(title, title.trim_ascii());
+    for tag in &tags {
+        assert_eq!(*tag, tag.trim_ascii());
+    }
+    assert!(!tags.is_empty());
+
     Ok((title, tags))
 }
 
@@ -544,11 +700,25 @@ fn md_parse_metadata(md_content: &str) -> anyhow::Result<(&str, Vec<&str>)> {
 fn md_strip_metadata(md_content: &str) -> Option<&str> {
     let mut offset = 0usize;
     for (i, line) in md_content.split_inclusive('\n').enumerate() {
+        // `offset` indexes into `md_content`: it walks the lines it was built
+        // from, so it can never run past the end.
+        assert!(offset <= md_content.len());
+
         if i >= 2 && line.trim_ascii() == "---" {
-            return Some(&md_content[offset + line.len()..]);
+            let start = offset + line.len();
+            assert!(start <= md_content.len());
+
+            let res = &md_content[start..];
+            // The metadata lines and the delimiter are gone, so the body is a
+            // strictly shorter suffix of the input.
+            assert!(res.len() < md_content.len());
+            return Some(res);
         }
         offset += line.len();
     }
+
+    // Every line was walked, so the offsets accounted for the whole input.
+    assert_eq!(md_content.len(), offset);
 
     None
 }
@@ -568,7 +738,22 @@ fn html_slug(s: &str) -> String {
             _ => {}
         };
     }
-    res.trim_matches(|c| c == '-').to_owned()
+    let res = res.trim_matches(|c| c == '-').to_owned();
+
+    // A slug is an `id` attribute and the target of a `#` link: lowercase
+    // ASCII, with no leading, trailing or repeated `-`. `md_collect_titles`
+    // asserts the same properties on the other side of the call.
+    assert!(!res.starts_with('-'));
+    assert!(!res.ends_with('-'));
+    assert!(!res.contains("--"));
+    assert!(
+        res.chars()
+            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-'),
+        "slug is not url-safe: {}",
+        res
+    );
+
+    res
 }
 
 fn md_to_html(md_content: &str) -> anyhow::Result<Vec<u8>> {
@@ -595,14 +780,21 @@ fn md_to_html(md_content: &str) -> anyhow::Result<Vec<u8>> {
         for c in &p.children {
             md_to_html_rec(&mut sb, &mut footnote_defs, c, &[], false)?;
         }
+        // Every caller turns this back into a `String`. Asserted at both
+        // returns: this one skips the recursion the other one goes through.
+        assert!(std::str::from_utf8(&sb).is_ok());
         return Ok(sb);
     }
     md_to_html_rec(&mut sb, &mut footnote_defs, &md_ast, &[], false)?;
+
+    assert!(std::str::from_utf8(&sb).is_ok());
 
     Ok(sb)
 }
 
 fn md_to_text_rec(node: &Node, out: &mut String) {
+    let len_before = out.len();
+
     match node {
         Node::Text(text) => out.push_str(&text.value),
         // Keep the strikethrough markers: the title
@@ -626,6 +818,10 @@ fn md_to_text_rec(node: &Node, out: &mut String) {
             }
         }
     }
+
+    // Flattening to text only ever appends: no node rewrites what a previous
+    // one wrote.
+    assert!(out.len() >= len_before);
 }
 
 // Render markdown to plain text, for the places where markup is not allowed:
@@ -647,10 +843,15 @@ fn md_to_text(md_content: &str) -> anyhow::Result<String> {
     let mut res = String::with_capacity(md_content.len());
     md_to_text_rec(&md_ast, &mut res);
 
+    // Markup is dropped, never expanded: every byte of the output comes from a
+    // byte of the source. This is also why the capacity above is exact.
+    assert!(res.len() <= md_content.len());
+
     Ok(res)
 }
 
 fn md_html_append(md_content: &str, html_content: &mut Vec<u8>) -> anyhow::Result<()> {
+    let len_before = html_content.len();
     let mut footnote_defs = Vec::new();
 
     let md_ast = markdown::to_mdast(
@@ -673,6 +874,10 @@ fn md_html_append(md_content: &str, html_content: &mut Vec<u8>) -> anyhow::Resul
     md_to_html_rec(html_content, &mut footnote_defs, &md_ast, &md_titles, false)?;
     md_render_footnote_definitions(html_content, &footnote_defs)?;
 
+    // Appended to, never truncated, and the appended part is text.
+    assert!(html_content.len() >= len_before);
+    assert!(std::str::from_utf8(&html_content[len_before..]).is_ok());
+
     Ok(())
 }
 
@@ -683,11 +888,18 @@ fn capitalize_first(s: &str) -> Cow<'_, str> {
 
     let mut chars = s.chars();
     let c = chars.next().unwrap(); // Safe due to `is_empty()` check.
-    if c.is_uppercase() {
+    let res = if c.is_uppercase() {
         Cow::Borrowed(s)
     } else {
         Cow::Owned(c.to_uppercase().collect::<String>() + chars.as_str())
-    }
+    };
+
+    // Uppercasing can lengthen a string (`ß` becomes `SS`) but never shortens
+    // it, and a non-empty input cannot capitalize to nothing.
+    assert!(!res.is_empty());
+    assert!(res.len() >= s.len());
+
+    res
 }
 
 fn md_to_html_rec(
@@ -697,6 +909,12 @@ fn md_to_html_rec(
     titles: &[Title],
     inside_thead: bool,
 ) -> anyhow::Result<()> {
+    // `inside_thead` is threaded down from `Node::Table` through the header
+    // row to its cells, and reset everywhere else: no other node can observe
+    // it set.
+    assert!(!inside_thead || matches!(node, Node::TableRow(_) | Node::TableCell(_)));
+    let len_before = content.len();
+
     match node {
         Node::Root(root) => {
             for child in &root.children {
@@ -834,7 +1052,21 @@ fn md_to_html_rec(
         }
         Node::Code(code) => {
             let sanitized = text_sanitize_for_html(&code.value, false);
-            let lang = code.lang.as_ref().unwrap(); // Safe due to `md_lint_rec` checking that.
+            // `md_lint_rec` rejects a code block without a language, but not
+            // every path through this renderer is linted first (`index.md` and
+            // the article titles are not), so state the assumption where it is
+            // relied upon rather than only where it is established.
+            assert!(
+                code.lang.is_some(),
+                "code block without a language: position={:?}",
+                code.position
+            );
+            let lang = code.lang.as_ref().unwrap();
+            assert!(
+                STANDARD_LANGS.contains(&lang.as_str()) || CUSTOM_LANGS.contains(&lang.as_str()),
+                "unknown lang: {}",
+                lang
+            );
             write!(
                 content,
                 r#"<pre>
@@ -874,6 +1106,9 @@ fn md_to_html_rec(
                 .find(|t| t.start_md_offset == position.start.offset)
                 .ok_or_else(|| anyhow!("failed to find title: position={:?}", position))?;
 
+            assert!(heading.depth >= 1);
+            assert!(heading.depth <= 6);
+
             writeln!(content, r#"<h{} id="{}">"#, heading.depth, title.slug)?;
             write!(content, r##"  <a class="title" href="#{}">"##, title.slug)?;
             for child in &heading.children {
@@ -890,6 +1125,8 @@ fn md_to_html_rec(
         Node::Table(table) => {
             writeln!(content, "<table>")?;
             let (thead, tbdody) = table.children.split_first().ok_or(anyhow!("expected table element to have thead and tbody as first two children, but it did not"))?;
+            // `inside_thead` is only meaningful for a row of cells.
+            assert!(matches!(thead, Node::TableRow(_)));
             writeln!(content, "<thead>")?;
             md_to_html_rec(content, footnote_defs, thead, titles, true)?;
             writeln!(content, "</thead>")?;
@@ -946,6 +1183,12 @@ fn md_to_html_rec(
             writeln!(content, "</p>")?;
         }
     }
+
+    // Rendering appends. A node may write nothing at all -- a footnote
+    // definition is collected for later instead -- but it never rewinds what
+    // its siblings wrote.
+    assert!(content.len() >= len_before);
+
     Ok(())
 }
 
@@ -970,11 +1213,23 @@ fn text_sanitize_for_html(s: &str, sanitize_single_quote: bool) -> Cow<'_, str> 
                 other => result.push(other),
             }
         }
+
+        // Escaping replaces one character with several, so it only grows the
+        // text, and none of the characters that could close or open a tag
+        // survive it.
+        assert!(result.len() >= s.len());
+        assert!(!result.contains('<'));
+        assert!(!result.contains('>'));
+        assert!(!result.contains('"'));
+        assert!(!sanitize_single_quote || !result.contains('\''));
+
         Cow::Owned(result)
     }
 }
 
 fn md_render_toc(content: &mut Vec<u8>, titles: &[Title]) -> anyhow::Result<()> {
+    let len_before = content.len();
+
     if titles.is_empty() {
         return Ok(());
     }
@@ -988,9 +1243,16 @@ fn md_render_toc(content: &mut Vec<u8>, titles: &[Title]) -> anyhow::Result<()> 
     // Heading depths of the `<ul>` levels currently open. The one written just
     // above is the base level and is never closed inside the loop.
     let base_depth = titles[0].depth;
+    assert!(base_depth >= 1);
+    assert!(base_depth <= 6);
     let mut open_depths: Vec<u8> = vec![base_depth];
 
     for (i, title) in titles.iter().enumerate() {
+        // The two invariants the loop below rests on: the base level is never
+        // popped, so the stack is never empty and its bottom never moves.
+        assert!(!open_depths.is_empty());
+        assert_eq!(base_depth, open_depths[0]);
+
         // `md_lint` rejects an article whose headings start below `##` or skip
         // a level, so the stack below just follows them. It still opens one
         // level at a time and pops instead of subtracting depths, so even
@@ -1021,6 +1283,10 @@ fn md_render_toc(content: &mut Vec<u8>, titles: &[Title]) -> anyhow::Result<()> 
             title.slug,
             text_sanitize_for_html(&title.text, false),
         )?;
+
+        // Checked again on the way out: an iteration that emptied the stack
+        // would misnest the next one rather than this one.
+        assert!(!open_depths.is_empty());
     }
 
     // Final cleanup: close all remaining open tags. `titles` is not empty, so
@@ -1030,8 +1296,15 @@ fn md_render_toc(content: &mut Vec<u8>, titles: &[Title]) -> anyhow::Result<()> 
         open_depths.pop();
         writeln!(content, "</ul>\n</li>")?;
     }
+    // Everything opened inside the loop is closed again, leaving only the base
+    // level that was written before it.
+    assert_eq!(1, open_depths.len());
+    assert_eq!(base_depth, open_depths[0]);
+
     writeln!(content, "</ul>")?;
     writeln!(content, "</details>\n")?;
+
+    assert!(content.len() > len_before);
 
     Ok(())
 }
@@ -1045,12 +1318,26 @@ fn md_render_article(
     let start = Instant::now();
     assert!(!html_header.is_empty());
     assert!(!html_footer.is_empty());
+    git_stat.assert_invariants();
 
     let md_content_bytes = fs::read(&git_stat.path_from_git_root)
         .with_context(|| format!("failed to read file: {}", &git_stat.path_from_git_root))?;
     let hash = hash_article_inputs(&git_stat, html_header, html_footer, &md_content_bytes);
 
     if let Some(article) = cache.get(&hash) {
+        // A hash collision would publish one article's HTML under another
+        // article's name, silently. The key is 64 bits of `DefaultHasher`, not
+        // a cryptographic digest, so verify the hit instead of trusting it.
+        assert_eq!(
+            article.git_stat.path_from_git_root,
+            git_stat.path_from_git_root
+        );
+        assert_eq!(article.git_stat.creation_date, git_stat.creation_date);
+        assert_eq!(
+            article.git_stat.modification_date,
+            git_stat.modification_date
+        );
+        article.assert_invariants();
         return Ok((hash, article.clone()));
     }
     let md_content_bytes_len = md_content_bytes.len();
@@ -1129,6 +1416,14 @@ fn md_render_article(
                     &git_stat.path_from_git_root, &git_stat.modification_date,
                 )
             })?;
+    // The `YYYY-MM-DD` halves are what the reader sees. Asserting the order
+    // again on the truncated form pairs with `GitStat::assert_invariants`: a
+    // date that lost its day would compare fine as a timestamp and render as
+    // nonsense here.
+    assert_eq!(10, creation_date.len());
+    assert_eq!(10, modification_date.len());
+    assert!(creation_date <= modification_date);
+
     writeln!(
         sb,
         r#"{}
@@ -1182,6 +1477,11 @@ fn md_render_article(
 
     cache.insert(hash, article.clone());
 
+    // What every caller relies on: a complete article, carrying a page that is
+    // not empty.
+    article.assert_invariants();
+    assert!(!article.html_output.is_empty());
+
     println!(
         "⏳ cache miss: generated {} in {} us",
         &article.git_stat.path_from_git_root,
@@ -1195,6 +1495,8 @@ fn md_render_footnote_definitions(
     content: &mut Vec<u8>,
     footnote_defs: &[FootnoteDefinition],
 ) -> anyhow::Result<()> {
+    let len_before = content.len();
+
     if footnote_defs.is_empty() {
         return Ok(());
     }
@@ -1206,6 +1508,10 @@ fn md_render_footnote_definitions(
     )?;
 
     for def in footnote_defs {
+        // The identifier is both an `id` and the target of the `<sup>` link
+        // written by `Node::FootnoteReference`.
+        assert!(!def.identifier.is_empty());
+
         writeln!(content, r#"<li id="fn-{}">"#, def.identifier)?;
 
         let [child] = def.children.as_slice() else {
@@ -1246,6 +1552,9 @@ fn md_render_footnote_definitions(
         r#"</ol>
 </section>"#
     )?;
+
+    assert!(content.len() > len_before);
+
     Ok(())
 }
 
@@ -1255,8 +1564,11 @@ fn generate_tags_page(
     html_footer: &[u8],
 ) -> anyhow::Result<()> {
     let start = Instant::now();
+    assert!(!html_header.is_empty());
+    assert!(!html_footer.is_empty());
 
     let sb = tags_page_build(articles, html_header, html_footer)?;
+    assert!(!sb.is_empty());
     fs::write("articles-by-tag.html", sb).context("failed to write articles-by-tag.html")?;
 
     println!(
@@ -1271,9 +1583,16 @@ fn tags_page_build(
     html_header: &[u8],
     html_footer: &[u8],
 ) -> anyhow::Result<Vec<u8>> {
+    // The same preconditions as at the call site: this is the half that runs
+    // under the unit tests.
+    assert!(!html_header.is_empty());
+    assert!(!html_footer.is_empty());
+
     let mut tag_to_articles = BTreeMap::new();
 
     for article in articles {
+        article.assert_invariants();
+
         for tag in &article.tags {
             tag_to_articles
                 .entry(tag.clone())
@@ -1281,6 +1600,12 @@ fn tags_page_build(
                 .push(article);
         }
     }
+
+    // Every tag of every article landed in exactly one bucket: an article
+    // dropped here would silently vanish from the page rather than crash it.
+    let tags_in: usize = articles.iter().map(|a| a.tags.len()).sum();
+    let tags_out: usize = tag_to_articles.values().map(|v: &Vec<_>| v.len()).sum();
+    assert_eq!(tags_in, tags_out);
 
     for tag1 in tag_to_articles.keys() {
         for tag2 in tag_to_articles.keys() {
@@ -1335,6 +1660,8 @@ fn tags_page_build(
 
     sb.extend(html_footer);
 
+    assert!(sb.len() > html_header.len() + html_footer.len());
+
     Ok(sb)
 }
 
@@ -1343,6 +1670,13 @@ fn generate_article_rss(
     base_uuid: &uuid::Uuid,
     article: &Article,
 ) -> anyhow::Result<()> {
+    // An Atom entry carries both dates and a title, all written below without
+    // a fallback: `<published>` is the creation date and `<updated>` the
+    // modification date, so a feed reader sees an entry updated before it was
+    // published if these ever swap.
+    article.assert_invariants();
+    let len_before = sb.len();
+
     let article_uuid =
         uuid::Uuid::new_v5(base_uuid, article.html_path.to_string_lossy().as_bytes());
     write!(
@@ -1367,6 +1701,8 @@ fn generate_article_rss(
         article.git_stat.creation_date,
     )?;
 
+    assert!(sb.len() > len_before);
+
     Ok(())
 }
 
@@ -1374,6 +1710,7 @@ fn generate_rss(articles: &mut [Article]) -> anyhow::Result<()> {
     let start = Instant::now();
 
     let sb = rss_build(articles)?;
+    assert!(!sb.is_empty());
     fs::write("feed.xml", sb).context("failed to write feed.xml")?;
 
     println!(
@@ -1392,6 +1729,14 @@ fn rss_build(articles: &mut [Article]) -> anyhow::Result<Vec<u8>> {
             .cmp(&b.git_stat.creation_date)
     });
 
+    // The entries are written in this order, and the `<updated>` below assumes
+    // it is not the order of modification dates.
+    assert!(
+        articles
+            .windows(2)
+            .all(|w| w[0].git_stat.creation_date <= w[1].git_stat.creation_date)
+    );
+
     let mut sb = Vec::with_capacity(32000);
     let blog_uuid = uuid::Builder::from_bytes(FEED_UUID).into_uuid();
 
@@ -1402,6 +1747,14 @@ fn rss_build(articles: &mut [Article]) -> anyhow::Result<Vec<u8>> {
         .map(|a| a.git_stat.modification_date.as_str())
         .max()
         .ok_or(anyhow!("no article to build the feed from"))?;
+
+    // It is the feed's `<updated>`: nothing inside the feed may be newer than
+    // the feed itself.
+    for a in articles.iter() {
+        a.assert_invariants();
+        assert!(a.git_stat.creation_date.as_str() <= last_modification_date);
+        assert!(a.git_stat.modification_date.as_str() <= last_modification_date);
+    }
 
     writeln!(
         sb,
@@ -1424,6 +1777,10 @@ fn rss_build(articles: &mut [Article]) -> anyhow::Result<Vec<u8>> {
 
     sb.extend(b"</feed>");
 
+    // A feed reader rejects the document outright if either end is missing.
+    assert!(sb.starts_with(b"<?xml"));
+    assert!(sb.ends_with(b"</feed>"));
+
     Ok(sb)
 }
 
@@ -1433,6 +1790,8 @@ fn generate_home_page(
     html_footer: &[u8],
 ) -> anyhow::Result<()> {
     let start = Instant::now();
+    assert!(!html_header.is_empty());
+    assert!(!html_footer.is_empty());
 
     articles.sort_by(|a, b| {
         b.git_stat
@@ -1440,6 +1799,15 @@ fn generate_home_page(
             .as_str()
             .cmp(&a.git_stat.creation_date)
     });
+    // Newest first: the home page lists the most recent article at the top.
+    assert!(
+        articles
+            .windows(2)
+            .all(|w| w[0].git_stat.creation_date >= w[1].git_stat.creation_date)
+    );
+    for a in articles.iter() {
+        a.assert_invariants();
+    }
 
     let mut sb = Vec::with_capacity(64 * 1024);
 
@@ -1494,6 +1862,7 @@ fn generate_home_page(
     md_html_append(&markdown_content, &mut sb)?;
 
     sb.extend(html_footer);
+    assert!(sb.len() > html_header.len() + html_footer.len());
     fs::write("index.html", sb).context("failed to write index.html")?;
 
     println!(
@@ -1508,8 +1877,13 @@ fn generate_all(cache: &mut HashMap<u64, Article>) -> anyhow::Result<()> {
     let start = std::time::Instant::now();
     let html_header = fs::read("header.html").context("failed to read header.html")?;
     let html_footer = fs::read("footer.html").context("failed to read footer.html")?;
+    // Every generated page embeds both. An empty one is a truncated checkout,
+    // not an article that happens to have no header.
+    assert!(!html_header.is_empty(), "header.html is empty");
+    assert!(!html_footer.is_empty(), "footer.html is empty");
 
     let git_stats = git_get_articles_stats()?;
+    let git_stats_count = git_stats.len();
 
     let mut articles: Vec<Article> = Vec::with_capacity(git_stats.len());
     let mut live_hashes: HashSet<u64> = HashSet::with_capacity(git_stats.len());
@@ -1537,7 +1911,16 @@ fn generate_all(cache: &mut HashMap<u64, Article>) -> anyhow::Result<()> {
     // `watch` runs.
     cache.retain(|hash, _| live_hashes.contains(hash));
 
+    // Every article rendered above was either found in the cache or inserted
+    // into it, so after the retain the cache holds exactly the live articles:
+    // it cannot grow without bound while `watch` runs.
+    assert_eq!(cache.len(), live_hashes.len());
+    // Ignored files are skipped, so this is an inequality rather than a sum.
+    assert!(articles.len() + failures <= git_stats_count);
+
     for a in &articles {
+        a.assert_invariants();
+        assert!(!a.html_output.is_empty());
         fs::write(&a.html_path, &a.html_output)
             .with_context(|| format!("failed to write {:?}", &a.html_path))?;
     }
@@ -1561,6 +1944,21 @@ fn generate_all(cache: &mut HashMap<u64, Article>) -> anyhow::Result<()> {
 }
 
 fn check_langs() {
+    // Design integrity of the two lists, checked before anything is rendered.
+    // A language listed twice, or in both lists, means one of the two entries
+    // is dead: `md_lint_rec` accepts a code block on the first match.
+    assert!(STANDARD_LANGS.is_sorted(), "STANDARD_LANGS is not sorted");
+    assert!(CUSTOM_LANGS.is_sorted(), "CUSTOM_LANGS is not sorted");
+    for (i, lang) in STANDARD_LANGS.iter().enumerate() {
+        assert!(!STANDARD_LANGS[i + 1..].contains(lang), "{}", lang);
+        assert!(!CUSTOM_LANGS.contains(lang), "{}", lang);
+    }
+    for (i, lang) in CUSTOM_LANGS.iter().enumerate() {
+        assert!(!CUSTOM_LANGS[i + 1..].contains(lang), "{}", lang);
+    }
+
+    // A language highlight.js does not ship with is loaded from a `.min.js` of
+    // our own, next to the generated pages.
     for lang in ["cmake", "scheme", "x86asm", "dockerfile"] {
         let exists = fs::exists(format!("{}.min.js", lang)).unwrap_or_default();
         assert!(exists, "{}", lang);
@@ -1603,6 +2001,8 @@ fn watch(mtx_cond: Arc<(Mutex<u64>, Condvar)>, cache: &mut HashMap<u64, Article>
         // In a debug build a panic here would have killed the watcher anyway,
         // leaving nothing to notify anyone about.
         let mut generation = lock.lock().unwrap();
+        let generation_before = *generation;
+
         for path in event.paths {
             // A watched path always has a final component, but do not bet the
             // watcher thread on it.
@@ -1647,6 +2047,10 @@ fn watch(mtx_cond: Arc<(Mutex<u64>, Condvar)>, cache: &mut HashMap<u64, Article>
                 cvar.notify_all();
             }
         }
+
+        // The generation is what every live-reload client compares against: it
+        // only ever moves forward, and only while this lock is held.
+        assert!(*generation >= generation_before);
     }
 
     println!("end of file watch ");
@@ -1663,6 +2067,9 @@ fn percent_decode(s: &str) -> Option<String> {
     let mut res = Vec::with_capacity(bytes.len());
     let mut i = 0;
     while i < bytes.len() {
+        let len_before = res.len();
+        let i_before = i;
+
         if bytes[i] == b'%' {
             res.push(u8::from_str_radix(s.get(i + 1..i + 3)?, 16).ok()?);
             i += 3;
@@ -1670,15 +2077,30 @@ fn percent_decode(s: &str) -> Option<String> {
             res.push(bytes[i]);
             i += 1;
         }
+
+        // Exactly one byte decoded per step, and the cursor always advances:
+        // the two halves of "this loop terminates and consumes its input".
+        assert_eq!(len_before + 1, res.len());
+        assert!(i > i_before);
     }
 
-    String::from_utf8(res).ok()
+    // An escape is three bytes in and one byte out, so decoding only shrinks.
+    assert!(res.len() <= bytes.len());
+
+    let res = String::from_utf8(res).ok()?;
+    assert!(res.len() <= s.len());
+
+    Some(res)
 }
 
 // Resolve a URL path to a file inside `root`, or `None` if it points outside of
 // it. Everything but plain file/directory names is refused rather than
 // resolved: there is nothing above the blog root worth serving.
 fn http_resolve_path(root: &Path, url_path: &str) -> Option<PathBuf> {
+    // `starts_with` below compares components, which only means "inside the
+    // root" if the root is itself absolute and canonical.
+    assert!(root.is_absolute());
+
     // A query string or a fragment is not part of the path.
     let url_path = url_path
         .split_once(['?', '#'])
@@ -1702,6 +2124,11 @@ fn http_resolve_path(root: &Path, url_path: &str) -> Option<PathBuf> {
         return None;
     }
 
+    // The one guarantee this function exists to make, restated where it is
+    // handed to the caller that will read the file.
+    assert!(res.is_absolute());
+    assert!(res.starts_with(root));
+
     Some(res)
 }
 
@@ -1712,7 +2139,7 @@ fn get_content_type(path: &Path) -> &'static str {
         Some(e) => e,
     };
 
-    match extension {
+    let res = match extension {
         "js" => "application/javascript",
         "gif" => "image/gif",
         "jpg" => "image/jpeg",
@@ -1727,7 +2154,12 @@ fn get_content_type(path: &Path) -> &'static str {
         "css" => "text/css; charset=utf-8",
         "mp4" => "video/mp4",
         _ => "text/plain; charset=utf8",
-    }
+    };
+
+    // A media type is `type/subtype`, with optional parameters.
+    assert!(res.contains('/'));
+
+    res
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -1756,12 +2188,20 @@ impl std::fmt::Display for HttpReadError {
 // Read until `req_bytes` holds one complete HTTP request. Every failure here is
 // something a client can cause at will, so none of them may panic.
 fn http_read_request<R: Read>(reader: R, req_bytes: &mut Vec<u8>) -> Result<(), HttpReadError> {
+    // Reading appends, and the size limit below counts the whole buffer: a
+    // caller that reused a dirty buffer would get a short request and a wrong
+    // limit.
+    assert!(req_bytes.is_empty());
+
     // The equivalent of Go's `io.LimitReader`: hands out at most this many
     // bytes and then reports EOF, which bounds the request exactly instead of
     // to whatever the buffer capacity happened to grow to.
     let mut reader = reader.take(HTTP_REQUEST_SIZE_MAX as u64);
 
     loop {
+        // Everything read so far came through `take`, so the request is
+        // bounded no matter how far the capacity has doubled.
+        assert!(req_bytes.len() <= HTTP_REQUEST_SIZE_MAX);
         // Grow when full: a request bigger than the initial capacity used to
         // end up handing `read()` an empty slice, which reads 0 and drops the
         // connection without ever answering. `take` is what bounds this, so
@@ -1772,6 +2212,10 @@ fn http_read_request<R: Read>(reader: R, req_bytes: &mut Vec<u8>) -> Result<(), 
         let cap = req_bytes.capacity();
 
         let old_len = req_bytes.len();
+        // An empty slice makes `read()` report 0 bytes, which is
+        // indistinguishable from the client hanging up: this is exactly what
+        // the growth above exists to prevent.
+        assert!(cap > old_len);
         // Zero the spare capacity so that `read()` gets a real `&mut [u8]`.
         // This does not reallocate since `len <= capacity`.
         req_bytes.resize(cap, 0);
@@ -1783,6 +2227,13 @@ fn http_read_request<R: Read>(reader: R, req_bytes: &mut Vec<u8>) -> Result<(), 
             }
         };
         req_bytes.truncate(old_len + read_count);
+        // `Read` is a trait anyone can implement, and one that reports more
+        // bytes than it wrote would leave the zeroed spare capacity in the
+        // buffer and be parsed as part of the request. `truncate` is a no-op
+        // in exactly that case, which is what this catches.
+        assert_eq!(old_len + read_count, req_bytes.len());
+        assert!(req_bytes.len() <= HTTP_REQUEST_SIZE_MAX);
+
         if read_count == 0 {
             // `take` signals the limit as a plain EOF, so tell the two apart:
             // a client that hung up is not a client that flooded us.
@@ -1796,7 +2247,12 @@ fn http_read_request<R: Read>(reader: R, req_bytes: &mut Vec<u8>) -> Result<(), 
         let mut headers = [httparse::EMPTY_HEADER; 1024];
         let mut req = httparse::Request::new(&mut headers);
         match req.parse(req_bytes) {
-            Ok(parsed) if !parsed.is_partial() => return Ok(()),
+            Ok(parsed) if !parsed.is_partial() => {
+                // A complete request was parsed out of these bytes, so the
+                // caller can parse them again.
+                assert!(!req_bytes.is_empty());
+                return Ok(());
+            }
             Ok(_) => {}
             Err(_) => return Err(HttpReadError::Malformed),
         }
@@ -1808,6 +2264,10 @@ where
     F: Fn(httparse::Request<'_, '_>, TcpStream) + Send + Sync + Clone + 'static,
 {
     let addr: SocketAddr = "127.0.0.1:8001".parse().unwrap();
+    // This server renders local files with no authentication of any kind: it
+    // must never be reachable from outside this machine.
+    assert!(addr.ip().is_loopback());
+    assert!(addr.port() > 0);
 
     let listener = TcpListener::bind(addr)?;
     println!("Open: http://{}/blog", addr);
@@ -1851,6 +2311,9 @@ fn wait_for_next_generation(
     seen: u64,
     timeout: Duration,
 ) -> Option<u64> {
+    // A zero timeout would turn the caller's keepalive loop into a spin.
+    assert!(!timeout.is_zero());
+
     let (lock, cvar) = mtx_cond;
     let guard = lock.lock().unwrap();
     let (guard, _) = cvar
@@ -1858,7 +2321,14 @@ fn wait_for_next_generation(
         .unwrap();
 
     // A timeout leaves the generation exactly where it was.
-    (*guard != seen).then_some(*guard)
+    let res = (*guard != seen).then_some(*guard);
+
+    // `seen` was read from this same counter, which only ever increments, so a
+    // change can only be an increase. A decrease would mean a client waits for
+    // a rebuild that already happened.
+    assert!(res.is_none_or(|generation| generation > seen));
+
+    res
 }
 
 fn live_reload(
@@ -1879,6 +2349,7 @@ fn live_reload(
     loop {
         match wait_for_next_generation(&mtx_cond, seen, LIVE_RELOAD_KEEPALIVE) {
             Some(generation) => {
+                assert!(generation > seen);
                 seen = generation;
                 write!(resp, "data: foobar\n\n").map_err(|_| ())?;
                 resp.flush().map_err(|_| ())?;
@@ -1900,6 +2371,13 @@ fn live_reload(
 fn main() -> ExitCode {
     let mut args = std::env::args().skip(1);
     let arg1 = args.next();
+    // The only argument this program takes. Silently ignoring an unknown one
+    // meant `watchh` generated the blog once and exited looking like a success.
+    assert!(
+        arg1.is_none() || arg1.as_deref() == Some("watch"),
+        "usage: blog [watch]"
+    );
+    assert_eq!(None, args.next(), "usage: blog [watch]");
 
     check_langs();
 
@@ -1917,6 +2395,9 @@ fn main() -> ExitCode {
         let serve_root = std::env::current_dir()
             .and_then(|d| d.canonicalize())
             .expect("failed to resolve the current directory");
+        // `http_resolve_path` confines every served path to this root, which
+        // it can only do if the root is absolute and free of symlinks.
+        assert!(serve_root.is_absolute());
 
         let mtx_cond = Arc::new((Mutex::new(0u64), Condvar::new()));
 
@@ -1928,7 +2409,12 @@ fn main() -> ExitCode {
 
         if let Err(err) = http_serve(move |req, stream| {
             let mut resp = BufWriter::new(stream);
-            match (req.method.unwrap(), req.path.unwrap()) {
+            // `http_read_request` returned a complete request, and httparse
+            // fills both fields in before reporting one.
+            match (
+                req.method.expect("a complete request has a method"),
+                req.path.expect("a complete request has a path"),
+            ) {
                 ("GET", "/blog") => {
                     // The client can vanish at any point: never panic on a write.
                     let _ = write!(
@@ -1940,7 +2426,7 @@ fn main() -> ExitCode {
                     let _ = live_reload(resp, mtx_cond.clone());
                 }
                 _ => {
-                    let url_path = req.path.unwrap();
+                    let url_path = req.path.expect("a complete request has a path");
                     let path = match http_resolve_path(&serve_root, url_path) {
                         Some(path) => path,
                         None => {
@@ -2695,6 +3181,32 @@ mod tests {
 
         assert!(!is_ignored_markdown_file(Path::new("an_article.md")));
         assert!(!is_ignored_markdown_file(Path::new("readme.md")));
+    }
+
+    // --- type invariants
+
+    #[test]
+    #[should_panic(expected = "modified before created")]
+    fn an_article_modified_before_it_was_created_is_rejected() {
+        let gs = GitStat {
+            creation_date: "2026-01-01T00:00:00+00:00".to_owned(),
+            modification_date: "2024-01-01T00:00:00+00:00".to_owned(),
+            path_from_git_root: "a.md".to_owned(),
+        };
+        gs.assert_invariants();
+    }
+
+    #[test]
+    #[should_panic]
+    fn a_page_not_named_after_its_markdown_is_rejected() {
+        let mut a = test_article(
+            "a.html",
+            "A",
+            "2024-01-01T00:00:00+00:00",
+            "2024-01-01T00:00:00+00:00",
+        );
+        a.html_path = PathBuf::from("other.html");
+        a.assert_invariants();
     }
 
     #[test]
