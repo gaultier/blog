@@ -1634,9 +1634,10 @@ fn tags_page_build(
 
         writeln!(
             sb,
-            "<li id=\"{}\"><span class=\"tag\">{}</span><ul>",
+            "<li id=\"{}\"><span class=\"tag\">{}</span>: {}<ul>",
             html_slug(tag),
-            text_sanitize_for_html(tag, false)
+            text_sanitize_for_html(tag, false),
+            articles.len(),
         )?;
 
         for a in articles {
