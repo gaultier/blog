@@ -38,7 +38,7 @@ hljs.registerLanguage("odin", function(e) {
   }
 });
 
-hljs.registerLanguage("awk", function(e) {
+hljs.registerLanguage("awk", function() {
   return {
     aliases: ["awk", "awklang", "awk-lang"],
     keywords: {
@@ -51,7 +51,7 @@ hljs.registerLanguage("awk", function(e) {
   }
 });
 
-hljs.registerLanguage("dtrace", function(e) {
+hljs.registerLanguage("dtrace", function() {
   return {
     aliases: ["d", "dtracelang", "dtrace-lang"],
     keywords: {
@@ -70,29 +70,29 @@ document.querySelectorAll('.code-hl').forEach(el => {
 });
 
 document.body.style['color-scheme'] = 'light dark';
-let colorScheme = localStorage.getItem('colorScheme');
+const colorScheme = localStorage.getItem('colorScheme');
 if (colorScheme !== null) {
   document.body.style.colorScheme = colorScheme;
 }
 
-let dark_light_mode_button = document.querySelector('#dark-light-mode');
-dark_light_mode_button.textContent = document.body.style.colorScheme === 'dark' ? '🔆' : '🌙' ;
-dark_light_mode_button.addEventListener('click', function(e) {
+const darkLightModeButton = document.getElementById('dark-light-mode');
+darkLightModeButton.textContent = document.body.style.colorScheme === 'dark' ? '🔆' : '🌙' ;
+darkLightModeButton.addEventListener('click', function(e) {
   e.preventDefault();
 
-  let cur = document.body.style.colorScheme || 'dark';
+  const cur = document.body.style.colorScheme || 'dark';
   if (cur === 'dark') {
     document.body.style.colorScheme = 'light';
-    dark_light_mode_button.textContent = '🌙';
+    darkLightModeButton.textContent = '🌙';
   } else {
     document.body.style.colorScheme = 'dark';
-    dark_light_mode_button.textContent = '🔆';
+    darkLightModeButton.textContent = '🔆';
   }
 
   localStorage.setItem('colorScheme', document.body.style.colorScheme);
 });
 
-document.querySelectorAll('.copy-code').forEach((el, _i) => {
+document.querySelectorAll('.copy-code').forEach(el => {
   el.addEventListener('click', function(e){
     const pre = el.parentElement.parentElement;
     const codeBlock = pre.querySelector('code');
