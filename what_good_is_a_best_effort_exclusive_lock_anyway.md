@@ -1,10 +1,10 @@
-Title: What good is a best effort exclusive lock, anyway?
+Title: What good is a best-effort exclusive lock, anyway?
 Tags: Concurrency, SQL, CockroachDB, Optimization
 ---
 
 An interesting paradox came up last week at work. A colleague implemented an exclusive lock in [Kratos](https://github.com/ory/kratos) on a row in the database to prevent two different requests from using the same one-time code. I'm simplifying but that's the idea. So correctness is vital.
 
-For mainstream databases like Postgres and MySQL, that's simply done with `SELECT ... FOR UPDATE`, end of story. No one else can concurrently read (in a locking way) or write the selected rows: they block on them until the surrounding SQL transaction is finished (either committed or rolled back).
+For mainstream databases like Postgres and MySQL, that's simply done with `SELECT ... FOR UPDATE`, end of story. No one else can concurrently read (in a locking way, plain `SELECT`s still work) or write the selected rows: they block on them until the surrounding SQL transaction is finished (either committed or rolled back).
 
 But we also support CockroachDB, which supports that syntax as well, except it does something *a bit* [different](https://docs.cockroachlabs.com/docs/v26.2/select-for-update#lock-behavior-under-serializable-isolation):
 
