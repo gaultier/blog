@@ -22,7 +22,7 @@ That works... but it has [downsides](/blog/optimization-tales-cockroachdb-part2-
 
 ## A best-effort exclusive lock, come again?
 
-Ok, so, if you're like me, you're probably currently reading the quote from the CockroachDB docs again and wondering: wait, what's a 'best-effort exclusive lock'? Why does it even exist? It is either exclusive, or it is not! Is it salesman snakeoil>
+Ok, so, if you're like me, you're probably currently reading the quote from the CockroachDB docs again and wondering: wait, what's a 'best-effort exclusive lock'? Why does it even exist? It is either exclusive, or it is not! Is it salesman snake oil?
 
 Imagine a mutex that *sometimes* works. *Sometimes* it guarantees exclusive access to the shared resource, *sometimes* not. The application would crash and burn very quickly!
 
@@ -49,7 +49,7 @@ It turns out, there is a real reason. Imagine a concert ticket sale with a thund
 ```sql
 BEGIN;
 
- -- 'Touch' the row.
+-- 'Touch' the row.
 SELECT tickets_sold FROM concerts WHERE id = ?;
 
 -- Lots of expensive SQL for billing, credit card stuff ...
@@ -79,16 +79,19 @@ Thus the optimized version is:
 ```diff
  BEGIN;
 
- -- 'Touch' the row.
+- -- 'Touch' the row.
 - SELECT tickets_sold FROM concerts WHERE id = ?;
++ -- 'Touch' the row and take a best effort lock on it. 
++ -- Concurrent transactions now wait here.
 + SELECT tickets_sold FROM concerts WHERE id = ? FOR UPDATE;
 
- -- Lots of expensive SQL for billing, credit card stuff ...
+  -- Lots of expensive SQL for billing, credit card stuff ...
 
- -- This will potentially contend a lot.
- UPDATE concerts SET tickets_sold = tickets_sold + 1 WHERE id = ?;
+- -- This will potentially contend a lot.
++ -- Now this is much less contended.
+  UPDATE concerts SET tickets_sold = tickets_sold + 1 WHERE id = ?;
 
- COMMIT; -- The ticket is bought!
+  COMMIT; -- The ticket is bought!
 ```
 
 

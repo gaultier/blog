@@ -115,7 +115,7 @@ That way, <code>FOR UPDATE</code> does the expected thing: full exclusive lock, 
   <a class="title" href="#a-best-effort-exclusive-lock-come-again">A best-effort exclusive lock, come again?</a>
   <a class="hash-anchor" href="#a-best-effort-exclusive-lock-come-again" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p>Ok, so, if you're like me, you're probably currently reading the quote from the CockroachDB docs again and wondering: wait, what's a 'best-effort exclusive lock'? Why does it even exist? It is either exclusive, or it is not! Is it salesman snakeoil&gt;</p>
+<p>Ok, so, if you're like me, you're probably currently reading the quote from the CockroachDB docs again and wondering: wait, what's a 'best-effort exclusive lock'? Why does it even exist? It is either exclusive, or it is not! Is it salesman snake oil?</p>
 <p>Imagine a mutex that <em>sometimes</em> works. <em>Sometimes</em> it guarantees exclusive access to the shared resource, <em>sometimes</em> not. The application would crash and burn very quickly!</p>
 <p>The key here is: our SQL statement is running inside a <code>SERIALIZABLE</code> transaction. CockroachDB detects read-write or write-write conflicts from other concurrent transactions on the same rows (to simplify a bit<sup class="footnote-ref"><a href="#fn-1" id="fnref-1" data-footnote-ref>1</a></sup>
 ).</p>
@@ -140,7 +140,7 @@ A serial execution is one in which each SQL-transaction executes to completion b
   </div>
   <code class="language-sql"><span class="line-number"></span><span class="code-hl">BEGIN;</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl"> -- 'Touch' the row.</span>
+<span class="line-number"></span><span class="code-hl">-- 'Touch' the row.</span>
 <span class="line-number"></span><span class="code-hl">SELECT tickets_sold FROM concerts WHERE id = ?;</span>
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">-- Lots of expensive SQL for billing, credit card stuff ...</span>
@@ -164,16 +164,19 @@ A serial execution is one in which each SQL-transaction executes to completion b
   </div>
   <code class="language-diff"><span class="line-number"></span><span class="code-hl"> BEGIN;</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl"> -- 'Touch' the row.</span>
+<span class="line-number"></span><span class="code-hl">- -- 'Touch' the row.</span>
 <span class="line-number"></span><span class="code-hl">- SELECT tickets_sold FROM concerts WHERE id = ?;</span>
+<span class="line-number"></span><span class="code-hl">+ -- 'Touch' the row and take a best effort lock on it. </span>
+<span class="line-number"></span><span class="code-hl">+ -- Concurrent transactions now wait here.</span>
 <span class="line-number"></span><span class="code-hl">+ SELECT tickets_sold FROM concerts WHERE id = ? FOR UPDATE;</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl"> -- Lots of expensive SQL for billing, credit card stuff ...</span>
+<span class="line-number"></span><span class="code-hl">  -- Lots of expensive SQL for billing, credit card stuff ...</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl"> -- This will potentially contend a lot.</span>
-<span class="line-number"></span><span class="code-hl"> UPDATE concerts SET tickets_sold = tickets_sold + 1 WHERE id = ?;</span>
+<span class="line-number"></span><span class="code-hl">- -- This will potentially contend a lot.</span>
+<span class="line-number"></span><span class="code-hl">+ -- Now this is much less contended.</span>
+<span class="line-number"></span><span class="code-hl">  UPDATE concerts SET tickets_sold = tickets_sold + 1 WHERE id = ?;</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl"> COMMIT; -- The ticket is bought!</span>
+<span class="line-number"></span><span class="code-hl">  COMMIT; -- The ticket is bought!</span>
 </code></pre>
 <h2 id="what-makes-it-best-effort-exactly">
   <a class="title" href="#what-makes-it-best-effort-exactly">What makes it best-effort, exactly?</a>
