@@ -26,6 +26,7 @@ Ok, so, if you're like me, you're probably currently reading the quote from the 
 
 Imagine a mutex that *sometimes* works. *Sometimes* it guarantees exclusive access to the shared resource, *sometimes* not. The application would crash and burn very quickly!
 
+Would you buy a rain jacket that is waterproof 'here and there'? A car with brakes that work 'at times'?
 
 The key here is: our SQL statement is running inside a `SERIALIZABLE` transaction. CockroachDB detects read-write or write-write conflicts from other concurrent transactions on the same rows (to simplify a bit[^1]).
 
