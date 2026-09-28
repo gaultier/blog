@@ -31,7 +31,7 @@ The key here is: our SQL statement is running inside a `SERIALIZABLE` transactio
 
 If such a conflict happens, CockroachDB guarantees that at most one transaction commits and the others are forced to restart from the top. 
 
-> From (Second Informal Review Draft) ISO/IEC 9075:1992, Database Language SQL- July 30, 1992: The execution of concurrent SQL-transactions at isolation level SERIALIZABLE is guaranteed to be serializable.
+> From (Second Informal Review Draft) ISO/IEC 9075:1992, Database Language SQL — July 30, 1992: The execution of concurrent SQL-transactions at isolation level SERIALIZABLE is guaranteed to be serializable.
 > A serializable execution is defined to be an execution of the operations of concurrently executing SQL-transactions that produces the same effect as some serial execution of those same SQL-transactions.
 > A serial execution is one in which each SQL-transaction executes to completion before the next SQL-transaction begins.
 
@@ -39,7 +39,7 @@ There is a serial (i.e. sequential) order of all the transactions that happened 
 
 So, this means that, assuming the `SERIALIZABLE` transaction 'touches' all the right rows at the start (by doing a dummy `SELECT` or `UPDATE my_table SET id = id ...`), we actually do not need any lock.
 
-But then, why did CockroachDB even implement `SELECT FOR UPDATE`? Was it just for standard compliance?
+But then, why did CockroachDB even implement `SELECT ... FOR UPDATE`? Was it just for standard compliance?
 
 
 ## Why does it even exist?
@@ -70,6 +70,16 @@ And it's fine if two or more transactions try at the same time: this is just a m
 
 As my colleague put it: if just half of them wait, that's already a big win for performance.
 
+
+## What makes it best-effort exactly
+
+The docs mention a key fact: 
+
+> SELECT ... FOR UPDATE and SELECT ... FOR SHARE are implemented as fast, in-memory unreplicated locks.
+
+So this is simple and fast, but indeed completely insufficient by itself to guarantee correcness in a multi-node setup (which we do run).
+
+Interestingly, that means that if two concurrent requests land on two different database nodes, for example in different regions, then the lock would not help performance.
 
 ## Conclusion
 

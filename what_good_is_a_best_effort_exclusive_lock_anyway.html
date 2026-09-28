@@ -89,6 +89,10 @@ Do not edit it by hand.
 </li>
 
   <li>
+    <a href="#what-makes-it-best-effort-exactly">What makes it best-effort exactly</a>
+</li>
+
+  <li>
     <a href="#conclusion">Conclusion</a>
 </li>
 </ul>
@@ -117,13 +121,13 @@ That way, <code>FOR UPDATE</code> does the expected thing: full exclusive lock, 
 ).</p>
 <p>If such a conflict happens, CockroachDB guarantees that at most one transaction commits and the others are forced to restart from the top.</p>
 <blockquote>
-<p>From (Second Informal Review Draft) ISO/IEC 9075:1992, Database Language SQL- July 30, 1992: The execution of concurrent SQL-transactions at isolation level SERIALIZABLE is guaranteed to be serializable.
+<p>From (Second Informal Review Draft) ISO/IEC 9075:1992, Database Language SQL — July 30, 1992: The execution of concurrent SQL-transactions at isolation level SERIALIZABLE is guaranteed to be serializable.
 A serializable execution is defined to be an execution of the operations of concurrently executing SQL-transactions that produces the same effect as some serial execution of those same SQL-transactions.
 A serial execution is one in which each SQL-transaction executes to completion before the next SQL-transaction begins.</p>
 </blockquote>
 <p>There is a serial (i.e. sequential) order of all the transactions that happened in the system, as if their execution never overlapped.</p>
 <p>So, this means that, assuming the <code>SERIALIZABLE</code> transaction 'touches' all the right rows at the start (by doing a dummy <code>SELECT</code> or <code>UPDATE my_table SET id = id ...</code>), we actually do not need any lock.</p>
-<p>But then, why did CockroachDB even implement <code>SELECT FOR UPDATE</code>? Was it just for standard compliance?</p>
+<p>But then, why did CockroachDB even implement <code>SELECT ... FOR UPDATE</code>? Was it just for standard compliance?</p>
 <h2 id="why-does-it-even-exist">
   <a class="title" href="#why-does-it-even-exist">Why does it even exist?</a>
   <a class="hash-anchor" href="#why-does-it-even-exist" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
@@ -148,6 +152,16 @@ A serial execution is one in which each SQL-transaction executes to completion b
 <p>Instead, if it's possible, we would like to simply wait for our turn to update the row. And that's exactly why <code>SELECT ... FOR UPDATE</code> exists in CockroachDB.</p>
 <p>And it's fine if two or more transactions try at the same time: this is just a mitigation strategy to prevent <em>all</em> of them from trying at the same time.</p>
 <p>As my colleague put it: if just half of them wait, that's already a big win for performance.</p>
+<h2 id="what-makes-it-best-effort-exactly">
+  <a class="title" href="#what-makes-it-best-effort-exactly">What makes it best-effort exactly</a>
+  <a class="hash-anchor" href="#what-makes-it-best-effort-exactly" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>The docs mention a key fact:</p>
+<blockquote>
+<p>SELECT ... FOR UPDATE and SELECT ... FOR SHARE are implemented as fast, in-memory unreplicated locks.</p>
+</blockquote>
+<p>So this is simple and fast, but indeed completely insufficient by itself to guarantee correcness in a multi-node setup (which we do run).</p>
+<p>Interestingly, that means that if two concurrent requests land on two different database nodes, for example in different regions, then the lock would not help performance.</p>
 <h2 id="conclusion">
   <a class="title" href="#conclusion">Conclusion</a>
   <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
