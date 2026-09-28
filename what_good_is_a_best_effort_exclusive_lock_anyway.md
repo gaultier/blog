@@ -20,7 +20,7 @@ That way, `FOR UPDATE` does the expected thing: full exclusive lock, done.
 
 That works... but it has [downsides](/blog/optimization-tales-cockroachdb-part2-slow-logout.html#second-optimization-read-committed). Turns out, the guarantees from `SERIALIZABLE` are really nice. Under weaker isolation levels, a littany of concurrency anomalies will occur, and that's hard to keep the application logic correct. Especially when concurrent transactions with different isolation levels exist in the codebase, possibly touching the same rows.
 
-## An best effort exclusive lock, come again?
+## A best effort exclusive lock, come again?
 
 Ok, so, if you're like me, you're probably currently reading the quote from the CockroachDB docs again and wondering: wait, what's a 'best effort exclusive lock' ? Why does it even exist? It is either exclusive, or it is not!
 

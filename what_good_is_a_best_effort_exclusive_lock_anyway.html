@@ -81,7 +81,7 @@ Do not edit it by hand.
 <ul>
 
   <li>
-    <a href="#an-best-effort-exclusive-lock-come-again">An best effort exclusive lock, come again?</a>
+    <a href="#a-best-effort-exclusive-lock-come-again">A best effort exclusive lock, come again?</a>
 </li>
 
   <li>
@@ -107,9 +107,9 @@ Do not edit it by hand.
 <p>I pointed it out to my colleague. His first instinct was to open the SQL transaction in the isolation level <code>READ COMMITTED</code>, which is the default for PostgreSQL but not for CockroachDB (<code>SERIALIZABLE</code> is the default).
 That way, <code>FOR UPDATE</code> does the expected thing: full exclusive lock, done.</p>
 <p>That works... but it has <a href="/blog/optimization-tales-cockroachdb-part2-slow-logout.html#second-optimization-read-committed">downsides</a>. Turns out, the guarantees from <code>SERIALIZABLE</code> are really nice. Under weaker isolation levels, a littany of concurrency anomalies will occur, and that's hard to keep the application logic correct. Especially when concurrent transactions with different isolation levels exist in the codebase, possibly touching the same rows.</p>
-<h2 id="an-best-effort-exclusive-lock-come-again">
-  <a class="title" href="#an-best-effort-exclusive-lock-come-again">An best effort exclusive lock, come again?</a>
-  <a class="hash-anchor" href="#an-best-effort-exclusive-lock-come-again" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+<h2 id="a-best-effort-exclusive-lock-come-again">
+  <a class="title" href="#a-best-effort-exclusive-lock-come-again">A best effort exclusive lock, come again?</a>
+  <a class="hash-anchor" href="#a-best-effort-exclusive-lock-come-again" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>Ok, so, if you're like me, you're probably currently reading the quote from the CockroachDB docs again and wondering: wait, what's a 'best effort exclusive lock' ? Why does it even exist? It is either exclusive, or it is not!</p>
 <p>Imagine a mutex that <em>sometimes</em> works. <em>Sometimes</em> it guarantees exclusive access to the shared resource, <em>sometimes</em> not. The application would crash and burn very quickly!</p>
