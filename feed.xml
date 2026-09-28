@@ -2,7 +2,7 @@
 <feed xmlns="http://www.w3.org/2005/Atom">
 <title>Philippe Gaultier's blog</title>
 <link href="https://gaultier.github.io/blog"/>
-<updated>2026-09-28T21:50:06+02:00</updated>
+<updated>2026-09-28T22:07:33+02:00</updated>
 <author>
   <name>Philippe Gaultier</name>
 </author>
@@ -453,7 +453,7 @@
 <title>What good is a best effort exclusive lock anyway?</title>
 <link href="https://gaultier.github.io/blog/what_good_is_a_best_effort_exclusive_lock_anyway.html"/>
 <id>urn:uuid:1bcb983e-3474-5dd5-90e9-051dda2684c5</id>
-<updated>2026-09-28T21:50:06+02:00</updated>
+<updated>2026-09-28T22:07:33+02:00</updated>
 <published>2026-09-28T21:50:06+02:00</published>
 </entry>
     </feed>

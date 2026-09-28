@@ -77,7 +77,20 @@ Do not edit it by hand.
   <h1>What good is a best effort exclusive lock anyway?</h1>
 <div class="tags"> <a href="/blog/articles-by-tag.html#concurrency" class="tag">Concurrency</a> <a href="/blog/articles-by-tag.html#sql" class="tag">SQL</a> <a href="/blog/articles-by-tag.html#cockroachdb" class="tag">CockroachDB</a> </div>
 </div>
-<p>An interesting paradoxon came up last week at work. A colleague implemented an exclusive lock in <a href="http://github.com/ory/kratos">Kratos</a> on a row in the database. For mainstream databases like Postgres and MySQL, that's simply done with <code>SELECT ... FOR UPDATE</code>, end of story. No one else can concurrently read or write the selected rows, they block on it, until the surrounding SQL transaction is finished (either committed or rolled back).</p>
+  <details class="toc"><summary>Table of contents</summary>
+<ul>
+
+  <li>
+    <a href="#why-does-it-even-exist">Why does it even exist</a>
+</li>
+
+  <li>
+    <a href="#conclusion">Conclusion</a>
+</li>
+</ul>
+</details>
+
+<p>An interesting paradoxon came up last week at work. A colleague implemented an exclusive lock in <a href="http://github.com/ory/kratos">Kratos</a> on a row in the database. For mainstream databases like Postgres and MySQL, that's simply done with <code>SELECT ... FOR UPDATE</code>, end of story. No one else can concurrently read (in a locking way) or write the selected rows: they block on it, until the surrounding SQL transaction is finished (either committed or rolled back).</p>
 <p>But we also support CockroachDB, which does also support that syntax, except this does something <em>a bit</em> different:</p>
 <blockquote>
 <p>When running under SERIALIZABLE isolation, SELECT ... FOR UPDATE and SELECT ... FOR SHARE locks should be thought of as best-effort, and should not be relied upon for correctness.</p>
@@ -99,9 +112,37 @@ A serializable execution is defined to be an execution of the operations of conc
 A serial execution is one in which each SQL-transaction executes to completion before the next SQL-transaction begins.</p>
 </blockquote>
 <p>There is a serial (i.e. sequential) order of all the transactions that happened in the system, as if their execution never overlapped.</p>
-<p>So, this means that, assuming the <code>SERIALIZABLE</code> transaction 'touches' all the right rows at the start (by doing a dummy <code>SELECT</code> or <code>UPDATE set id = id ...</code>), we actually do not need any lock.</p>
+<p>So, this means that, assuming the <code>SERIALIZABLE</code> transaction 'touches' all the right rows at the start (by doing a dummy <code>SELECT</code> or <code>UPDATE my_table set id = id ...</code>), we actually do not need any lock.</p>
 <p>But then, why did the CockroachDB even implement <code>SELECT FOR UPDATE</code>? Was it just for standard compliance?</p>
-<p>It turns out, there is a real reason.</p>
+<h2 id="why-does-it-even-exist">
+  <a class="title" href="#why-does-it-even-exist">Why does it even exist</a>
+  <a class="hash-anchor" href="#why-does-it-even-exist" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p>It turns out, there is a real reason. Imagine a concert ticket sale with a thundering herd of a 10 000 concurrent requests that try to all update the same row to buy their ticket when the sale opens, e.g.:</p>
+<pre>
+  <div class="code-header">
+    <span>Sql</span>
+    <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
+  </div>
+  <code class="language-sql"><span class="line-number"></span><span class="code-hl">BEGIN;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">-- Lots of expensive SQL...</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">UPDATE attendants SET count = count + 1 WHERE concert_id = ?;</span>
+<span class="line-number"></span><span class="code-hl"></span>
+<span class="line-number"></span><span class="code-hl">COMMIT;</span>
+</code></pre>
+<p>Only one transaction commits and all others retry from the start. That's great for correctness: when all of them (finally) finish, the count will have the right value, no double increments or lost increments can happen.</p>
+<p>However it is potentially very expensive to retry from the start (even though CockroachDB can automatically retry the transaction server-side in some cases).</p>
+<p>This is the definition of contention: it is slow for everyone even though it does not have to be: the operation is not costly in itself.</p>
+<p>Instead, if it's possible, we could like to simply wait for our turn to update the row. And that's exactly why <code>SELECT ... FOR UPDATE</code> exists in CockroachDB.</p>
+<p>And it's fine if two or more transactions try at the same time: this is just a mitigation strategy to avoid <em>all</em> of them to try at the same time.</p>
+<p>As my colleague put it: If only half of them wait, that's already a big win.</p>
+<h2 id="conclusion">
+  <a class="title" href="#conclusion">Conclusion</a>
+  <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
+<p><code>SERIALIZABLE</code> is great but sometimes expensive as I have written in the past.</p>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <div id="donate">

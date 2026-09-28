@@ -2,7 +2,7 @@ Title: What good is a best effort exclusive lock anyway?
 Tags: Concurrency, SQL, CockroachDB
 ---
 
-An interesting paradoxon came up last week at work. A colleague implemented an exclusive lock in [Kratos](http://github.com/ory/kratos) on a row in the database. For mainstream databases like Postgres and MySQL, that's simply done with `SELECT ... FOR UPDATE`, end of story. No one else can concurrently read or write the selected rows, they block on it, until the surrounding SQL transaction is finished (either committed or rolled back).
+An interesting paradoxon came up last week at work. A colleague implemented an exclusive lock in [Kratos](http://github.com/ory/kratos) on a row in the database. For mainstream databases like Postgres and MySQL, that's simply done with `SELECT ... FOR UPDATE`, end of story. No one else can concurrently read (in a locking way) or write the selected rows: they block on it, until the surrounding SQL transaction is finished (either committed or rolled back).
 
 But we also support CockroachDB, which does also support that syntax, except this does something *a bit* different:
 
@@ -33,9 +33,41 @@ If such a conflict happens, CockroachDB guarantees that up to one transaction co
 
 There is a serial (i.e. sequential) order of all the transactions that happened in the system, as if their execution never overlapped.
 
-So, this means that, assuming the `SERIALIZABLE` transaction 'touches' all the right rows at the start (by doing a dummy `SELECT` or `UPDATE set id = id ...`), we actually do not need any lock.
+So, this means that, assuming the `SERIALIZABLE` transaction 'touches' all the right rows at the start (by doing a dummy `SELECT` or `UPDATE my_table set id = id ...`), we actually do not need any lock.
 
 But then, why did the CockroachDB even implement `SELECT FOR UPDATE`? Was it just for standard compliance?
 
 
-It turns out, there is a real reason.
+## Why does it even exist
+
+It turns out, there is a real reason. Imagine a concert ticket sale with a thundering herd of a 10 000 concurrent requests that try to all update the same row to buy their ticket when the sale opens, e.g.: 
+
+```sql
+BEGIN;
+
+-- Lots of expensive SQL...
+
+UPDATE attendants SET count = count + 1 WHERE concert_id = ?;
+
+COMMIT;
+```
+
+
+
+Only one transaction commits and all others retry from the start. That's great for correctness: when all of them (finally) finish, the count will have the right value, no double increments or lost increments can happen. 
+
+However it is potentially very expensive to retry from the start (even though CockroachDB can automatically retry the transaction server-side in some cases). 
+
+This is the definition of contention: it is slow for everyone even though it does not have to be: the operation is not costly in itself.
+
+Instead, if it's possible, we could like to simply wait for our turn to update the row. And that's exactly why `SELECT ... FOR UPDATE` exists in CockroachDB. 
+
+And it's fine if two or more transactions try at the same time: this is just a mitigation strategy to avoid *all* of them to try at the same time. 
+
+As my colleague put it: If only half of them wait, that's already a big win.
+
+
+## Conclusion
+
+`SERIALIZABLE` is great but sometimes expensive as I have written in the past.
+
