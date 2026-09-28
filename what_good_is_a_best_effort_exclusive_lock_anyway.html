@@ -5,7 +5,7 @@ Do not edit it by hand.
 <!DOCTYPE html>
 <html>
 <head>
-<title>What good is a best effort exclusive lock anyway?</title>
+<title>What good is a best effort exclusive lock, anyway?</title>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <link type="application/atom+xml" href="/blog/feed.xml" rel="self">
@@ -74,14 +74,18 @@ Do not edit it by hand.
 <p class="publication-date">Published on 2026-09-28. Last modified on 2026-09-28.</p>
 </div>
 <div class="article-title">
-  <h1>What good is a best effort exclusive lock anyway?</h1>
+  <h1>What good is a best effort exclusive lock, anyway?</h1>
 <div class="tags"> <a href="/blog/articles-by-tag.html#concurrency" class="tag">Concurrency</a> <a href="/blog/articles-by-tag.html#sql" class="tag">SQL</a> <a href="/blog/articles-by-tag.html#cockroachdb" class="tag">CockroachDB</a> </div>
 </div>
   <details class="toc"><summary>Table of contents</summary>
 <ul>
 
   <li>
-    <a href="#why-does-it-even-exist">Why does it even exist</a>
+    <a href="#an-best-effort-exclusive-lock-come-again">An best effort exclusive lock, come again?</a>
+</li>
+
+  <li>
+    <a href="#why-does-it-even-exist">Why does it even exist?</a>
 </li>
 
   <li>
@@ -90,8 +94,9 @@ Do not edit it by hand.
 </ul>
 </details>
 
-<p>An interesting paradoxon came up last week at work. A colleague implemented an exclusive lock in <a href="http://github.com/ory/kratos">Kratos</a> on a row in the database. For mainstream databases like Postgres and MySQL, that's simply done with <code>SELECT ... FOR UPDATE</code>, end of story. No one else can concurrently read (in a locking way) or write the selected rows: they block on it, until the surrounding SQL transaction is finished (either committed or rolled back).</p>
-<p>But we also support CockroachDB, which does also support that syntax, except this does something <em>a bit</em> different:</p>
+<p>An interesting paradoxon came up last week at work. A colleague implemented an exclusive lock in <a href="http://github.com/ory/kratos">Kratos</a> on a row in the database to avoid two different requests from using a one time code. I'm simplifying but that's the idea. So correctness is vital.</p>
+<p>For mainstream databases like Postgres and MySQL, that's simply done with <code>SELECT ... FOR UPDATE</code>, end of story. No one else can concurrently read (in a locking way) or write the selected rows: they block on it, until the surrounding SQL transaction is finished (either committed or rolled back).</p>
+<p>But we also support CockroachDB, which does also support that syntax, except this does something <em>a bit</em> <a href="https://docs.cockroachlabs.com/docs/v26.2/select-for-update#lock-behavior-under-serializable-isolation">different</a>:</p>
 <blockquote>
 <p>When running under SERIALIZABLE isolation, SELECT ... FOR UPDATE and SELECT ... FOR SHARE locks should be thought of as best-effort, and should not be relied upon for correctness.</p>
 </blockquote>
@@ -99,12 +104,17 @@ Do not edit it by hand.
 <blockquote>
 <p>The desired ordering of concurrent accesses to one or more rows of a table expressed by your use of SELECT ... FOR UPDATE may not be preserved (that is, a transaction B against some table T that was supposed to wait behind another transaction A operating on T may not wait for transaction A).</p>
 </blockquote>
-<p>I pointed out that to my colleague. The fix was to open the SQL transaction in the isolation level <code>READ COMMITTED</code>, which is the default for PostgreSQL but not for CockroachDB (<code>SERIALIZABLE</code> is the default).
+<p>I pointed it out to my colleague. His first instinct was to open the SQL transaction in the isolation level <code>READ COMMITTED</code>, which is the default for PostgreSQL but not for CockroachDB (<code>SERIALIZABLE</code> is the default).
 That way, <code>FOR UPDATE</code> does the expected thing: full exclusive lock, done.</p>
-<p>That works... but it has downsides. Turns out, <code>SERIALIZABLE</code> is really nice. Under weaker isolation levels, a littany of concurrency anomalies will occur, and that's hard to keep the application logic correct.</p>
+<p>That works... but it has <a href="/blog/optimization-tales-cockroachdb-part2-slow-logout.html#second-optimization-read-committed">downsides</a>. Turns out, the guarantees from <code>SERIALIZABLE</code> are really nice. Under weaker isolation levels, a littany of concurrency anomalies will occur, and that's hard to keep the application logic correct. Especially when concurrent transactions with different isolation levels exist in the codebase, possibly touching the same rows.</p>
+<h2 id="an-best-effort-exclusive-lock-come-again">
+  <a class="title" href="#an-best-effort-exclusive-lock-come-again">An best effort exclusive lock, come again?</a>
+  <a class="hash-anchor" href="#an-best-effort-exclusive-lock-come-again" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
+</h2>
 <p>Ok, so, if you're like me, you're probably currently reading the quote from the CockroachDB docs again and wondering: wait, what's a 'best effort exclusive lock' ? Why does it even exist? It is either exclusive, or it is not!</p>
 <p>Imagine a mutex that <em>sometimes</em> works. <em>Sometimes</em> it guarantees exclusive access to the shared resource, <em>sometimes</em> not. The application would crash and burn very quickly!</p>
-<p>The key here is: our SQL statement is running inside a <code>SERIALIZABLE</code> transaction. CockroachDB detects read-write or write-write conflicts from other concurrent transactions on the same rows (to simplify a bit).</p>
+<p>The key here is: our SQL statement is running inside a <code>SERIALIZABLE</code> transaction. CockroachDB detects read-write or write-write conflicts from other concurrent transactions on the same rows (to simplify a bit<sup class="footnote-ref"><a href="#fn-1" id="fnref-1" data-footnote-ref>1</a></sup>
+).</p>
 <p>If such a conflict happens, CockroachDB guarantees that up to one transaction commits and the others are forced to restart from the top.</p>
 <blockquote>
 <p>From : (Second Informal Review Draft) ISO/IEC 9075:1992, Database Language SQL- July 30, 1992: The execution of concurrent SQL-transactions at isolation level SERIALIZABLE is guaranteed to be serializable.
@@ -115,7 +125,7 @@ A serial execution is one in which each SQL-transaction executes to completion b
 <p>So, this means that, assuming the <code>SERIALIZABLE</code> transaction 'touches' all the right rows at the start (by doing a dummy <code>SELECT</code> or <code>UPDATE my_table set id = id ...</code>), we actually do not need any lock.</p>
 <p>But then, why did the CockroachDB even implement <code>SELECT FOR UPDATE</code>? Was it just for standard compliance?</p>
 <h2 id="why-does-it-even-exist">
-  <a class="title" href="#why-does-it-even-exist">Why does it even exist</a>
+  <a class="title" href="#why-does-it-even-exist">Why does it even exist?</a>
   <a class="hash-anchor" href="#why-does-it-even-exist" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
 <p>It turns out, there is a real reason. Imagine a concert ticket sale with a thundering herd of a 10 000 concurrent requests that try to all update the same row to buy their ticket when the sale opens, e.g.:</p>
@@ -126,23 +136,33 @@ A serial execution is one in which each SQL-transaction executes to completion b
   </div>
   <code class="language-sql"><span class="line-number"></span><span class="code-hl">BEGIN;</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">-- Lots of expensive SQL...</span>
+<span class="line-number"></span><span class="code-hl">-- Lots of expensive SQL for billing, credit card stuff ...</span>
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">UPDATE attendants SET count = count + 1 WHERE concert_id = ?;</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">COMMIT;</span>
+<span class="line-number"></span><span class="code-hl">COMMIT; -- The ticket is bought!</span>
 </code></pre>
-<p>Only one transaction commits and all others retry from the start. That's great for correctness: when all of them (finally) finish, the count will have the right value, no double increments or lost increments can happen.</p>
-<p>However it is potentially very expensive to retry from the start (even though CockroachDB can automatically retry the transaction server-side in some cases).</p>
+<p>Only one transaction commits and all others retry from the start. That's great for correctness: when all transactions (finally) finish, the count will have the right value, no double increments or lost increments can happen.</p>
+<p>However it is potentially very expensive to retry from the start of the transaction (even though CockroachDB can automatically retry the transaction server-side in some cases, transparently to the application).</p>
 <p>This is the definition of contention: it is slow for everyone even though it does not have to be: the operation is not costly in itself.</p>
 <p>Instead, if it's possible, we could like to simply wait for our turn to update the row. And that's exactly why <code>SELECT ... FOR UPDATE</code> exists in CockroachDB.</p>
-<p>And it's fine if two or more transactions try at the same time: this is just a mitigation strategy to avoid <em>all</em> of them to try at the same time.</p>
-<p>As my colleague put it: If only half of them wait, that's already a big win.</p>
+<p>And it's fine if two or more transactions try at the same time: this is just a mitigation strategy to avoid <em>all</em> of them from trying at the same time.</p>
+<p>As my colleague put it: if just half of them do wait, that's already a big win for performance.</p>
 <h2 id="conclusion">
   <a class="title" href="#conclusion">Conclusion</a>
   <a class="hash-anchor" href="#conclusion" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>
 </h2>
-<p><code>SERIALIZABLE</code> is great but sometimes expensive as I have written in the past.</p>
+<p><code>SERIALIZABLE</code> is great but sometimes expensive as I have written in the past. Sometimes, <a href="/blog/optimization-tales-cockroachdb-part2-slow-logout.html">making the writes conditional</a> is the answer.
+Other times, <a href="/blog/optimization-tales-cockroachdb-part3-slow-list-messages.html">writing to another range than the hot one</a> is the solution. And sometimes, a little 'best effort' wait is all you need.</p>
+<section class="footnotes" data-footnotes>
+<ol>
+<li id="fn-1">
+<p>
+I have written about the details <a href="http://127.0.0.1:8001/blog/optimization-tales-cockroachdb-part5-uuid.html">here</a>: CockroachDB observes conflicts on <em>key intervals</em>, to be precise.<a href="#fnref-1" class="footnote-backref" data-footnote-backref data-footnote-backref-idx="1" aria-label="Back to reference 1">↩</a>
+</p>
+</li>
+</ol>
+</section>
 <p><a href="/blog"> ⏴ Back to all articles</a></p>
 
 <div id="donate">

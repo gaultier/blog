@@ -478,6 +478,7 @@ summary {
 .toc  {
   border: 1px solid var(--color-less-important);
   border-radius: .2rem;
+  margin-bottom: 3rem;
 }
 
 
