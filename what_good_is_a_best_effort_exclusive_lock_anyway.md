@@ -51,7 +51,7 @@ BEGIN;
 
 -- Lots of expensive SQL for billing, credit card stuff ...
 
-UPDATE attendants SET count = count + 1 WHERE concert_id = ?;
+UPDATE stats SET attendants_count = attendants_count + 1 WHERE concert_id = ?;
 
 COMMIT; -- The ticket is bought!
 ```

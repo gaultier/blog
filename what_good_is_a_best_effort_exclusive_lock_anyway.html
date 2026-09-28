@@ -138,7 +138,7 @@ A serial execution is one in which each SQL-transaction executes to completion b
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">-- Lots of expensive SQL for billing, credit card stuff ...</span>
 <span class="line-number"></span><span class="code-hl"></span>
-<span class="line-number"></span><span class="code-hl">UPDATE attendants SET count = count + 1 WHERE concert_id = ?;</span>
+<span class="line-number"></span><span class="code-hl">UPDATE stats SET attendants_count = attendants_count + 1 WHERE concert_id = ?;</span>
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">COMMIT; -- The ticket is bought!</span>
 </code></pre>
