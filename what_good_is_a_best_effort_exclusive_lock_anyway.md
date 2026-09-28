@@ -49,9 +49,11 @@ It turns out, there is a real reason. Imagine a concert ticket sale with a thund
 ```sql
 BEGIN;
 
+SELECT tickets_sold FROM concerts WHERE id = ?; -- 'Touch' the row.
+
 -- Lots of expensive SQL for billing, credit card stuff ...
 
-UPDATE stats SET attendants_count = attendants_count + 1 WHERE concert_id = ?;
+UPDATE concerts SET tickets_sold = tickets_sold + 1 WHERE id = ?;
 
 COMMIT; -- The ticket is bought!
 ```
