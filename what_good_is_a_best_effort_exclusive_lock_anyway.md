@@ -22,7 +22,7 @@ That works... but it has [downsides](/blog/optimization-tales-cockroachdb-part2-
 
 ## A best-effort exclusive lock, come again?
 
-Ok, so, if you're like me, you're probably currently reading the quote from the CockroachDB docs again and wondering: wait, what's a 'best-effort exclusive lock'? Why does it even exist? It is either exclusive, or it is not!
+Ok, so, if you're like me, you're probably currently reading the quote from the CockroachDB docs again and wondering: wait, what's a 'best-effort exclusive lock'? Why does it even exist? It is either exclusive, or it is not! Is it salesman snakeoil>
 
 Imagine a mutex that *sometimes* works. *Sometimes* it guarantees exclusive access to the shared resource, *sometimes* not. The application would crash and burn very quickly!
 
@@ -37,7 +37,7 @@ If such a conflict happens, CockroachDB guarantees that at most one transaction 
 
 There is a serial (i.e. sequential) order of all the transactions that happened in the system, as if their execution never overlapped.
 
-So, this means that, assuming the `SERIALIZABLE` transaction 'touches' all the right rows at the start (by doing a dummy `SELECT` or `UPDATE my_table SET id = id ...`), we actually do not need any lock. The application retries the transaction that were forced to restart, they eventually succeed, and voila.
+So, this means that, assuming the `SERIALIZABLE` transaction 'touches' all the right rows at the start (by doing a dummy `SELECT` or `UPDATE my_table SET id = id ...`), we actually do not need any lock. The application retries the transactions that were forced to restart, they eventually succeed, and voila.
 
 But then, why did CockroachDB even implement `SELECT ... FOR UPDATE`? Was it just for standard compliance?
 
@@ -49,10 +49,12 @@ It turns out, there is a real reason. Imagine a concert ticket sale with a thund
 ```sql
 BEGIN;
 
-SELECT tickets_sold FROM concerts WHERE id = ?; -- 'Touch' the row.
+ -- 'Touch' the row.
+SELECT tickets_sold FROM concerts WHERE id = ?;
 
 -- Lots of expensive SQL for billing, credit card stuff ...
 
+-- This will potentially contend a lot.
 UPDATE concerts SET tickets_sold = tickets_sold + 1 WHERE id = ?;
 
 COMMIT; -- The ticket is bought!
@@ -72,16 +74,34 @@ And it's fine if two or more transactions try at the same time: this is just a m
 
 As my colleague put it: if just half of them wait, that's already a big win for performance.
 
+Thus the optimized version is:
 
-## What makes it best-effort exactly
+```diff
+ BEGIN;
+
+ -- 'Touch' the row.
+- SELECT tickets_sold FROM concerts WHERE id = ?;
++ SELECT tickets_sold FROM concerts WHERE id = ? FOR UPDATE;
+
+ -- Lots of expensive SQL for billing, credit card stuff ...
+
+ -- This will potentially contend a lot.
+ UPDATE concerts SET tickets_sold = tickets_sold + 1 WHERE id = ?;
+
+ COMMIT; -- The ticket is bought!
+```
+
+
+## What makes it best-effort, exactly?
 
 The docs mention a key fact: 
 
 > SELECT ... FOR UPDATE and SELECT ... FOR SHARE are implemented as fast, in-memory unreplicated locks.
+> If a lease transfer or range split/merge occurs on a range held by an unreplicated lock, the lock is dropped.
 
-So this is simple and fast, but indeed completely insufficient by itself to guarantee correcness in a multi-node setup (which we do run).
+So this is simple and fast, but indeed completely insufficient by itself to guarantee correctness in a multi-node setup (which we do run).
 
-Interestingly, that means that if two concurrent requests land on two different database nodes, for example in different regions, then the lock would not help performance.
+Interestingly, the last sentence means that nothing has to fail (like a node crashing) for the lock to be dropped.
 
 ## Conclusion
 
