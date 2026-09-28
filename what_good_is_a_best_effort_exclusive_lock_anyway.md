@@ -37,7 +37,7 @@ If such a conflict happens, CockroachDB guarantees that at most one transaction 
 
 There is a serial (i.e. sequential) order of all the transactions that happened in the system, as if their execution never overlapped.
 
-So, this means that, assuming the `SERIALIZABLE` transaction 'touches' all the right rows at the start (by doing a dummy `SELECT` or `UPDATE my_table SET id = id ...`), we actually do not need any lock.
+So, this means that, assuming the `SERIALIZABLE` transaction 'touches' all the right rows at the start (by doing a dummy `SELECT` or `UPDATE my_table SET id = id ...`), we actually do not need any lock. The application retries the transaction that were forced to restart, they eventually succeed, and voila.
 
 But then, why did CockroachDB even implement `SELECT ... FOR UPDATE`? Was it just for standard compliance?
 
