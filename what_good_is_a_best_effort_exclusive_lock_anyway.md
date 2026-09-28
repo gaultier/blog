@@ -29,7 +29,7 @@ Imagine a mutex that *sometimes* works. *Sometimes* it guarantees exclusive acce
 
 The key here is: our SQL statement is running inside a `SERIALIZABLE` transaction. CockroachDB detects read-write or write-write conflicts from other concurrent transactions on the same rows (to simplify a bit[^1]).
 
-If such a conflict happens, CockroachDB guarantees that at most one transaction commits and the others are forced to restart from the top. 
+If such a conflict happens, CockroachDB guarantees that at most one transaction commits and the others are forced to restart from the top (in the worst case; in some cases, concurrent writes simply block until the transaction is finished and then they can continue and finish their transaction). 
 
 > From (Second Informal Review Draft) ISO/IEC 9075:1992, Database Language SQL — July 30, 1992: The execution of concurrent SQL-transactions at isolation level SERIALIZABLE is guaranteed to be serializable.
 > A serializable execution is defined to be an execution of the operations of concurrently executing SQL-transactions that produces the same effect as some serial execution of those same SQL-transactions.

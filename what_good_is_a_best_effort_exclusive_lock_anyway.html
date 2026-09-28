@@ -119,7 +119,7 @@ That way, <code>FOR UPDATE</code> does the expected thing: full exclusive lock, 
 <p>Imagine a mutex that <em>sometimes</em> works. <em>Sometimes</em> it guarantees exclusive access to the shared resource, <em>sometimes</em> not. The application would crash and burn very quickly!</p>
 <p>The key here is: our SQL statement is running inside a <code>SERIALIZABLE</code> transaction. CockroachDB detects read-write or write-write conflicts from other concurrent transactions on the same rows (to simplify a bit<sup class="footnote-ref"><a href="#fn-1" id="fnref-1" data-footnote-ref>1</a></sup>
 ).</p>
-<p>If such a conflict happens, CockroachDB guarantees that at most one transaction commits and the others are forced to restart from the top.</p>
+<p>If such a conflict happens, CockroachDB guarantees that at most one transaction commits and the others are forced to restart from the top (in the worst case; in some cases, concurrent writes simply block until the transaction is finished and then they can continue and finish their transaction).</p>
 <blockquote>
 <p>From (Second Informal Review Draft) ISO/IEC 9075:1992, Database Language SQL — July 30, 1992: The execution of concurrent SQL-transactions at isolation level SERIALIZABLE is guaranteed to be serializable.
 A serializable execution is defined to be an execution of the operations of concurrently executing SQL-transactions that produces the same effect as some serial execution of those same SQL-transactions.
