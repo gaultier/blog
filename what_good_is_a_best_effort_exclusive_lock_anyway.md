@@ -77,11 +77,11 @@ As my colleague put it: if just half of them wait, that's already a big win for 
 Thus the optimized version is:
 
 ```diff
- BEGIN;
+  BEGIN;
 
 - -- 'Touch' the row.
 - SELECT tickets_sold FROM concerts WHERE id = ?;
-+ -- 'Touch' the row and take a best effort lock on it. 
++ -- 'Touch' the row and take a best-effort lock on it.
 + -- Concurrent transactions now wait here.
 + SELECT tickets_sold FROM concerts WHERE id = ? FOR UPDATE;
 
@@ -102,7 +102,7 @@ The docs mention a key fact:
 > SELECT ... FOR UPDATE and SELECT ... FOR SHARE are implemented as fast, in-memory unreplicated locks.
 > If a lease transfer or range split/merge occurs on a range held by an unreplicated lock, the lock is dropped.
 
-So this is simple and fast, but indeed completely insufficient by itself to guarantee correctness in a multi-node setup (which we do run).
+So this is simple and fast, but indeed completely insufficient by itself to guarantee correctness.
 
 Interestingly, the last sentence means that nothing has to fail (like a node crashing) for the lock to be dropped.
 

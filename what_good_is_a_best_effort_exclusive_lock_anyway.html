@@ -162,11 +162,11 @@ A serial execution is one in which each SQL-transaction executes to completion b
     <span>Diff</span>
     <button class="copy-code" type="button"><svg aria-hidden="true" focusable="false" class="octicon octicon-copy" viewBox="0 0 16 16" width="16" height="16" fill="currentColor" display="inline-block" overflow="visible" style="vertical-align: text-bottom;"><path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z"></path><path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z"></path></svg></button>
   </div>
-  <code class="language-diff"><span class="line-number"></span><span class="code-hl"> BEGIN;</span>
+  <code class="language-diff"><span class="line-number"></span><span class="code-hl">  BEGIN;</span>
 <span class="line-number"></span><span class="code-hl"></span>
 <span class="line-number"></span><span class="code-hl">- -- 'Touch' the row.</span>
 <span class="line-number"></span><span class="code-hl">- SELECT tickets_sold FROM concerts WHERE id = ?;</span>
-<span class="line-number"></span><span class="code-hl">+ -- 'Touch' the row and take a best effort lock on it. </span>
+<span class="line-number"></span><span class="code-hl">+ -- 'Touch' the row and take a best-effort lock on it.</span>
 <span class="line-number"></span><span class="code-hl">+ -- Concurrent transactions now wait here.</span>
 <span class="line-number"></span><span class="code-hl">+ SELECT tickets_sold FROM concerts WHERE id = ? FOR UPDATE;</span>
 <span class="line-number"></span><span class="code-hl"></span>
@@ -187,7 +187,7 @@ A serial execution is one in which each SQL-transaction executes to completion b
 <p>SELECT ... FOR UPDATE and SELECT ... FOR SHARE are implemented as fast, in-memory unreplicated locks.
 If a lease transfer or range split/merge occurs on a range held by an unreplicated lock, the lock is dropped.</p>
 </blockquote>
-<p>So this is simple and fast, but indeed completely insufficient by itself to guarantee correctness in a multi-node setup (which we do run).</p>
+<p>So this is simple and fast, but indeed completely insufficient by itself to guarantee correctness.</p>
 <p>Interestingly, the last sentence means that nothing has to fail (like a node crashing) for the lock to be dropped.</p>
 <h2 id="conclusion">
   <a class="title" href="#conclusion">Conclusion</a>
