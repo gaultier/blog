@@ -98,6 +98,7 @@ Do not edit it by hand.
 </ul>
 </details>
 
+<p><em>Discussion: <a href="https://old.reddit.com/r/programming/comments/1wsqvwe/what_good_is_a_besteffort_exclusive_lock_anyway/?">/r/programming</a></em></p>
 <p>An interesting paradox came up last week at work. A colleague implemented an exclusive lock in <a href="https://github.com/ory/kratos">Kratos</a> on a row in the database to prevent two different requests from using the same one-time code. I'm simplifying but that's the idea. So correctness is vital.</p>
 <p>For mainstream databases like Postgres and MySQL, that's simply done with <code>SELECT ... FOR UPDATE</code>, end of story. No one else can concurrently read (in a locking way, plain <code>SELECT</code>s still work) or write the selected rows: they block on them until the surrounding SQL transaction is finished (either committed or rolled back).</p>
 <p>But we also support CockroachDB, which supports that syntax as well, except it does something <em>a bit</em> <a href="https://docs.cockroachlabs.com/docs/v26.2/select-for-update#lock-behavior-under-serializable-isolation">different</a>:</p>
