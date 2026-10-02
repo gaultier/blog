@@ -61,7 +61,7 @@ pid$target::*rand*: /self->t/ {}
 
 ## Blog implementation
 
-- [ ] gen: check that for foo.md in Git, foo.html is also in git 
+- [x] gen: check that for foo.md in Git, foo.html is also in git 
 - [ ] gen: check that for an image mentioned in markdown, the file is also in git
 - [ ] browser: search with `/` shortcut and appears on the side
 - [ ] browser: search shows the full title path to the match e.g. 'my_article: foo/bar/baz'
