@@ -462,6 +462,44 @@ fn git_get_articles_stats() -> anyhow::Result<Vec<GitStat>> {
     Ok(res)
 }
 
+fn git_get_html_files() -> anyhow::Result<Vec<String>> {
+    let start = Instant::now();
+
+    let output = Command::new("git")
+        .args(["ls-files", "*.html"])
+        .output()
+        .context("failed to get git html files")?;
+    ensure!(
+        output.status.success(),
+        "git ls-files failed: status={} stderr={}",
+        output.status,
+        String::from_utf8_lossy(&output.stderr)
+    );
+    // git writes warnings here without failing, which is not our problem to
+    // turn into a build error.
+    if !output.stderr.is_empty() {
+        eprintln!(
+            "git ls-files stderr: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+    }
+
+    let res: Vec<String> = output
+        .stdout
+        .split(|c| *c == b'\n')
+        .filter(|slice| !slice.is_empty())
+        .map(|slice| str::from_utf8(slice).unwrap().to_string())
+        .collect();
+
+    println!(
+        "🗄️ git ls-files: {} files in {} ms",
+        res.len(),
+        Instant::now().duration_since(start).as_millis()
+    );
+
+    Ok(res)
+}
+
 fn git_parse_log(output_str: &str) -> anyhow::Result<Vec<GitStat>> {
     let mut lines = output_str.lines().peekable();
 
@@ -1874,6 +1912,32 @@ fn generate_home_page(
     Ok(())
 }
 
+fn ensure_each_md_file_has_corresponding_html_file(git_stats: &[GitStat]) -> anyhow::Result<()> {
+    let git_html_files = git_get_html_files()?;
+
+    'outer: for md in git_stats {
+        if IGNORED_MARKDOWN_FILES.contains(&md.path_from_git_root.as_str()) {
+            continue;
+        }
+
+        let md = &md.path_from_git_root.strip_suffix(".md").unwrap();
+
+        for html in &git_html_files {
+            let html = &html.strip_suffix(".html").unwrap();
+
+            if md == html {
+                continue 'outer;
+            }
+        }
+        bail!(
+            "markdown file does not have a corresponding html file in git: {}",
+            md
+        );
+    }
+
+    Ok(())
+}
+
 fn generate_all(cache: &mut HashMap<u64, Article>) -> anyhow::Result<()> {
     let start = std::time::Instant::now();
     let html_header = fs::read("header.html").context("failed to read header.html")?;
@@ -1884,6 +1948,7 @@ fn generate_all(cache: &mut HashMap<u64, Article>) -> anyhow::Result<()> {
     assert!(!html_footer.is_empty(), "footer.html is empty");
 
     let git_stats = git_get_articles_stats()?;
+    ensure_each_md_file_has_corresponding_html_file(&git_stats)?;
     let git_stats_count = git_stats.len();
 
     let mut articles: Vec<Article> = Vec::with_capacity(git_stats.len());
