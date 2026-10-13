@@ -1,5 +1,6 @@
 ## Ideas for articles
 
+- [ ] Parse protobuf by hand
 - [ ] CRDB Optimization part 6: the slow partial index
 - [ ] DTrace + CGO lack of `:return` probe fire:
 ```d
