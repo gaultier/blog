@@ -1,5 +1,7 @@
 ## Ideas for articles
 
+- [ ] Less is more: `dig` under DTrace
+- [ ] Go data race avoidance guidelines
 - [ ] Parse protobuf by hand
 - [ ] CRDB Optimization part 6: the slow partial index
 - [ ] DTrace + CGO lack of `:return` probe fire:
