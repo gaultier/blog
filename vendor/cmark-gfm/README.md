@@ -13,7 +13,10 @@ now, changed for the blog:
   no longer lays footnotes out like GitHub does.
 - The arena allocator is thread-local, `cmark_arena_reset` keeps the first chunk
   for the next document, and `arena_realloc` grows the last allocation in place
-  (and no longer overflows when shrinking).
+  (and no longer overflows when shrinking). A thread's chunks are freed when it
+  exits.
+- The inline special-character tables (`SPECIAL_CHARS`, `SKIP_CHARS`) are
+  thread-local: every parse edits them, so threads parsing at once raced.
 - `cmark_node_get_literal_chunk` returns a literal without copying it.
 - `config.h`, `cmark-gfm_export.h` and `cmark-gfm_version.h`, which CMake used
   to generate, are written by hand.

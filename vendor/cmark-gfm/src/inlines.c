@@ -65,8 +65,8 @@ typedef struct subject{
   bool no_link_openers;
 } subject;
 
-// Extensions may populate this.
-static int8_t SKIP_CHARS[256];
+// Extensions may populate this. Thread-local, like `SPECIAL_CHARS`.
+static _Thread_local int8_t SKIP_CHARS[256];
 
 static CMARK_INLINE bool S_is_line_end_char(char c) {
   return (c == '\n' || c == '\r');
@@ -1375,7 +1375,11 @@ static cmark_node *handle_newline(subject *subj) {
 }
 
 // "\r\n\\`&_*[]<!"
-static int8_t SPECIAL_CHARS[256] = {
+//
+// Every parse adds the characters of its extensions here when it starts
+// parsing inlines, and removes them when it is done: thread-local, so that a
+// parse on another thread finishing cannot remove them from under this one.
+static _Thread_local int8_t SPECIAL_CHARS[256] = {
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
       0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0,
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,

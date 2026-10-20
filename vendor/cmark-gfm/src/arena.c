@@ -1,10 +1,12 @@
+#include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
 #include "cmark-gfm.h"
 #include "cmark-gfm-extension_api.h"
 
-// One arena per thread, so that threads can parse concurrently.
+// One arena per thread, so that threads can parse concurrently (see also
+// `SPECIAL_CHARS` in `inlines.c`).
 static _Thread_local struct arena_chunk {
   size_t sz, used;
   uint8_t push_point;
@@ -14,6 +16,34 @@ static _Thread_local struct arena_chunk {
 
 // The chunk `init_arena` allocated, which `cmark_arena_reset` keeps.
 static _Thread_local struct arena_chunk *first = NULL;
+
+// `_Thread_local` has no destructor: this key frees a thread's chunks when it
+// exits. Its value is always `A`, the newest chunk, from which every other one
+// is reachable, so the destructor needs no thread-local storage, which may
+// already be gone by then.
+static pthread_key_t arena_key;
+static pthread_once_t arena_key_once = PTHREAD_ONCE_INIT;
+
+static void free_chunks(void *head) {
+  struct arena_chunk *c = (struct arena_chunk *)head;
+  while (c) {
+    struct arena_chunk *n = c->prev;
+    free(c->ptr);
+    free(c);
+    c = n;
+  }
+}
+
+static void make_arena_key(void) {
+  if (pthread_key_create(&arena_key, free_chunks))
+    abort();
+}
+
+static void set_head(struct arena_chunk *c) {
+  A = c;
+  if (pthread_setspecific(arena_key, c))
+    abort();
+}
 
 static struct arena_chunk *alloc_arena_chunk(size_t sz, struct arena_chunk *prev) {
   struct arena_chunk *c = (struct arena_chunk *)calloc(1, sizeof(*c));
@@ -31,46 +61,51 @@ void cmark_arena_push(void) {
   if (!A)
     return;
   A->push_point = 1;
-  A = alloc_arena_chunk(10240, A);
+  set_head(alloc_arena_chunk(10240, A));
 }
 
 int cmark_arena_pop(void) {
   if (!A)
     return 0;
-  while (A && !A->push_point) {
-    free(A->ptr);
-    struct arena_chunk *n = A->prev;
-    free(A);
-    A = n;
+  struct arena_chunk *head = A;
+  while (head && !head->push_point) {
+    free(head->ptr);
+    struct arena_chunk *n = head->prev;
+    free(head);
+    head = n;
   }
-  if (A)
-    A->push_point = 0;
+  if (head)
+    head->push_point = 0;
+  set_head(head);
   return 1;
 }
 
 static void init_arena(void) {
-  A = first = alloc_arena_chunk(4 * 1048576, NULL);
+  pthread_once(&arena_key_once, make_arena_key);
+  first = alloc_arena_chunk(4 * 1048576, NULL);
+  set_head(first);
 }
 
 // Free every chunk but the first one, which is kept, zeroed, for the next
 // document: allocating and faulting in a fresh one for each document costs more
 // than the parse of a small one.
 void cmark_arena_reset(void) {
-  while (A) {
-    struct arena_chunk *n = A->prev;
-    if (A != first) {
-      free(A->ptr);
-      free(A);
+  struct arena_chunk *c = A;
+  while (c) {
+    struct arena_chunk *n = c->prev;
+    if (c != first) {
+      free(c->ptr);
+      free(c);
     }
-    A = n;
+    c = n;
   }
   if (first) {
     memset(first->ptr, 0, first->used);
     first->used = 0;
     first->push_point = 0;
     first->prev = NULL;
+    set_head(first);
   }
-  A = first;
 }
 
 static void *arena_calloc(size_t nmem, size_t size) {
@@ -88,7 +123,7 @@ static void *arena_calloc(size_t nmem, size_t size) {
   if (sz > A->sz) {
     A->prev = chunk = alloc_arena_chunk(sz, A->prev);
   } else if (sz > A->sz - A->used) {
-    A = chunk = alloc_arena_chunk(A->sz + A->sz / 2, A);
+    set_head(chunk = alloc_arena_chunk(A->sz + A->sz / 2, A));
   } else {
     chunk = A;
   }

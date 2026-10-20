@@ -62,23 +62,51 @@ fn main() {
 
     println!("cargo:rerun-if-changed=build.rs");
     println!("cargo:rerun-if-changed={}", CMARK_DIR);
-    println!("cargo:rerun-if-env-changed=CC");
-    println!("cargo:rerun-if-env-changed=AR");
-    println!("cargo:rerun-if-env-changed=CFLAGS");
+    let target = env::var("TARGET").unwrap();
+    let host = env::var("HOST").unwrap();
+    // A command from the environment, the target-specific variable first
+    // (`CC_aarch64_apple_darwin`), as the `cc` crate reads them. It may carry
+    // arguments of its own (`CC="ccache clang"`).
+    let tool = |name: &str, default: &str| -> Vec<String> {
+        let specific = format!("{}_{}", name, target.replace('-', "_"));
+        println!("cargo:rerun-if-env-changed={}", specific);
+        println!("cargo:rerun-if-env-changed={}", name);
+        let value = env::var(&specific).ok().or_else(|| {
+            // The plain variable, or the default, is for the host: using it to
+            // cross-compile would build objects that cannot be linked.
+            assert!(
+                target == host,
+                "cross-compiling to {} needs {} to be set",
+                target,
+                specific
+            );
+            env::var(name).ok()
+        });
+        let value = value.unwrap_or_else(|| default.to_owned());
+        let res: Vec<String> = value.split_whitespace().map(|s| s.to_owned()).collect();
+        assert!(!res.is_empty(), "{} is empty", name);
+        res
+    };
 
-    let cc = env::var("CC").unwrap_or_else(|_| "cc".to_owned());
-    let ar = env::var("AR").unwrap_or_else(|_| "ar".to_owned());
+    let cc = tool("CC", "cc");
+    let ar = tool("AR", "ar");
     let opt_level = env::var("OPT_LEVEL").unwrap_or_else(|_| "0".to_owned());
     let debug = env::var("DEBUG").is_ok_and(|d| d != "false" && d != "0");
     // Extra flags, e.g. `-fsanitize=address` to match `-Zsanitizer=address`.
-    let cflags = env::var("CFLAGS").unwrap_or_default();
+    let cflags_specific = format!("CFLAGS_{}", target.replace('-', "_"));
+    println!("cargo:rerun-if-env-changed={}", cflags_specific);
+    println!("cargo:rerun-if-env-changed=CFLAGS");
+    let cflags = env::var(&cflags_specific)
+        .or_else(|_| env::var("CFLAGS"))
+        .unwrap_or_default();
 
     // Compile every file in parallel: they are independent.
     let mut objects = Vec::new();
     let mut children: Vec<(Child, &str)> = Vec::new();
     for file in SRC_FILES.iter().chain(EXTENSION_FILES.iter()) {
         let obj = obj_dir.join(file.replace(['/', '.'], "_") + ".o");
-        let mut cmd = Command::new(&cc);
+        let mut cmd = Command::new(&cc[0]);
+        cmd.args(&cc[1..]);
         cmd.arg("-std=c11")
             .arg(format!("-O{}", opt_level))
             .arg("-fPIC")
@@ -98,7 +126,7 @@ fn main() {
         cmd.args(cflags.split_whitespace());
         children.push((
             cmd.spawn()
-                .unwrap_or_else(|err| panic!("failed to run {}: {}", cc, err)),
+                .unwrap_or_else(|err| panic!("failed to run {:?}: {}", cc, err)),
             file,
         ));
         objects.push(obj);
@@ -110,12 +138,13 @@ fn main() {
 
     let lib = out_dir.join("libcmark-gfm.a");
     let _ = fs::remove_file(&lib);
-    let status = Command::new(&ar)
+    let status = Command::new(&ar[0])
+        .args(&ar[1..])
         .arg("crs")
         .arg(&lib)
         .args(&objects)
         .status()
-        .unwrap_or_else(|err| panic!("failed to run {}: {}", ar, err));
+        .unwrap_or_else(|err| panic!("failed to run {:?}: {}", ar, err));
     assert!(
         status.success(),
         "failed to archive libcmark-gfm: {}",

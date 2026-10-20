@@ -151,8 +151,12 @@ enum Node<'a> {
     Image {
         url: &'a str,
     },
+    // `definition_label` is the label of the definition libcmark-gfm matched
+    // the reference with, case-insensitively: the id comes from it, so that
+    // both ends always agree.
     FootnoteReference {
         label: &'a str,
+        definition_label: &'a str,
     },
 }
 
@@ -269,29 +273,34 @@ impl<'a> NodeRef<'a> {
             cmark::CMARK_NODE_IMAGE => Node::Image {
                 url: unsafe { cmark_str(cmark::cmark_node_get_url(node)) }?,
             },
-            cmark::CMARK_NODE_FOOTNOTE_REFERENCE => Node::FootnoteReference {
-                label: self.literal()?,
-            },
+            cmark::CMARK_NODE_FOOTNOTE_REFERENCE => {
+                // An unknown reference is turned into text by the parser.
+                let definition =
+                    NodeRef::new(unsafe { cmark::cmark_node_parent_footnote_def(node) })
+                        .ok_or_else(|| {
+                            anyhow!("unknown footnote reference: position={:?}", self.position())
+                        })?;
+                Node::FootnoteReference {
+                    label: self.literal()?,
+                    definition_label: definition.literal()?,
+                }
+            }
             // The nodes of the extensions have types allocated when the
             // extensions are registered, which `md_parse` does first.
-            other => match unsafe {
-                (
-                    cmark::CMARK_NODE_TABLE,
-                    cmark::CMARK_NODE_TABLE_ROW,
-                    cmark::CMARK_NODE_TABLE_CELL,
-                    cmark::CMARK_NODE_STRIKETHROUGH,
-                )
-            } {
-                (table, _, _, _) if other == table => Node::Table,
-                (_, row, _, _) if other == row => Node::TableRow,
-                (_, _, cell, _) if other == cell => Node::TableCell,
-                (_, _, _, strikethrough) if other == strikethrough => Node::Delete,
-                _ => bail!(
-                    "unsupported markdown node: type={} position={:?}",
-                    other,
-                    self.position()
-                ),
-            },
+            // Read after registration, which never writes them again.
+            other if other == unsafe { *&raw const cmark::CMARK_NODE_TABLE } => Node::Table,
+            other if other == unsafe { *&raw const cmark::CMARK_NODE_TABLE_ROW } => Node::TableRow,
+            other if other == unsafe { *&raw const cmark::CMARK_NODE_TABLE_CELL } => {
+                Node::TableCell
+            }
+            other if other == unsafe { *&raw const cmark::CMARK_NODE_STRIKETHROUGH } => {
+                Node::Delete
+            }
+            other => bail!(
+                "unsupported markdown node: type={} position={:?}",
+                other,
+                self.position()
+            ),
         };
         Ok(res)
     }
@@ -1010,11 +1019,12 @@ mod cmark {
 
     unsafe extern "C" {
         // Assigned by `cmark_gfm_core_extensions_ensure_registered`, from
-        // `table.h` and `strikethrough.h`.
-        pub static CMARK_NODE_TABLE: cmark_node_type;
-        pub static CMARK_NODE_TABLE_ROW: cmark_node_type;
-        pub static CMARK_NODE_TABLE_CELL: cmark_node_type;
-        pub static CMARK_NODE_STRIKETHROUGH: cmark_node_type;
+        // `table.h` and `strikethrough.h`. `mut`: an immutable extern static
+        // must be initialized before any Rust code runs, and these are not.
+        pub static mut CMARK_NODE_TABLE: cmark_node_type;
+        pub static mut CMARK_NODE_TABLE_ROW: cmark_node_type;
+        pub static mut CMARK_NODE_TABLE_CELL: cmark_node_type;
+        pub static mut CMARK_NODE_STRIKETHROUGH: cmark_node_type;
 
         pub fn cmark_gfm_core_extensions_ensure_registered();
         pub fn cmark_find_syntax_extension(name: *const c_char) -> *mut cmark_syntax_extension;
@@ -1031,6 +1041,7 @@ mod cmark {
 
         pub fn cmark_node_next(node: *mut cmark_node) -> *mut cmark_node;
         pub fn cmark_node_first_child(node: *mut cmark_node) -> *mut cmark_node;
+        pub fn cmark_node_parent_footnote_def(node: *mut cmark_node) -> *mut cmark_node;
         pub fn cmark_node_get_type(node: *mut cmark_node) -> cmark_node_type;
         pub fn cmark_node_get_literal_chunk(node: *mut cmark_node, len: *mut usize) -> *const u8;
         pub fn cmark_node_get_heading_level(node: *mut cmark_node) -> c_int;
@@ -1044,7 +1055,8 @@ mod cmark {
 }
 
 // Parse markdown with libcmark-gfm: CommonMark, plus the GFM tables,
-// strikethrough (single or double tilde) and footnotes. Autolinking of bare
+// strikethrough (single or double tilde), task lists (whose `[ ]` marker is
+// dropped) and footnotes. Autolinking of bare
 // URLs is left out on purpose: a link is always explicit.
 //
 // The document only lives for the duration of `f`. It is allocated in the
@@ -1061,6 +1073,16 @@ fn md_parse<R>(
         !PARSING.replace(true),
         "a markdown document is already alive on this thread"
     );
+    // Runs on every way out, a panic in `f` included, so that the thread can
+    // parse again.
+    struct Reset;
+    impl Drop for Reset {
+        fn drop(&mut self) {
+            unsafe { cmark::cmark_arena_reset() };
+            PARSING.set(false);
+        }
+    }
+    let _reset = Reset;
 
     // The registration guards itself with a plain `static int`, which is a
     // data race when two threads (e.g. tests) parse for the first time at once.
@@ -1076,7 +1098,7 @@ fn md_parse<R>(
             )
         };
         assert!(!parser.is_null());
-        for extension in [c"table", c"strikethrough"] {
+        for extension in [c"table", c"strikethrough", c"tasklist"] {
             let ext = unsafe { cmark::cmark_find_syntax_extension(extension.as_ptr()) };
             ensure!(
                 !ext.is_null()
@@ -1096,9 +1118,6 @@ fn md_parse<R>(
 
         f(root)
     })();
-
-    unsafe { cmark::cmark_arena_reset() };
-    PARSING.set(false);
 
     res
 }
@@ -1184,8 +1203,8 @@ fn md_to_text(md_content: &str) -> anyhow::Result<String> {
     md_parse(md_content, |root| md_to_text_rec(root, &mut res))?;
 
     // Markup is dropped, never expanded: every byte of the output comes from a
-    // byte of the source. This is also why the capacity above is exact.
-    assert!(res.len() <= md_content.len());
+    // byte of the source, except that a NUL byte becomes the 3 bytes of U+FFFD.
+    assert!(res.len() <= md_content.len() || md_content.contains('\0'));
 
     Ok(res)
 }
@@ -1281,7 +1300,7 @@ fn md_to_html_rec<'a>(
         ),
         Node::InlineCode(value) => {
             content.extend_from_slice(b"<code>");
-            text_sanitize_for_html_into(content, value);
+            text_sanitize_for_html_into(content, value, false);
             content.extend_from_slice(b"</code>");
         }
         Node::Delete => {
@@ -1294,8 +1313,11 @@ fn md_to_html_rec<'a>(
             children(content, footnote_defs, node)?;
             write!(content, "</em>")?;
         }
-        Node::FootnoteReference { label } => {
-            let identifier = md_footnote_identifier(label);
+        Node::FootnoteReference {
+            label,
+            definition_label,
+        } => {
+            let identifier = md_footnote_identifier(definition_label);
             writeln!(
                 content,
                 r##"<sup class="footnote-ref"><a href="#fn-{}" id="fnref-{}" data-footnote-ref>{}</a></sup>"##,
@@ -1309,15 +1331,15 @@ fn md_to_html_rec<'a>(
             let mut alt = String::new();
             md_alt_text_rec(node, &mut alt)?;
             content.extend_from_slice(br#"<img src=""#);
-            text_sanitize_for_html_into(content, url);
+            text_sanitize_for_html_into(content, url, false);
             content.extend_from_slice(br#"" alt=""#);
-            text_sanitize_for_html_into(content, &alt);
+            text_sanitize_for_html_into(content, &alt, false);
             content.extend_from_slice(br#"" />"#);
         }
 
         Node::Link { url } => {
             content.extend_from_slice(br#"<a href=""#);
-            text_sanitize_for_html_into(content, url);
+            text_sanitize_for_html_into(content, url, false);
             content.extend_from_slice(br#"">"#);
             children(content, footnote_defs, node)?;
             write!(content, r#"</a>"#)?;
@@ -1327,7 +1349,7 @@ fn md_to_html_rec<'a>(
             children(content, footnote_defs, node)?;
             write!(content, "</strong>")?;
         }
-        Node::Text(value) => text_sanitize_for_html_into(content, value),
+        Node::Text(value) => text_sanitize_for_html_into(content, value, false),
         Node::SoftBreak => content.push(b'\n'),
         Node::Code { lang, value } => {
             // `md_lint_rec` rejects a code block without a language, but not
@@ -1361,7 +1383,7 @@ fn md_to_html_rec<'a>(
                 content.extend_from_slice(
                     br#"<span class="line-number"></span><span class="code-hl">"#,
                 );
-                text_sanitize_for_html_into(content, line);
+                text_sanitize_for_html_into(content, line, false);
                 content.extend_from_slice(b"</span>\n");
             }
             writeln!(content, "</code></pre>")?;
@@ -1447,37 +1469,12 @@ fn md_to_html_rec<'a>(
 
 fn text_sanitize_for_html(s: &str, sanitize_single_quote: bool) -> Cow<'_, str> {
     if !s.contains(['&', '<', '>', '"', '\'']) {
-        Cow::Borrowed(s)
-    } else {
-        let mut result = String::with_capacity(s.len());
-        for c in s.chars() {
-            match c {
-                '&' => result.push_str("&amp;"),
-                '<' => result.push_str("&lt;"),
-                '>' => result.push_str("&gt;"),
-                '"' => result.push_str("&quot;"),
-                '\'' => {
-                    if sanitize_single_quote {
-                        result.push_str("&#39;")
-                    } else {
-                        result.push('\'');
-                    }
-                }
-                other => result.push(other),
-            }
-        }
-
-        // Escaping replaces one character with several, so it only grows the
-        // text, and none of the characters that could close or open a tag
-        // survive it.
-        assert!(result.len() >= s.len());
-        assert!(!result.contains('<'));
-        assert!(!result.contains('>'));
-        assert!(!result.contains('"'));
-        assert!(!sanitize_single_quote || !result.contains('\''));
-
-        Cow::Owned(result)
+        return Cow::Borrowed(s);
     }
+    let mut out = Vec::with_capacity(s.len() + s.len() / 8);
+    text_sanitize_for_html_into(&mut out, s, sanitize_single_quote);
+    // Only ASCII is replaced, by ASCII, so this is still UTF-8.
+    Cow::Owned(String::from_utf8(out).unwrap())
 }
 
 // The index of the first byte of `bytes` that is one of `needles`, looking at
@@ -1509,14 +1506,21 @@ fn find_any_byte<const N: usize>(bytes: &[u8], needles: [u8; N]) -> Option<usize
         .map(|i| rest_start + i)
 }
 
-// `text_sanitize_for_html(s, false)`, written straight into the output. The
-// characters to escape are ASCII, so the runs between them are copied as bytes.
-fn text_sanitize_for_html_into(out: &mut Vec<u8>, s: &str) {
+// `text_sanitize_for_html`, written straight into the output. The characters
+// to escape are ASCII, so the runs between them are copied as bytes.
+fn text_sanitize_for_html_into(out: &mut Vec<u8>, s: &str, sanitize_single_quote: bool) {
     let len_before = out.len();
 
     let bytes = s.as_bytes();
+    let find = |bytes: &[u8]| {
+        if sanitize_single_quote {
+            find_any_byte(bytes, [b'&', b'<', b'>', b'"', b'\''])
+        } else {
+            find_any_byte(bytes, [b'&', b'<', b'>', b'"'])
+        }
+    };
     let mut start = 0;
-    while let Some(offset) = find_any_byte(&bytes[start..], [b'&', b'<', b'>', b'"']) {
+    while let Some(offset) = find(&bytes[start..]) {
         let i = start + offset;
         out.extend_from_slice(&bytes[start..i]);
         out.extend_from_slice(match bytes[i] {
@@ -1524,17 +1528,20 @@ fn text_sanitize_for_html_into(out: &mut Vec<u8>, s: &str) {
             b'<' => b"&lt;",
             b'>' => b"&gt;",
             b'"' => b"&quot;",
+            b'\'' => b"&#39;",
             _ => unreachable!(),
         });
         start = i + 1;
     }
     out.extend_from_slice(&bytes[start..]);
 
-    // The same postconditions as `text_sanitize_for_html`, on what was
-    // appended.
+    // Escaping replaces one character with several, so it only grows the
+    // text, and none of the characters that could close or open a tag
+    // survive it.
     let appended = &out[len_before..];
     assert!(appended.len() >= s.len());
     assert!(find_any_byte(appended, [b'<', b'>', b'"']).is_none());
+    assert!(!sanitize_single_quote || !appended.contains(&b'\''));
 }
 
 fn md_render_toc(content: &mut Vec<u8>, titles: &[Title]) -> anyhow::Result<()> {
@@ -3099,21 +3106,30 @@ mod tests {
     }
 
     #[test]
-    fn sanitizing_into_a_buffer_matches_sanitizing_a_string() {
-        for s in [
-            "",
-            "plain",
-            "a<b>&\"c\"'d",
-            "<<<<<<<<<<",
-            "é<€>😀&",
-            "0123456789&",
-        ] {
-            let mut out = Vec::new();
-            text_sanitize_for_html_into(&mut out, s);
-            assert_eq!(
-                text_sanitize_for_html(s, false),
-                String::from_utf8(out).unwrap()
-            );
+    fn sanitizing_escapes_exactly_the_html_specials() {
+        let cases = [
+            ("", "", ""),
+            ("plain", "plain", "plain"),
+            (
+                "a<b>&\"c\"'d",
+                "a&lt;b&gt;&amp;&quot;c&quot;'d",
+                "a&lt;b&gt;&amp;&quot;c&quot;&#39;d",
+            ),
+            (
+                "<<<<<<<<<<",
+                "&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;",
+                "&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;&lt;",
+            ),
+            ("é<€>😀&", "é&lt;€&gt;😀&amp;", "é&lt;€&gt;😀&amp;"),
+            ("0123456789'", "0123456789'", "0123456789&#39;"),
+        ];
+        for (s, without_quote, with_quote) in cases {
+            assert_eq!(without_quote, text_sanitize_for_html(s, false));
+            assert_eq!(with_quote, text_sanitize_for_html(s, true));
+
+            let mut out = b"prefix".to_vec();
+            text_sanitize_for_html_into(&mut out, s, false);
+            assert_eq!(format!("prefix{}", without_quote).as_bytes(), out);
         }
     }
 
@@ -3128,6 +3144,52 @@ mod tests {
         assert_eq!(None, md_lint_spelling("KBé"));
         // The correct spellings.
         assert_eq!(None, md_lint_spelling("DTrace, 1 KiB, 1 kB"));
+    }
+
+    #[test]
+    fn task_list_markers_are_dropped() {
+        assert_eq!(
+            "<ul>\n<li>todo</li>\n<li>done</li>\n</ul>\n",
+            render_md("- [ ] todo\n- [x] done\n").unwrap()
+        );
+    }
+
+    #[test]
+    fn a_footnote_reference_gets_the_id_of_its_definition() {
+        // libcmark-gfm matches labels with Unicode case folding: `ß` and `SS`.
+        let html = render_md("x[^Straße]\n\n[^STRASSE]: def\n").unwrap();
+        assert!(html.contains(r##"href="#fn-strasse""##), "{}", html);
+        assert!(html.contains(r#"<li id="fn-strasse">"#), "{}", html);
+        // The reference still shows its label as written.
+        assert!(html.contains(">Straße</a></sup>"), "{}", html);
+    }
+
+    #[test]
+    fn a_panic_while_parsing_does_not_wedge_the_thread() {
+        let res =
+            std::panic::catch_unwind(|| md_parse("a", |_| -> anyhow::Result<()> { panic!() }));
+        assert!(res.is_err());
+        assert_eq!("<p>b</p>\n", render_md("b").unwrap());
+    }
+
+    #[test]
+    fn threads_parse_concurrently() {
+        // Each thread finishing its parse used to reset the inline special
+        // characters of the others, turning `~~x~~` into plain text.
+        let threads: Vec<_> = (0..8)
+            .map(|_| {
+                thread::spawn(|| {
+                    for _ in 0..200 {
+                        let html = render_md("~~a~~ b\n\n| x |\n|---|\n| y |\n").unwrap();
+                        assert!(html.starts_with("<p><del>a</del> b</p>"), "{}", html);
+                        assert!(html.contains("<td>y</td>"), "{}", html);
+                    }
+                })
+            })
+            .collect();
+        for t in threads {
+            t.join().unwrap();
+        }
     }
 
     #[test]
