@@ -64,11 +64,14 @@ fn main() {
     println!("cargo:rerun-if-changed={}", CMARK_DIR);
     println!("cargo:rerun-if-env-changed=CC");
     println!("cargo:rerun-if-env-changed=AR");
+    println!("cargo:rerun-if-env-changed=CFLAGS");
 
     let cc = env::var("CC").unwrap_or_else(|_| "cc".to_owned());
     let ar = env::var("AR").unwrap_or_else(|_| "ar".to_owned());
     let opt_level = env::var("OPT_LEVEL").unwrap_or_else(|_| "0".to_owned());
     let debug = env::var("DEBUG").is_ok_and(|d| d != "false" && d != "0");
+    // Extra flags, e.g. `-fsanitize=address` to match `-Zsanitizer=address`.
+    let cflags = env::var("CFLAGS").unwrap_or_default();
 
     // Compile every file in parallel: they are independent.
     let mut objects = Vec::new();
@@ -92,6 +95,7 @@ fn main() {
         if debug {
             cmd.arg("-g");
         }
+        cmd.args(cflags.split_whitespace());
         children.push((
             cmd.spawn()
                 .unwrap_or_else(|err| panic!("failed to run {}: {}", cc, err)),
