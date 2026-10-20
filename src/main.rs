@@ -2171,7 +2171,7 @@ fn ensure_each_md_file_has_corresponding_html_file(git_stats: &[GitStat]) -> any
     let git_html_files = git_get_html_files()?;
 
     'outer: for md in git_stats {
-        if IGNORED_MARKDOWN_FILES.contains(&md.path_from_git_root.as_str()) {
+        if is_ignored_markdown_file(Path::new(&md.path_from_git_root)) {
             continue;
         }
 
