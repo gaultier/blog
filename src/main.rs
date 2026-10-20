@@ -1,20 +1,18 @@
 use anyhow::{Context, anyhow, bail, ensure};
-use markdown::{
-    ParseOptions,
-    mdast::{FootnoteDefinition, Node},
-};
+use cmark_gfm_sys as cmark;
 use notify::{EventKind, RecursiveMode, Watcher, event::ModifyKind};
 use std::{
     borrow::Cow,
     cmp::Ordering,
     collections::{BTreeMap, HashMap, HashSet},
+    ffi::{CStr, c_char},
     fs::{self},
     hash::{DefaultHasher, Hash, Hasher},
     io::{self, BufWriter, Read},
     net::{SocketAddr, TcpListener, TcpStream},
     path::{Path, PathBuf},
     process::{Command, ExitCode},
-    sync::{Arc, Condvar, Mutex},
+    sync::{Arc, Condvar, Mutex, Once},
     thread::{self},
     time::{Duration, Instant},
 };
@@ -88,8 +86,166 @@ const _: () = assert!(LIVE_RELOAD_KEEPALIVE.as_secs() > 0);
 struct Title {
     text: String,
     depth: u8,
-    start_md_offset: usize,
+    // A heading is a block of its own, so its line identifies it.
+    start_md_line: usize,
     slug: String,
+}
+
+// Where a node starts in the markdown source, 1-based, as libcmark-gfm reports
+// it. Only used to identify headings and to point at errors.
+#[derive(Clone, Copy, Debug)]
+struct Position {
+    line: usize,
+    // Only ever printed, in error messages.
+    #[allow(dead_code)]
+    column: usize,
+}
+
+// The markdown tree, owned, and limited to what this blog renders. It is built
+// from the libcmark-gfm tree by `md_parse`, so that nothing else ever touches a
+// raw `cmark_node`. Its shape follows mdast: a run of text, soft line breaks
+// included, is one `Text` node, and literals carry no trailing line ending.
+#[derive(Clone, Debug)]
+enum Node {
+    Root(Parent),
+    Blockquote(Parent),
+    List(List),
+    ListItem(Parent),
+    Paragraph(Parent),
+    Heading(Heading),
+    Code(Code),
+    Html(Literal),
+    ThematicBreak(Position),
+    Table(Parent),
+    TableRow(Parent),
+    TableCell(Parent),
+    FootnoteDefinition(FootnoteDefinition),
+    Text(Literal),
+    InlineCode(Literal),
+    Emphasis(Parent),
+    Strong(Parent),
+    Delete(Parent),
+    Link(Link),
+    Image(Image),
+    FootnoteReference(FootnoteReference),
+    Break(Position),
+}
+
+#[derive(Clone, Debug)]
+struct Parent {
+    children: Vec<Node>,
+    position: Position,
+}
+
+#[derive(Clone, Debug)]
+struct Literal {
+    value: String,
+    position: Position,
+}
+
+#[derive(Clone, Debug)]
+struct List {
+    ordered: bool,
+    start: Option<u32>,
+    children: Vec<Node>,
+    position: Position,
+}
+
+#[derive(Clone, Debug)]
+struct Heading {
+    depth: u8,
+    children: Vec<Node>,
+    position: Position,
+}
+
+#[derive(Clone, Debug)]
+struct Code {
+    // The first word of the info string.
+    lang: Option<String>,
+    value: String,
+    position: Position,
+}
+
+#[derive(Clone, Debug)]
+struct Link {
+    url: String,
+    children: Vec<Node>,
+    position: Position,
+}
+
+#[derive(Clone, Debug)]
+struct Image {
+    url: String,
+    alt: String,
+    position: Position,
+}
+
+#[derive(Clone, Debug)]
+struct FootnoteDefinition {
+    // The label, normalized for use as an `id`.
+    identifier: String,
+    children: Vec<Node>,
+    position: Position,
+}
+
+#[derive(Clone, Debug)]
+struct FootnoteReference {
+    label: String,
+    identifier: String,
+    position: Position,
+}
+
+impl Node {
+    fn position(&self) -> Position {
+        match self {
+            Node::Root(x)
+            | Node::Blockquote(x)
+            | Node::ListItem(x)
+            | Node::Paragraph(x)
+            | Node::Table(x)
+            | Node::TableRow(x)
+            | Node::TableCell(x)
+            | Node::Emphasis(x)
+            | Node::Strong(x)
+            | Node::Delete(x) => x.position,
+            Node::List(x) => x.position,
+            Node::Heading(x) => x.position,
+            Node::Code(x) => x.position,
+            Node::Html(x) | Node::Text(x) | Node::InlineCode(x) => x.position,
+            Node::ThematicBreak(x) | Node::Break(x) => *x,
+            Node::FootnoteDefinition(x) => x.position,
+            Node::Link(x) => x.position,
+            Node::Image(x) => x.position,
+            Node::FootnoteReference(x) => x.position,
+        }
+    }
+
+    fn children(&self) -> Option<&Vec<Node>> {
+        match self {
+            Node::Root(x)
+            | Node::Blockquote(x)
+            | Node::ListItem(x)
+            | Node::Paragraph(x)
+            | Node::Table(x)
+            | Node::TableRow(x)
+            | Node::TableCell(x)
+            | Node::Emphasis(x)
+            | Node::Strong(x)
+            | Node::Delete(x) => Some(&x.children),
+            Node::List(x) => Some(&x.children),
+            Node::Heading(x) => Some(&x.children),
+            Node::FootnoteDefinition(x) => Some(&x.children),
+            Node::Link(x) => Some(&x.children),
+            Node::Code(_)
+            | Node::Html(_)
+            | Node::Text(_)
+            | Node::InlineCode(_)
+            | Node::ThematicBreak(_)
+            | Node::Break(_)
+            | Node::Image(_)
+            | Node::FootnoteReference(_) => None,
+        }
+    }
 }
 
 #[derive(Clone, Hash)]
@@ -242,19 +398,14 @@ fn md_lint_rec(node: &Node, md_path: &Path, previous_heading_depth: &mut u8) -> 
             }
             Ok(())
         }
-        Node::FootnoteDefinition(_) | Node::MdxJsxFlowElement(_) => Ok(()),
+        Node::FootnoteDefinition(_) => Ok(()),
         Node::List(x) => {
             for child in &x.children {
                 md_lint_rec(child, md_path, previous_heading_depth)?;
             }
             Ok(())
         }
-        Node::InlineMath(_)
-        | Node::MdxjsEsm(_)
-        | Node::Toml(_)
-        | Node::Yaml(_)
-        | Node::Break(_)
-        | Node::InlineCode(_) => Ok(()),
+        Node::Break(_) | Node::InlineCode(_) => Ok(()),
         Node::Delete(x) => {
             for child in &x.children {
                 md_lint_rec(child, md_path, previous_heading_depth)?;
@@ -267,12 +418,7 @@ fn md_lint_rec(node: &Node, md_path: &Path, previous_heading_depth: &mut u8) -> 
             }
             Ok(())
         }
-        Node::MdxTextExpression(_)
-        | Node::FootnoteReference(_)
-        | Node::Html(_)
-        | Node::Image(_)
-        | Node::ImageReference(_)
-        | Node::MdxJsxTextElement(_) => Ok(()),
+        Node::FootnoteReference(_) | Node::Html(_) | Node::Image(_) => Ok(()),
 
         Node::Link(link) => {
             // TODO: external links.
@@ -292,7 +438,6 @@ fn md_lint_rec(node: &Node, md_path: &Path, previous_heading_depth: &mut u8) -> 
             }
             Ok(())
         }
-        Node::LinkReference(_) => Ok(()),
         Node::Strong(x) => {
             for child in &x.children {
                 md_lint_rec(child, md_path, previous_heading_depth)?;
@@ -342,7 +487,6 @@ fn md_lint_rec(node: &Node, md_path: &Path, previous_heading_depth: &mut u8) -> 
             }
             Ok(())
         }
-        Node::Math(_) | Node::MdxFlowExpression(_) => Ok(()),
         Node::Heading(x) => {
             if x.depth < 2 {
                 bail!(
@@ -396,7 +540,6 @@ fn md_lint_rec(node: &Node, md_path: &Path, previous_heading_depth: &mut u8) -> 
             }
             Ok(())
         }
-        Node::Definition(_) => Ok(()),
         Node::Paragraph(x) => {
             for child in &x.children {
                 md_lint_rec(child, md_path, previous_heading_depth)?;
@@ -677,12 +820,7 @@ fn md_collect_titles(
             titles.push(Title {
                 text: content,
                 depth,
-                start_md_offset: heading
-                    .position
-                    .as_ref()
-                    .ok_or(anyhow!("heading has no position"))?
-                    .start
-                    .offset,
+                start_md_line: heading.position.line,
                 slug,
             });
         }
@@ -794,20 +932,280 @@ fn html_slug(s: &str) -> String {
     res
 }
 
+// Parse markdown with libcmark-gfm: CommonMark, plus the GFM tables,
+// strikethrough (single or double tilde) and footnotes. Autolinking of bare
+// URLs is left out on purpose: a link is always explicit.
+fn md_parse(md_content: &str) -> anyhow::Result<Node> {
+    // `cmark_gfm::Parser::parse` builds a `CString`, which cannot hold one.
+    ensure!(
+        !md_content.contains('\0'),
+        "failed to parse markdown: NUL byte"
+    );
+
+    // The registration guards itself with a plain `static int`, which is a
+    // data race when two threads (e.g. tests) parse for the first time at once.
+    static REGISTER_EXTENSIONS: Once = Once::new();
+    REGISTER_EXTENSIONS
+        .call_once(|| unsafe { cmark::cmark_gfm_core_extensions_ensure_registered() });
+
+    let parser = cmark_gfm::Parser::new(cmark_gfm::Options::CMARK_OPT_FOOTNOTES);
+    for extension in ["table", "strikethrough"] {
+        parser
+            .add_extension(extension)
+            .map_err(|err| anyhow!("failed to parse markdown: {}", err))?;
+    }
+    parser.parse(md_content);
+    let doc = parser.finish();
+    ensure!(!doc.is_null(), "failed to parse markdown: no document");
+
+    // libcmark-gfm renumbers footnote references (`[^foo]` becomes `1`) and
+    // moves the definitions, in that order, to the end of the document. It
+    // keeps no label on a definition, but it does keep the line it starts on,
+    // so the label is read back from the source.
+    let md_lines: Vec<&str> = md_content.lines().collect();
+    let mut footnote_labels = Vec::new();
+    let mut child = unsafe { cmark::cmark_node_first_child(doc) };
+    while !child.is_null() {
+        if unsafe { cmark::cmark_node_get_type(child) }
+            == cmark::cmark_node_type_CMARK_NODE_FOOTNOTE_DEFINITION
+        {
+            let line = unsafe { cmark::cmark_node_get_start_line(child) } as usize;
+            let label = md_lines
+                .get(line.wrapping_sub(1))
+                .and_then(|l| l.trim_start().strip_prefix("[^"))
+                .and_then(|l| l.split_once("]:"))
+                .map(|(label, _)| label.to_owned())
+                .ok_or_else(|| anyhow!("failed to find footnote label: line={}", line))?;
+            footnote_labels.push(label);
+        }
+        child = unsafe { cmark::cmark_node_next(child) };
+    }
+
+    let res = unsafe { md_from_cmark(doc, &footnote_labels) };
+    unsafe { cmark::cmark_node_free(doc) };
+    let mut res = res?;
+
+    // Put the footnote definitions back in source order, which is the order
+    // they are rendered in. Nothing else looks at where they are in the tree.
+    if let Node::Root(root) = &mut res {
+        root.children.sort_by_key(|n| match n {
+            Node::FootnoteDefinition(def) => (true, def.position.line),
+            _ => (false, 0),
+        });
+    }
+
+    assert!(matches!(res, Node::Root(_)));
+    Ok(res)
+}
+
+fn md_footnote_identifier(label: &str) -> String {
+    label
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+        .to_lowercase()
+}
+
+// An empty string for a null pointer: libcmark-gfm returns one for an absent
+// URL or info string.
+//
+// SAFETY: `s` is null or a NUL-terminated string that outlives the call.
+unsafe fn cmark_string(s: *const c_char) -> String {
+    if s.is_null() {
+        return String::new();
+    }
+    // libcmark-gfm validates and replaces invalid UTF-8 on input, so this is
+    // never lossy in practice.
+    unsafe { CStr::from_ptr(s) }.to_string_lossy().into_owned()
+}
+
+// The text an image is described by: its content, with the markup dropped.
+fn md_alt_text_rec(node: &Node, out: &mut String) {
+    match node {
+        Node::Text(x) | Node::InlineCode(x) => out.push_str(&x.value),
+        Node::Image(x) => out.push_str(&x.alt),
+        other => {
+            for child in other.children().into_iter().flatten() {
+                md_alt_text_rec(child, out);
+            }
+        }
+    }
+}
+
+// SAFETY: `node` is a node of a live libcmark-gfm tree, which is not mutated
+// for the duration of the call.
+unsafe fn md_from_cmark(
+    node: *mut cmark::cmark_node,
+    footnote_labels: &[String],
+) -> anyhow::Result<Node> {
+    assert!(!node.is_null());
+
+    let position = Position {
+        line: unsafe { cmark::cmark_node_get_start_line(node) } as usize,
+        column: unsafe { cmark::cmark_node_get_start_column(node) } as usize,
+    };
+    let literal = || unsafe { cmark_string(cmark::cmark_node_get_literal(node)) };
+    let children = || -> anyhow::Result<Vec<Node>> {
+        let mut res: Vec<Node> = Vec::new();
+        let mut child = unsafe { cmark::cmark_node_first_child(node) };
+        while !child.is_null() {
+            let converted = unsafe { md_from_cmark(child, footnote_labels) }?;
+            // libcmark-gfm splits text at soft line breaks; mdast does not.
+            if let Node::Text(text) = &converted
+                && let Some(Node::Text(previous)) = res.last_mut()
+            {
+                previous.value.push_str(&text.value);
+            } else {
+                res.push(converted);
+            }
+            child = unsafe { cmark::cmark_node_next(child) };
+        }
+        Ok(res)
+    };
+    let parent = || -> anyhow::Result<Parent> {
+        Ok(Parent {
+            children: children()?,
+            position,
+        })
+    };
+
+    let res = match unsafe { cmark::cmark_node_get_type(node) } {
+        cmark::cmark_node_type_CMARK_NODE_DOCUMENT => Node::Root(parent()?),
+        cmark::cmark_node_type_CMARK_NODE_BLOCK_QUOTE => Node::Blockquote(parent()?),
+        cmark::cmark_node_type_CMARK_NODE_LIST => {
+            let ordered = unsafe { cmark::cmark_node_get_list_type(node) }
+                == cmark::cmark_list_type_CMARK_ORDERED_LIST;
+            let start = unsafe { cmark::cmark_node_get_list_start(node) };
+            Node::List(List {
+                ordered,
+                start: if ordered {
+                    Some(start.try_into()?)
+                } else {
+                    None
+                },
+                children: children()?,
+                position,
+            })
+        }
+        cmark::cmark_node_type_CMARK_NODE_ITEM => Node::ListItem(parent()?),
+        cmark::cmark_node_type_CMARK_NODE_CODE_BLOCK => {
+            let info = unsafe { cmark_string(cmark::cmark_node_get_fence_info(node)) };
+            let mut value = literal();
+            if value.ends_with('\n') {
+                value.pop();
+            }
+            Node::Code(Code {
+                lang: info.split_whitespace().next().map(|s| s.to_owned()),
+                value,
+                position,
+            })
+        }
+        cmark::cmark_node_type_CMARK_NODE_HTML_BLOCK => {
+            let mut value = literal();
+            if value.ends_with('\n') {
+                value.pop();
+            }
+            Node::Html(Literal { value, position })
+        }
+        cmark::cmark_node_type_CMARK_NODE_PARAGRAPH => Node::Paragraph(parent()?),
+        cmark::cmark_node_type_CMARK_NODE_HEADING => Node::Heading(Heading {
+            depth: unsafe { cmark::cmark_node_get_heading_level(node) }.try_into()?,
+            children: children()?,
+            position,
+        }),
+        cmark::cmark_node_type_CMARK_NODE_THEMATIC_BREAK => Node::ThematicBreak(position),
+        cmark::cmark_node_type_CMARK_NODE_FOOTNOTE_DEFINITION => {
+            // Definitions come last, in the order of `footnote_labels`, so this
+            // one is the first label not claimed by a previous sibling.
+            let mut index = 0usize;
+            let mut previous = unsafe { cmark::cmark_node_previous(node) };
+            while !previous.is_null()
+                && unsafe { cmark::cmark_node_get_type(previous) }
+                    == cmark::cmark_node_type_CMARK_NODE_FOOTNOTE_DEFINITION
+            {
+                index += 1;
+                previous = unsafe { cmark::cmark_node_previous(previous) };
+            }
+            let label = footnote_labels
+                .get(index)
+                .ok_or_else(|| anyhow!("unknown footnote definition: position={:?}", position))?;
+            Node::FootnoteDefinition(FootnoteDefinition {
+                identifier: md_footnote_identifier(label),
+                children: children()?,
+                position,
+            })
+        }
+        cmark::cmark_node_type_CMARK_NODE_TEXT => Node::Text(Literal {
+            value: literal(),
+            position,
+        }),
+        cmark::cmark_node_type_CMARK_NODE_SOFTBREAK => Node::Text(Literal {
+            value: "\n".to_owned(),
+            position,
+        }),
+        cmark::cmark_node_type_CMARK_NODE_LINEBREAK => Node::Break(position),
+        cmark::cmark_node_type_CMARK_NODE_CODE => Node::InlineCode(Literal {
+            value: literal(),
+            position,
+        }),
+        cmark::cmark_node_type_CMARK_NODE_HTML_INLINE => Node::Html(Literal {
+            value: literal(),
+            position,
+        }),
+        cmark::cmark_node_type_CMARK_NODE_EMPH => Node::Emphasis(parent()?),
+        cmark::cmark_node_type_CMARK_NODE_STRONG => Node::Strong(parent()?),
+        cmark::cmark_node_type_CMARK_NODE_LINK => Node::Link(Link {
+            url: unsafe { cmark_string(cmark::cmark_node_get_url(node)) },
+            children: children()?,
+            position,
+        }),
+        cmark::cmark_node_type_CMARK_NODE_IMAGE => {
+            let mut alt = String::new();
+            for child in &children()? {
+                md_alt_text_rec(child, &mut alt);
+            }
+            Node::Image(Image {
+                url: unsafe { cmark_string(cmark::cmark_node_get_url(node)) },
+                alt,
+                position,
+            })
+        }
+        cmark::cmark_node_type_CMARK_NODE_FOOTNOTE_REFERENCE => {
+            // The literal is the 1-based index of the definition.
+            let index: usize = literal().parse()?;
+            let label = footnote_labels
+                .get(index.wrapping_sub(1))
+                .ok_or_else(|| anyhow!("unknown footnote reference: position={:?}", position))?
+                .clone();
+            Node::FootnoteReference(FootnoteReference {
+                identifier: md_footnote_identifier(&label),
+                label,
+                position,
+            })
+        }
+        // The nodes of the extensions have types allocated at runtime.
+        _ => {
+            let type_string = unsafe { cmark_string(cmark::cmark_node_get_type_string(node)) };
+            match type_string.as_str() {
+                "table" => Node::Table(parent()?),
+                "table_header" | "table_row" => Node::TableRow(parent()?),
+                "table_cell" => Node::TableCell(parent()?),
+                "strikethrough" => Node::Delete(parent()?),
+                other => bail!(
+                    "unsupported markdown node: {} position={:?}",
+                    other,
+                    position
+                ),
+            }
+        }
+    };
+
+    Ok(res)
+}
+
 fn md_to_html(md_content: &str) -> anyhow::Result<Vec<u8>> {
     let mut sb = Vec::with_capacity(md_content.len());
-    let md_ast = markdown::to_mdast(
-        md_content,
-        &ParseOptions {
-            constructs: markdown::Constructs {
-                gfm_autolink_literal: false,
-                ..markdown::Constructs::gfm()
-            },
-            gfm_strikethrough_single_tilde: true,
-            ..Default::default()
-        },
-    )
-    .map_err(|err| anyhow!("failed to parse markdown: {:?}", err))?;
+    let md_ast = md_parse(md_content)?;
 
     let mut footnote_defs = Vec::new();
 
@@ -865,18 +1263,7 @@ fn md_to_text_rec(node: &Node, out: &mut String) {
 // Render markdown to plain text, for the places where markup is not allowed:
 // `<title>`, or an Atom feed entry title.
 fn md_to_text(md_content: &str) -> anyhow::Result<String> {
-    let md_ast = markdown::to_mdast(
-        md_content,
-        &ParseOptions {
-            constructs: markdown::Constructs {
-                gfm_autolink_literal: false,
-                ..markdown::Constructs::gfm()
-            },
-            gfm_strikethrough_single_tilde: true,
-            ..Default::default()
-        },
-    )
-    .map_err(|err| anyhow!("failed to parse markdown: {:?}", err))?;
+    let md_ast = md_parse(md_content)?;
 
     let mut res = String::with_capacity(md_content.len());
     md_to_text_rec(&md_ast, &mut res);
@@ -892,18 +1279,7 @@ fn md_html_append(md_content: &str, html_content: &mut Vec<u8>) -> anyhow::Resul
     let len_before = html_content.len();
     let mut footnote_defs = Vec::new();
 
-    let md_ast = markdown::to_mdast(
-        md_content,
-        &ParseOptions {
-            constructs: markdown::Constructs {
-                gfm_autolink_literal: false,
-                ..markdown::Constructs::gfm()
-            },
-            gfm_strikethrough_single_tilde: true,
-            ..Default::default()
-        },
-    )
-    .map_err(|err| anyhow!("failed to parse markdown: {:?}", err))?;
+    let md_ast = md_parse(md_content)?;
 
     let mut md_titles = Vec::with_capacity(12);
     let mut title_to_counter: BTreeMap<String, u32> = BTreeMap::new();
@@ -970,10 +1346,6 @@ fn md_to_html_rec(
         Node::FootnoteDefinition(footnote_definition) => {
             footnote_defs.push(footnote_definition.clone());
         }
-        Node::MdxJsxFlowElement(_) => bail!(
-            "unsupported markdown node: MdxJsxFlowElement position={:?}",
-            node.position()
-        ),
         Node::List(list) => {
             let tag = if list.ordered { "ol" } else { "ul" };
             if let Some(start) = list.start
@@ -988,18 +1360,6 @@ fn md_to_html_rec(
             }
             writeln!(content, "</{}>", tag)?;
         }
-        Node::MdxjsEsm(_) => bail!(
-            "unsupported markdown node: MdxjsEsm position={:?}",
-            node.position()
-        ),
-        Node::Toml(_) => bail!(
-            "unsupported markdown node: Toml position={:?}",
-            node.position()
-        ),
-        Node::Yaml(_) => bail!(
-            "unsupported markdown node: Yaml position={:?}",
-            node.position()
-        ),
         Node::Break(_) => bail!(
             "unsupported markdown node: Break position={:?}",
             node.position()
@@ -1008,10 +1368,6 @@ fn md_to_html_rec(
             let sanitized = text_sanitize_for_html(&inline_code.value, false);
             write!(content, "<code>{}</code>", sanitized)?;
         }
-        Node::InlineMath(_) => bail!(
-            "unsupported markdown node: InlineMath position={:?}",
-            node.position()
-        ),
         Node::Delete(delete) => {
             write!(content, "<del>")?;
             for child in &delete.children {
@@ -1026,20 +1382,13 @@ fn md_to_html_rec(
             }
             write!(content, "</em>")?;
         }
-        Node::MdxTextExpression(_) => bail!(
-            "unsupported markdown node: MdxTextExpression position={:?}",
-            node.position()
-        ),
         Node::FootnoteReference(footnote_reference) => {
             writeln!(
                 content,
                 r##"<sup class="footnote-ref"><a href="#fn-{}" id="fnref-{}" data-footnote-ref>{}</a></sup>"##,
                 &footnote_reference.identifier,
                 footnote_reference.identifier,
-                footnote_reference
-                    .label
-                    .as_ref()
-                    .ok_or(anyhow!("footnote reference has no label"))?,
+                footnote_reference.label,
             )?;
         }
         Node::Html(html) => {
@@ -1054,14 +1403,6 @@ fn md_to_html_rec(
             )?;
         }
 
-        Node::ImageReference(_) => bail!(
-            "unsupported markdown node: ImageReference position={:?}",
-            node.position()
-        ),
-        Node::MdxJsxTextElement(_) => bail!(
-            "unsupported markdown node: MdxJsxTextElement position={:?}",
-            node.position()
-        ),
         Node::Link(link) => {
             write!(
                 content,
@@ -1073,10 +1414,6 @@ fn md_to_html_rec(
             }
             write!(content, r#"</a>"#)?;
         }
-        Node::LinkReference(_) => bail!(
-            "unsupported markdown node: LinkReference position={:?}",
-            node.position()
-        ),
         Node::Strong(strong) => {
             write!(content, "<strong>")?;
             for child in &strong.children {
@@ -1126,22 +1463,11 @@ fn md_to_html_rec(
             }
             writeln!(content, "</code></pre>")?;
         }
-        Node::Math(_) => bail!(
-            "unsupported markdown node: Math position={:?}",
-            node.position()
-        ),
-        Node::MdxFlowExpression(_) => bail!(
-            "unsupported markdown node: MdxFlowExpression position={:?}",
-            node.position()
-        ),
         Node::Heading(heading) => {
-            let position = heading
-                .position
-                .as_ref()
-                .ok_or(anyhow!("heading has no position"))?;
+            let position = heading.position;
             let title = titles
                 .iter()
-                .find(|t| t.start_md_offset == position.start.offset)
+                .find(|t| t.start_md_line == position.line)
                 .ok_or_else(|| anyhow!("failed to find title: position={:?}", position))?;
 
             assert!(heading.depth >= 1);
@@ -1209,10 +1535,6 @@ fn md_to_html_rec(
             }
             writeln!(content, "</li>")?;
         }
-        Node::Definition(_) => bail!(
-            "unsupported markdown node: Definition position={:?}",
-            node.position()
-        ),
         Node::Paragraph(paragraph) => {
             write!(content, "<p>")?;
             for child in &paragraph.children {
@@ -1397,24 +1719,8 @@ fn md_render_article(
 
     let md_path = PathBuf::from(&git_stat.path_from_git_root);
     let html_path = md_path.with_extension("html");
-    let md_ast = match markdown::to_mdast(
-        md_content_article,
-        &ParseOptions {
-            constructs: markdown::Constructs {
-                gfm_autolink_literal: false,
-                ..markdown::Constructs::gfm()
-            },
-            gfm_strikethrough_single_tilde: true,
-            ..Default::default()
-        },
-    ) {
-        Ok(x) => x,
-        Err(err) => bail!(
-            "failed to parse markdown: path={} err={:?}",
-            &git_stat.path_from_git_root,
-            err
-        ),
-    };
+    let md_ast = md_parse(md_content_article)
+        .with_context(|| format!("path={}", &git_stat.path_from_git_root))?;
 
     md_lint(&md_ast, &md_path)?;
 
@@ -2540,18 +2846,7 @@ mod tests {
     // ---------------------------------------------------------------- helpers
 
     fn parse_md(md: &str) -> Node {
-        markdown::to_mdast(
-            md,
-            &ParseOptions {
-                constructs: markdown::Constructs {
-                    gfm_autolink_literal: false,
-                    ..markdown::Constructs::gfm()
-                },
-                gfm_strikethrough_single_tilde: true,
-                ..Default::default()
-            },
-        )
-        .unwrap()
+        md_parse(md).unwrap()
     }
 
     fn render_md(md: &str) -> anyhow::Result<String> {
@@ -2571,11 +2866,11 @@ mod tests {
         titles
     }
 
-    fn test_title(text: &str, depth: u8, start_md_offset: usize) -> Title {
+    fn test_title(text: &str, depth: u8, start_md_line: usize) -> Title {
         Title {
             text: text.to_owned(),
             depth,
-            start_md_offset,
+            start_md_line,
             slug: html_slug(text),
         }
     }
@@ -3001,11 +3296,30 @@ mod tests {
     }
 
     #[test]
+    fn footnotes_keep_their_labels_and_source_order() {
+        // libcmark-gfm renumbers `[^b]` to 1 and `[^a]` to 2, in reference
+        // order, and moves the definitions in that order.
+        let html = render_md("x[^b] y[^a]\n\n[^a]: A\n[^b]: B\n").unwrap();
+
+        assert!(html.contains(r##"<a href="#fn-b" id="fnref-b" data-footnote-ref>b</a>"##));
+        assert!(html.contains(r##"<a href="#fn-a" id="fnref-a" data-footnote-ref>a</a>"##));
+        let def_a = html.find(r#"<li id="fn-a">"#).unwrap();
+        let def_b = html.find(r#"<li id="fn-b">"#).unwrap();
+        assert!(def_a < def_b, "{}", html);
+    }
+
+    #[test]
     fn unsupported_nodes_are_reported_not_panicked_on() {
-        // `Node::Definition`, previously `todo!()`.
-        assert!(render_md("[ref]: /blog/somewhere\n").is_err());
-        // `Node::Break`, likewise.
+        // `Node::Break`, previously `todo!()`.
         assert!(render_md("one  \ntwo\n").is_err());
+
+        // A link reference definition is resolved by libcmark-gfm into plain
+        // links, and is not a node of its own anymore.
+        assert_eq!("", render_md("[ref]: /blog/somewhere\n").unwrap());
+        assert_eq!(
+            "<p><a href=\"/blog/somewhere\">x</a></p>\n",
+            render_md("[x][ref]\n\n[ref]: /blog/somewhere\n").unwrap()
+        );
     }
 
     // --- metadata delimiter

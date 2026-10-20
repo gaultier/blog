@@ -5,10 +5,10 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.102"
+cmark-gfm = "0.1.1"
+cmark-gfm-sys = "0.29.0"
 # Live-reload HTTP server.
 httparse = "1.10.1"
-# Parse .md files.
-markdown = "1.0.0"
 # Watch files.
 notify = "8.2.0"
 # RSS feed.

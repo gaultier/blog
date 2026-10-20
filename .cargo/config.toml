@@ -1,0 +1,4 @@
+[env]
+# The libcmark-gfm vendored by `cmark-gfm-sys` declares a minimum CMake version
+# that CMake 4 no longer accepts.
+CMAKE_POLICY_VERSION_MINIMUM = "3.5"
