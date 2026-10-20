@@ -956,7 +956,7 @@ fn html_slug(s: &str) -> String {
 
 // The part of the libcmark-gfm API this program uses, from `cmark-gfm.h`,
 // `cmark-gfm-extension_api.h` and `cmark-gfm-core-extensions.h` in the
-// `vendor/cmark-gfm` submodule. The library is built by `build.rs`.
+// `vendor/cmark-gfm`. The library is built by `build.rs`.
 // Named as in C.
 #[allow(non_camel_case_types)]
 mod cmark {
