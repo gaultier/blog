@@ -5,10 +5,8 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.102"
-# Parse .md files.
-cmark-gfm = "0.1.1"
-# Walk the parsed tree, which `cmark-gfm` only hands out as a raw pointer.
-cmark-gfm-sys = "0.29.0"
+# Markdown is parsed by libcmark-gfm, built by `build.rs` from the
+# `vendor/cmark-gfm` submodule.
 # Live-reload HTTP server.
 httparse = "1.10.1"
 # Watch files.

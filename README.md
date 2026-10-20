@@ -4,6 +4,9 @@ https://gaultier.github.io/blog/
 ## Quickstart
 
 ```shell
+# Fetch libcmark-gfm, built by `build.rs`.
+$ git submodule update --init
+
 # Build once.
 $ cargo run [--release]
 

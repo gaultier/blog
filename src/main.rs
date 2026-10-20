@@ -1,5 +1,4 @@
 use anyhow::{Context, anyhow, bail, ensure};
-use cmark_gfm_sys as cmark;
 use notify::{EventKind, RecursiveMode, Watcher, event::ModifyKind};
 use std::{
     borrow::Cow,
@@ -932,61 +931,127 @@ fn html_slug(s: &str) -> String {
     res
 }
 
+// The part of the libcmark-gfm API this program uses, from `cmark-gfm.h`,
+// `cmark-gfm-extension_api.h` and `cmark-gfm-core-extensions.h` in the
+// `vendor/cmark-gfm` submodule. The library is built by `build.rs`.
+// Named as in C.
+#[allow(non_camel_case_types)]
+mod cmark {
+    use std::ffi::{c_char, c_int};
+
+    #[repr(C)]
+    pub struct cmark_node {
+        _private: [u8; 0],
+    }
+    #[repr(C)]
+    pub struct cmark_parser {
+        _private: [u8; 0],
+    }
+    #[repr(C)]
+    pub struct cmark_syntax_extension {
+        _private: [u8; 0],
+    }
+
+    pub type cmark_node_type = u32;
+    const CMARK_NODE_TYPE_BLOCK: cmark_node_type = 0x8000;
+    const CMARK_NODE_TYPE_INLINE: cmark_node_type = 0x8000 | 0x4000;
+    pub const CMARK_NODE_DOCUMENT: cmark_node_type = CMARK_NODE_TYPE_BLOCK | 0x0001;
+    pub const CMARK_NODE_BLOCK_QUOTE: cmark_node_type = CMARK_NODE_TYPE_BLOCK | 0x0002;
+    pub const CMARK_NODE_LIST: cmark_node_type = CMARK_NODE_TYPE_BLOCK | 0x0003;
+    pub const CMARK_NODE_ITEM: cmark_node_type = CMARK_NODE_TYPE_BLOCK | 0x0004;
+    pub const CMARK_NODE_CODE_BLOCK: cmark_node_type = CMARK_NODE_TYPE_BLOCK | 0x0005;
+    pub const CMARK_NODE_HTML_BLOCK: cmark_node_type = CMARK_NODE_TYPE_BLOCK | 0x0006;
+    pub const CMARK_NODE_PARAGRAPH: cmark_node_type = CMARK_NODE_TYPE_BLOCK | 0x0008;
+    pub const CMARK_NODE_HEADING: cmark_node_type = CMARK_NODE_TYPE_BLOCK | 0x0009;
+    pub const CMARK_NODE_THEMATIC_BREAK: cmark_node_type = CMARK_NODE_TYPE_BLOCK | 0x000a;
+    pub const CMARK_NODE_FOOTNOTE_DEFINITION: cmark_node_type = CMARK_NODE_TYPE_BLOCK | 0x000b;
+    pub const CMARK_NODE_TEXT: cmark_node_type = CMARK_NODE_TYPE_INLINE | 0x0001;
+    pub const CMARK_NODE_SOFTBREAK: cmark_node_type = CMARK_NODE_TYPE_INLINE | 0x0002;
+    pub const CMARK_NODE_LINEBREAK: cmark_node_type = CMARK_NODE_TYPE_INLINE | 0x0003;
+    pub const CMARK_NODE_CODE: cmark_node_type = CMARK_NODE_TYPE_INLINE | 0x0004;
+    pub const CMARK_NODE_HTML_INLINE: cmark_node_type = CMARK_NODE_TYPE_INLINE | 0x0005;
+    pub const CMARK_NODE_EMPH: cmark_node_type = CMARK_NODE_TYPE_INLINE | 0x0007;
+    pub const CMARK_NODE_STRONG: cmark_node_type = CMARK_NODE_TYPE_INLINE | 0x0008;
+    pub const CMARK_NODE_LINK: cmark_node_type = CMARK_NODE_TYPE_INLINE | 0x0009;
+    pub const CMARK_NODE_IMAGE: cmark_node_type = CMARK_NODE_TYPE_INLINE | 0x000a;
+    pub const CMARK_NODE_FOOTNOTE_REFERENCE: cmark_node_type = CMARK_NODE_TYPE_INLINE | 0x000b;
+
+    pub type cmark_list_type = u32;
+    pub const CMARK_ORDERED_LIST: cmark_list_type = 2;
+
+    pub const CMARK_OPT_FOOTNOTES: c_int = 1 << 13;
+
+    unsafe extern "C" {
+        pub fn cmark_gfm_core_extensions_ensure_registered();
+        pub fn cmark_find_syntax_extension(name: *const c_char) -> *mut cmark_syntax_extension;
+
+        pub fn cmark_parser_new(options: c_int) -> *mut cmark_parser;
+        pub fn cmark_parser_attach_syntax_extension(
+            parser: *mut cmark_parser,
+            extension: *mut cmark_syntax_extension,
+        ) -> c_int;
+        pub fn cmark_parser_feed(parser: *mut cmark_parser, buffer: *const c_char, len: usize);
+        pub fn cmark_parser_finish(parser: *mut cmark_parser) -> *mut cmark_node;
+        pub fn cmark_parser_free(parser: *mut cmark_parser);
+
+        pub fn cmark_node_free(node: *mut cmark_node);
+        pub fn cmark_node_next(node: *mut cmark_node) -> *mut cmark_node;
+        pub fn cmark_node_first_child(node: *mut cmark_node) -> *mut cmark_node;
+        pub fn cmark_node_parent_footnote_def(node: *mut cmark_node) -> *mut cmark_node;
+        pub fn cmark_node_get_type(node: *mut cmark_node) -> cmark_node_type;
+        pub fn cmark_node_get_type_string(node: *mut cmark_node) -> *const c_char;
+        pub fn cmark_node_get_literal(node: *mut cmark_node) -> *const c_char;
+        pub fn cmark_node_get_heading_level(node: *mut cmark_node) -> c_int;
+        pub fn cmark_node_get_list_type(node: *mut cmark_node) -> cmark_list_type;
+        pub fn cmark_node_get_list_start(node: *mut cmark_node) -> c_int;
+        pub fn cmark_node_get_fence_info(node: *mut cmark_node) -> *const c_char;
+        pub fn cmark_node_get_url(node: *mut cmark_node) -> *const c_char;
+        pub fn cmark_node_get_start_line(node: *mut cmark_node) -> c_int;
+        pub fn cmark_node_get_start_column(node: *mut cmark_node) -> c_int;
+    }
+}
+
 // Parse markdown with libcmark-gfm: CommonMark, plus the GFM tables,
 // strikethrough (single or double tilde) and footnotes. Autolinking of bare
 // URLs is left out on purpose: a link is always explicit.
 fn md_parse(md_content: &str) -> anyhow::Result<Node> {
-    // `cmark_gfm::Parser::parse` builds a `CString`, which cannot hold one.
-    ensure!(
-        !md_content.contains('\0'),
-        "failed to parse markdown: NUL byte"
-    );
-
     // The registration guards itself with a plain `static int`, which is a
     // data race when two threads (e.g. tests) parse for the first time at once.
     static REGISTER_EXTENSIONS: Once = Once::new();
     REGISTER_EXTENSIONS
         .call_once(|| unsafe { cmark::cmark_gfm_core_extensions_ensure_registered() });
 
-    let parser = cmark_gfm::Parser::new(cmark_gfm::Options::CMARK_OPT_FOOTNOTES);
-    for extension in ["table", "strikethrough"] {
-        parser
-            .add_extension(extension)
-            .map_err(|err| anyhow!("failed to parse markdown: {}", err))?;
+    let parser = unsafe { cmark::cmark_parser_new(cmark::CMARK_OPT_FOOTNOTES) };
+    assert!(!parser.is_null());
+    for extension in [c"table", c"strikethrough"] {
+        let ext = unsafe { cmark::cmark_find_syntax_extension(extension.as_ptr()) };
+        if ext.is_null() || unsafe { cmark::cmark_parser_attach_syntax_extension(parser, ext) } == 0
+        {
+            unsafe { cmark::cmark_parser_free(parser) };
+            bail!(
+                "failed to parse markdown: unknown extension {:?}",
+                extension
+            );
+        }
     }
-    parser.parse(md_content);
-    let doc = parser.finish();
+    // The document is owned by the caller of `cmark_parser_finish`, and
+    // outlives the parser.
+    let doc = unsafe {
+        cmark::cmark_parser_feed(parser, md_content.as_ptr().cast(), md_content.len());
+        let doc = cmark::cmark_parser_finish(parser);
+        cmark::cmark_parser_free(parser);
+        doc
+    };
     ensure!(!doc.is_null(), "failed to parse markdown: no document");
 
-    // libcmark-gfm renumbers footnote references (`[^foo]` becomes `1`) and
-    // moves the definitions, in that order, to the end of the document. It
-    // keeps no label on a definition, but it does keep the line it starts on,
-    // so the label is read back from the source.
-    let md_lines: Vec<&str> = md_content.lines().collect();
-    let mut footnote_labels = Vec::new();
-    let mut child = unsafe { cmark::cmark_node_first_child(doc) };
-    while !child.is_null() {
-        if unsafe { cmark::cmark_node_get_type(child) }
-            == cmark::cmark_node_type_CMARK_NODE_FOOTNOTE_DEFINITION
-        {
-            let line = unsafe { cmark::cmark_node_get_start_line(child) } as usize;
-            let label = md_lines
-                .get(line.wrapping_sub(1))
-                .and_then(|l| l.trim_start().strip_prefix("[^"))
-                .and_then(|l| l.split_once("]:"))
-                .map(|(label, _)| label.to_owned())
-                .ok_or_else(|| anyhow!("failed to find footnote label: line={}", line))?;
-            footnote_labels.push(label);
-        }
-        child = unsafe { cmark::cmark_node_next(child) };
-    }
-
-    let res = unsafe { md_from_cmark(doc, &footnote_labels) };
+    let res = unsafe { md_from_cmark(doc) };
     unsafe { cmark::cmark_node_free(doc) };
     let mut res = res?;
 
-    // Put the footnote definitions back in source order, which is the order
-    // they are rendered in. Nothing else looks at where they are in the tree.
+    // libcmark-gfm moves the footnote definitions to the end of the document,
+    // in the order they are first referenced. Put them back in source order,
+    // which is the order they are rendered in. Nothing else looks at where they
+    // are in the tree.
     if let Node::Root(root) = &mut res {
         root.children.sort_by_key(|n| match n {
             Node::FootnoteDefinition(def) => (true, def.position.line),
@@ -1034,10 +1099,7 @@ fn md_alt_text_rec(node: &Node, out: &mut String) {
 
 // SAFETY: `node` is a node of a live libcmark-gfm tree, which is not mutated
 // for the duration of the call.
-unsafe fn md_from_cmark(
-    node: *mut cmark::cmark_node,
-    footnote_labels: &[String],
-) -> anyhow::Result<Node> {
+unsafe fn md_from_cmark(node: *mut cmark::cmark_node) -> anyhow::Result<Node> {
     assert!(!node.is_null());
 
     let position = Position {
@@ -1049,7 +1111,7 @@ unsafe fn md_from_cmark(
         let mut res: Vec<Node> = Vec::new();
         let mut child = unsafe { cmark::cmark_node_first_child(node) };
         while !child.is_null() {
-            let converted = unsafe { md_from_cmark(child, footnote_labels) }?;
+            let converted = unsafe { md_from_cmark(child) }?;
             // libcmark-gfm splits text at soft line breaks; mdast does not.
             if let Node::Text(text) = &converted
                 && let Some(Node::Text(previous)) = res.last_mut()
@@ -1070,11 +1132,11 @@ unsafe fn md_from_cmark(
     };
 
     let res = match unsafe { cmark::cmark_node_get_type(node) } {
-        cmark::cmark_node_type_CMARK_NODE_DOCUMENT => Node::Root(parent()?),
-        cmark::cmark_node_type_CMARK_NODE_BLOCK_QUOTE => Node::Blockquote(parent()?),
-        cmark::cmark_node_type_CMARK_NODE_LIST => {
-            let ordered = unsafe { cmark::cmark_node_get_list_type(node) }
-                == cmark::cmark_list_type_CMARK_ORDERED_LIST;
+        cmark::CMARK_NODE_DOCUMENT => Node::Root(parent()?),
+        cmark::CMARK_NODE_BLOCK_QUOTE => Node::Blockquote(parent()?),
+        cmark::CMARK_NODE_LIST => {
+            let ordered =
+                unsafe { cmark::cmark_node_get_list_type(node) } == cmark::CMARK_ORDERED_LIST;
             let start = unsafe { cmark::cmark_node_get_list_start(node) };
             Node::List(List {
                 ordered,
@@ -1087,8 +1149,8 @@ unsafe fn md_from_cmark(
                 position,
             })
         }
-        cmark::cmark_node_type_CMARK_NODE_ITEM => Node::ListItem(parent()?),
-        cmark::cmark_node_type_CMARK_NODE_CODE_BLOCK => {
+        cmark::CMARK_NODE_ITEM => Node::ListItem(parent()?),
+        cmark::CMARK_NODE_CODE_BLOCK => {
             let info = unsafe { cmark_string(cmark::cmark_node_get_fence_info(node)) };
             let mut value = literal();
             if value.ends_with('\n') {
@@ -1100,66 +1162,58 @@ unsafe fn md_from_cmark(
                 position,
             })
         }
-        cmark::cmark_node_type_CMARK_NODE_HTML_BLOCK => {
+        cmark::CMARK_NODE_HTML_BLOCK => {
             let mut value = literal();
             if value.ends_with('\n') {
                 value.pop();
             }
             Node::Html(Literal { value, position })
         }
-        cmark::cmark_node_type_CMARK_NODE_PARAGRAPH => Node::Paragraph(parent()?),
-        cmark::cmark_node_type_CMARK_NODE_HEADING => Node::Heading(Heading {
+        cmark::CMARK_NODE_PARAGRAPH => Node::Paragraph(parent()?),
+        cmark::CMARK_NODE_HEADING => Node::Heading(Heading {
             depth: unsafe { cmark::cmark_node_get_heading_level(node) }.try_into()?,
             children: children()?,
             position,
         }),
-        cmark::cmark_node_type_CMARK_NODE_THEMATIC_BREAK => Node::ThematicBreak(position),
-        cmark::cmark_node_type_CMARK_NODE_FOOTNOTE_DEFINITION => {
-            // Definitions come last, in the order of `footnote_labels`, so this
-            // one is the first label not claimed by a previous sibling.
-            let mut index = 0usize;
-            let mut previous = unsafe { cmark::cmark_node_previous(node) };
-            while !previous.is_null()
-                && unsafe { cmark::cmark_node_get_type(previous) }
-                    == cmark::cmark_node_type_CMARK_NODE_FOOTNOTE_DEFINITION
-            {
-                index += 1;
-                previous = unsafe { cmark::cmark_node_previous(previous) };
-            }
-            let label = footnote_labels
-                .get(index)
-                .ok_or_else(|| anyhow!("unknown footnote definition: position={:?}", position))?;
+        cmark::CMARK_NODE_THEMATIC_BREAK => Node::ThematicBreak(position),
+        cmark::CMARK_NODE_FOOTNOTE_DEFINITION => {
+            let label = literal();
+            ensure!(
+                !label.is_empty(),
+                "footnote definition has no label: position={:?}",
+                position
+            );
             Node::FootnoteDefinition(FootnoteDefinition {
-                identifier: md_footnote_identifier(label),
+                identifier: md_footnote_identifier(&label),
                 children: children()?,
                 position,
             })
         }
-        cmark::cmark_node_type_CMARK_NODE_TEXT => Node::Text(Literal {
+        cmark::CMARK_NODE_TEXT => Node::Text(Literal {
             value: literal(),
             position,
         }),
-        cmark::cmark_node_type_CMARK_NODE_SOFTBREAK => Node::Text(Literal {
+        cmark::CMARK_NODE_SOFTBREAK => Node::Text(Literal {
             value: "\n".to_owned(),
             position,
         }),
-        cmark::cmark_node_type_CMARK_NODE_LINEBREAK => Node::Break(position),
-        cmark::cmark_node_type_CMARK_NODE_CODE => Node::InlineCode(Literal {
+        cmark::CMARK_NODE_LINEBREAK => Node::Break(position),
+        cmark::CMARK_NODE_CODE => Node::InlineCode(Literal {
             value: literal(),
             position,
         }),
-        cmark::cmark_node_type_CMARK_NODE_HTML_INLINE => Node::Html(Literal {
+        cmark::CMARK_NODE_HTML_INLINE => Node::Html(Literal {
             value: literal(),
             position,
         }),
-        cmark::cmark_node_type_CMARK_NODE_EMPH => Node::Emphasis(parent()?),
-        cmark::cmark_node_type_CMARK_NODE_STRONG => Node::Strong(parent()?),
-        cmark::cmark_node_type_CMARK_NODE_LINK => Node::Link(Link {
+        cmark::CMARK_NODE_EMPH => Node::Emphasis(parent()?),
+        cmark::CMARK_NODE_STRONG => Node::Strong(parent()?),
+        cmark::CMARK_NODE_LINK => Node::Link(Link {
             url: unsafe { cmark_string(cmark::cmark_node_get_url(node)) },
             children: children()?,
             position,
         }),
-        cmark::cmark_node_type_CMARK_NODE_IMAGE => {
+        cmark::CMARK_NODE_IMAGE => {
             let mut alt = String::new();
             for child in &children()? {
                 md_alt_text_rec(child, &mut alt);
@@ -1170,13 +1224,16 @@ unsafe fn md_from_cmark(
                 position,
             })
         }
-        cmark::cmark_node_type_CMARK_NODE_FOOTNOTE_REFERENCE => {
-            // The literal is the 1-based index of the definition.
-            let index: usize = literal().parse()?;
-            let label = footnote_labels
-                .get(index.wrapping_sub(1))
-                .ok_or_else(|| anyhow!("unknown footnote reference: position={:?}", position))?
-                .clone();
+        cmark::CMARK_NODE_FOOTNOTE_REFERENCE => {
+            // The literal is the 1-based index of the definition, which holds
+            // the label.
+            let def = unsafe { cmark::cmark_node_parent_footnote_def(node) };
+            ensure!(
+                !def.is_null(),
+                "unknown footnote reference: position={:?}",
+                position
+            );
+            let label = unsafe { cmark_string(cmark::cmark_node_get_literal(def)) };
             Node::FootnoteReference(FootnoteReference {
                 identifier: md_footnote_identifier(&label),
                 label,
