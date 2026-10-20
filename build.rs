@@ -135,7 +135,7 @@ fn main() {
     for file in SRC_FILES.iter().chain(EXTENSION_FILES.iter()) {
         let obj = obj_dir.join(file.replace(['/', '.'], "_") + ".o");
         let mut cmd = Command::new(&cc);
-        cmd.arg("-std=c99")
+        cmd.arg("-std=c11")
             .arg(format!("-O{}", opt_level))
             .arg("-fPIC")
             .arg("-DNDEBUG")

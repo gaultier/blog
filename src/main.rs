@@ -2,15 +2,18 @@ use anyhow::{Context, anyhow, bail, ensure};
 use notify::{EventKind, RecursiveMode, Watcher, event::ModifyKind};
 use std::{
     borrow::Cow,
+    cell::Cell,
     cmp::Ordering,
     collections::{BTreeMap, HashMap, HashSet},
     ffi::{CStr, c_char},
     fs::{self},
     hash::{DefaultHasher, Hash, Hasher},
     io::{self, BufWriter, Read},
+    marker::PhantomData,
     net::{SocketAddr, TcpListener, TcpStream},
     path::{Path, PathBuf},
     process::{Command, ExitCode},
+    ptr::NonNull,
     sync::{Arc, Condvar, Mutex, Once},
     thread::{self},
     time::{Duration, Instant},
@@ -100,150 +103,197 @@ struct Position {
     column: usize,
 }
 
-// The markdown tree, owned, and limited to what this blog renders. It is built
-// from the libcmark-gfm tree by `md_parse`, so that nothing else ever touches a
-// raw `cmark_node`. Its shape follows mdast: a run of text, soft line breaks
-// included, is one `Text` node, and literals carry no trailing line ending.
-#[derive(Clone, Debug)]
-enum Node {
-    Root(Parent),
-    Blockquote(Parent),
-    List(List),
-    ListItem(Parent),
-    Paragraph(Parent),
-    Heading(Heading),
-    Code(Code),
-    Html(Literal),
-    ThematicBreak(Position),
-    Table(Parent),
-    TableRow(Parent),
-    TableCell(Parent),
-    FootnoteDefinition(FootnoteDefinition),
-    Text(Literal),
-    InlineCode(Literal),
-    Emphasis(Parent),
-    Strong(Parent),
-    Delete(Parent),
-    Link(Link),
-    Image(Image),
-    FootnoteReference(FootnoteReference),
-    Break(Position),
+// A node of a libcmark-gfm document, valid for as long as the document is,
+// which `md_parse` scopes to `'a`.
+#[derive(Clone, Copy)]
+struct NodeRef<'a> {
+    ptr: NonNull<cmark::cmark_node>,
+    _doc: PhantomData<&'a cmark::cmark_node>,
 }
 
-#[derive(Clone, Debug)]
-struct Parent {
-    children: Vec<Node>,
-    position: Position,
+// What a node is, with what the renderer needs from it. Strings borrow from
+// the document; literals carry no trailing line ending.
+enum Node<'a> {
+    Root,
+    Blockquote,
+    List {
+        ordered: bool,
+        start: Option<u32>,
+    },
+    ListItem,
+    Paragraph,
+    Heading {
+        depth: u8,
+    },
+    // `lang` is the first word of the info string.
+    Code {
+        lang: Option<&'a str>,
+        value: &'a str,
+    },
+    Html(&'a str),
+    ThematicBreak,
+    Table,
+    TableRow,
+    TableCell,
+    FootnoteDefinition {
+        label: &'a str,
+    },
+    Text(&'a str),
+    SoftBreak,
+    Break,
+    InlineCode(&'a str),
+    Emphasis,
+    Strong,
+    Delete,
+    Link {
+        url: &'a str,
+    },
+    Image {
+        url: &'a str,
+    },
+    FootnoteReference {
+        label: &'a str,
+    },
 }
 
-#[derive(Clone, Debug)]
-struct Literal {
-    value: String,
-    position: Position,
+// A string owned by the document: an empty one for a null pointer, which is
+// what libcmark-gfm returns for an absent URL or info string.
+//
+// SAFETY: `s` is null or a NUL-terminated string that lives for `'a`.
+unsafe fn cmark_str<'a>(s: *const c_char) -> anyhow::Result<&'a str> {
+    if s.is_null() {
+        return Ok("");
+    }
+    unsafe { CStr::from_ptr(s) }
+        .to_str()
+        .context("invalid utf8 in markdown")
 }
 
-#[derive(Clone, Debug)]
-struct List {
-    ordered: bool,
-    start: Option<u32>,
-    children: Vec<Node>,
-    position: Position,
-}
+impl<'a> NodeRef<'a> {
+    fn new(ptr: *mut cmark::cmark_node) -> Option<Self> {
+        NonNull::new(ptr).map(|ptr| NodeRef {
+            ptr,
+            _doc: PhantomData,
+        })
+    }
 
-#[derive(Clone, Debug)]
-struct Heading {
-    depth: u8,
-    children: Vec<Node>,
-    position: Position,
-}
+    fn raw(self) -> *mut cmark::cmark_node {
+        self.ptr.as_ptr()
+    }
 
-#[derive(Clone, Debug)]
-struct Code {
-    // The first word of the info string.
-    lang: Option<String>,
-    value: String,
-    position: Position,
-}
-
-#[derive(Clone, Debug)]
-struct Link {
-    url: String,
-    children: Vec<Node>,
-    position: Position,
-}
-
-#[derive(Clone, Debug)]
-struct Image {
-    url: String,
-    alt: String,
-    position: Position,
-}
-
-#[derive(Clone, Debug)]
-struct FootnoteDefinition {
-    // The label, normalized for use as an `id`.
-    identifier: String,
-    children: Vec<Node>,
-    position: Position,
-}
-
-#[derive(Clone, Debug)]
-struct FootnoteReference {
-    label: String,
-    identifier: String,
-    position: Position,
-}
-
-impl Node {
-    fn position(&self) -> Position {
-        match self {
-            Node::Root(x)
-            | Node::Blockquote(x)
-            | Node::ListItem(x)
-            | Node::Paragraph(x)
-            | Node::Table(x)
-            | Node::TableRow(x)
-            | Node::TableCell(x)
-            | Node::Emphasis(x)
-            | Node::Strong(x)
-            | Node::Delete(x) => x.position,
-            Node::List(x) => x.position,
-            Node::Heading(x) => x.position,
-            Node::Code(x) => x.position,
-            Node::Html(x) | Node::Text(x) | Node::InlineCode(x) => x.position,
-            Node::ThematicBreak(x) | Node::Break(x) => *x,
-            Node::FootnoteDefinition(x) => x.position,
-            Node::Link(x) => x.position,
-            Node::Image(x) => x.position,
-            Node::FootnoteReference(x) => x.position,
+    fn position(self) -> Position {
+        Position {
+            line: unsafe { cmark::cmark_node_get_start_line(self.raw()) } as usize,
+            column: unsafe { cmark::cmark_node_get_start_column(self.raw()) } as usize,
         }
     }
 
-    fn children(&self) -> Option<&Vec<Node>> {
-        match self {
-            Node::Root(x)
-            | Node::Blockquote(x)
-            | Node::ListItem(x)
-            | Node::Paragraph(x)
-            | Node::Table(x)
-            | Node::TableRow(x)
-            | Node::TableCell(x)
-            | Node::Emphasis(x)
-            | Node::Strong(x)
-            | Node::Delete(x) => Some(&x.children),
-            Node::List(x) => Some(&x.children),
-            Node::Heading(x) => Some(&x.children),
-            Node::FootnoteDefinition(x) => Some(&x.children),
-            Node::Link(x) => Some(&x.children),
-            Node::Code(_)
-            | Node::Html(_)
-            | Node::Text(_)
-            | Node::InlineCode(_)
-            | Node::ThematicBreak(_)
-            | Node::Break(_)
-            | Node::Image(_)
-            | Node::FootnoteReference(_) => None,
+    fn first_child(self) -> Option<Self> {
+        Self::new(unsafe { cmark::cmark_node_first_child(self.raw()) })
+    }
+
+    fn children(self) -> impl Iterator<Item = NodeRef<'a>> {
+        std::iter::successors(self.first_child(), |node| {
+            Self::new(unsafe { cmark::cmark_node_next(node.raw()) })
+        })
+    }
+
+    // The only child of this node, if it is a paragraph.
+    fn only_paragraph(self) -> Option<Self> {
+        let child = self.first_child()?;
+        let is_paragraph =
+            unsafe { cmark::cmark_node_get_type(child.raw()) } == cmark::CMARK_NODE_PARAGRAPH;
+        let is_only = unsafe { cmark::cmark_node_next(child.raw()) }.is_null();
+        (is_paragraph && is_only).then_some(child)
+    }
+
+    fn literal(self) -> anyhow::Result<&'a str> {
+        let mut len = 0;
+        let ptr = unsafe { cmark::cmark_node_get_literal_chunk(self.raw(), &mut len) };
+        if ptr.is_null() {
+            return Ok("");
         }
+        std::str::from_utf8(unsafe { std::slice::from_raw_parts(ptr, len) })
+            .context("invalid utf8 in markdown")
+    }
+
+    fn get(self) -> anyhow::Result<Node<'a>> {
+        let node = self.raw();
+        let res = match unsafe { cmark::cmark_node_get_type(node) } {
+            cmark::CMARK_NODE_DOCUMENT => Node::Root,
+            cmark::CMARK_NODE_BLOCK_QUOTE => Node::Blockquote,
+            cmark::CMARK_NODE_LIST => {
+                let ordered =
+                    unsafe { cmark::cmark_node_get_list_type(node) } == cmark::CMARK_ORDERED_LIST;
+                let start = unsafe { cmark::cmark_node_get_list_start(node) };
+                Node::List {
+                    ordered,
+                    start: if ordered {
+                        Some(start.try_into()?)
+                    } else {
+                        None
+                    },
+                }
+            }
+            cmark::CMARK_NODE_ITEM => Node::ListItem,
+            cmark::CMARK_NODE_CODE_BLOCK => {
+                let info = unsafe { cmark_str(cmark::cmark_node_get_fence_info(node)) }?;
+                let value = self.literal()?;
+                Node::Code {
+                    lang: info.split_whitespace().next(),
+                    value: value.strip_suffix('\n').unwrap_or(value),
+                }
+            }
+            cmark::CMARK_NODE_HTML_BLOCK => {
+                let value = self.literal()?;
+                Node::Html(value.strip_suffix('\n').unwrap_or(value))
+            }
+            cmark::CMARK_NODE_PARAGRAPH => Node::Paragraph,
+            cmark::CMARK_NODE_HEADING => Node::Heading {
+                depth: unsafe { cmark::cmark_node_get_heading_level(node) }.try_into()?,
+            },
+            cmark::CMARK_NODE_THEMATIC_BREAK => Node::ThematicBreak,
+            cmark::CMARK_NODE_FOOTNOTE_DEFINITION => Node::FootnoteDefinition {
+                label: self.literal()?,
+            },
+            cmark::CMARK_NODE_TEXT => Node::Text(self.literal()?),
+            cmark::CMARK_NODE_SOFTBREAK => Node::SoftBreak,
+            cmark::CMARK_NODE_LINEBREAK => Node::Break,
+            cmark::CMARK_NODE_CODE => Node::InlineCode(self.literal()?),
+            cmark::CMARK_NODE_HTML_INLINE => Node::Html(self.literal()?),
+            cmark::CMARK_NODE_EMPH => Node::Emphasis,
+            cmark::CMARK_NODE_STRONG => Node::Strong,
+            cmark::CMARK_NODE_LINK => Node::Link {
+                url: unsafe { cmark_str(cmark::cmark_node_get_url(node)) }?,
+            },
+            cmark::CMARK_NODE_IMAGE => Node::Image {
+                url: unsafe { cmark_str(cmark::cmark_node_get_url(node)) }?,
+            },
+            cmark::CMARK_NODE_FOOTNOTE_REFERENCE => Node::FootnoteReference {
+                label: self.literal()?,
+            },
+            // The nodes of the extensions have types allocated when the
+            // extensions are registered, which `md_parse` does first.
+            other => match unsafe {
+                (
+                    cmark::CMARK_NODE_TABLE,
+                    cmark::CMARK_NODE_TABLE_ROW,
+                    cmark::CMARK_NODE_TABLE_CELL,
+                    cmark::CMARK_NODE_STRIKETHROUGH,
+                )
+            } {
+                (table, _, _, _) if other == table => Node::Table,
+                (_, row, _, _) if other == row => Node::TableRow,
+                (_, _, cell, _) if other == cell => Node::TableCell,
+                (_, _, _, strikethrough) if other == strikethrough => Node::Delete,
+                _ => bail!(
+                    "unsupported markdown node: type={} position={:?}",
+                    other,
+                    self.position()
+                ),
+            },
+        };
+        Ok(res)
     }
 }
 
@@ -360,8 +410,11 @@ fn hash_article_inputs(
 // Lint an article body. The `<h1>` is rendered from the `Title:` metadata, so
 // the body starts one level below it: the first heading must be `##`, and each
 // heading may go at most one level deeper than the previous one.
-fn md_lint(node: &Node, md_path: &Path) -> anyhow::Result<()> {
-    assert!(matches!(node, Node::Root(_)), "linting starts at the root");
+fn md_lint(node: NodeRef, md_path: &Path) -> anyhow::Result<()> {
+    assert!(
+        matches!(node.get()?, Node::Root),
+        "linting starts at the root"
+    );
     assert_eq!(Some("md"), md_path.extension().and_then(|e| e.to_str()));
 
     // The `<h1>` rendered from the metadata is the heading every article body
@@ -376,7 +429,48 @@ fn md_lint(node: &Node, md_path: &Path) -> anyhow::Result<()> {
     res
 }
 
-fn md_lint_rec(node: &Node, md_path: &Path, previous_heading_depth: &mut u8) -> anyhow::Result<()> {
+// Spellings that are always wrong: `DTrace`, `KiB` and `kB` have one correct
+// casing each.
+const INCORRECT_SPELLINGS: [&str; 7] = ["dtrace", "dTrace", "Dtrace", "Kib", "kb", "KB", "Kb"];
+
+fn md_lint_spelling(text: &str) -> Option<&str> {
+    // Splitting on non-letters yields maximal runs of letters, which is exactly
+    // the notion of "word" this lint wants: `workbench` is one word and never
+    // matches `kb`, while the `KB` in `100KB` and the `dtrace` in
+    // `dtrace-based` are words of their own. Note that `split_whitespace` would
+    // not do: it keeps the digits and the punctuation attached.
+    //
+    // Every incorrect spelling is ASCII and starts with one of these bytes, so
+    // only the runs of ASCII letters starting at one are looked at, and a match
+    // is a word if no letter, ASCII or not, comes right before or after it.
+    let bytes = text.as_bytes();
+    let mut pos = 0;
+    while let Some(offset) = find_any_byte(&bytes[pos..], [b'd', b'D', b'k', b'K']) {
+        let start = pos + offset;
+        let end = bytes[start..]
+            .iter()
+            .position(|b| !b.is_ascii_alphabetic())
+            .map_or(bytes.len(), |len| start + len);
+        // A candidate later in this run is preceded by a letter: not a word.
+        pos = end;
+
+        let word = &text[start..end];
+        if INCORRECT_SPELLINGS.contains(&word) {
+            let before = text[..start].chars().next_back();
+            let after = text[end..].chars().next();
+            if !before.is_some_and(char::is_alphabetic) && !after.is_some_and(char::is_alphabetic) {
+                return Some(word);
+            }
+        }
+    }
+    None
+}
+
+fn md_lint_rec(
+    node: NodeRef,
+    md_path: &Path,
+    previous_heading_depth: &mut u8,
+) -> anyhow::Result<()> {
     // Markdown heading depths run from 1 to 6, and this tracks the last one
     // accepted. Checked on the way in of every node, not only of a heading: a
     // sibling that corrupted it would otherwise be blamed on the next heading.
@@ -384,168 +478,103 @@ fn md_lint_rec(node: &Node, md_path: &Path, previous_heading_depth: &mut u8) -> 
     assert!(*previous_heading_depth <= 6);
     assert!(!md_path.as_os_str().is_empty());
 
-    match node {
-        Node::Root(x) => {
-            for child in &x.children {
-                md_lint_rec(child, md_path, previous_heading_depth)?;
-            }
-            Ok(())
-        }
-        Node::Blockquote(x) => {
-            for child in &x.children {
-                md_lint_rec(child, md_path, previous_heading_depth)?;
-            }
-            Ok(())
-        }
-        Node::FootnoteDefinition(_) => Ok(()),
-        Node::List(x) => {
-            for child in &x.children {
-                md_lint_rec(child, md_path, previous_heading_depth)?;
-            }
-            Ok(())
-        }
-        Node::Break(_) | Node::InlineCode(_) => Ok(()),
-        Node::Delete(x) => {
-            for child in &x.children {
-                md_lint_rec(child, md_path, previous_heading_depth)?;
-            }
-            Ok(())
-        }
-        Node::Emphasis(x) => {
-            for child in &x.children {
-                md_lint_rec(child, md_path, previous_heading_depth)?;
-            }
-            Ok(())
-        }
-        Node::FootnoteReference(_) | Node::Html(_) | Node::Image(_) => Ok(()),
+    match node.get()? {
+        Node::FootnoteDefinition { .. }
+        | Node::SoftBreak
+        | Node::Break
+        | Node::InlineCode(_)
+        | Node::FootnoteReference { .. }
+        | Node::Html(_)
+        | Node::Image { .. }
+        | Node::ThematicBreak => return Ok(()),
 
-        Node::Link(link) => {
+        Node::Link { url } => {
             // TODO: external links.
-            if !link.url.starts_with("/") {
+            if !url.starts_with("/") {
                 return Ok(());
             }
 
-            if !link.url.starts_with("/blog/") {
-                bail!("wrong internal link, must start with '/blog': {}", link.url);
+            if !url.starts_with("/blog/") {
+                bail!("wrong internal link, must start with '/blog': {}", url);
             }
-            if link.url.ends_with(".md") {
-                bail!("wrong internal link, must not end with '.md': {}", link.url);
+            if url.ends_with(".md") {
+                bail!("wrong internal link, must not end with '.md': {}", url);
             }
 
-            if link.url.contains("gaultier.github.io") {
-                bail!("wrong internal link, points to public blog: {}", link.url);
+            if url.contains("gaultier.github.io") {
+                bail!("wrong internal link, points to public blog: {}", url);
             }
-            Ok(())
-        }
-        Node::Strong(x) => {
-            for child in &x.children {
-                md_lint_rec(child, md_path, previous_heading_depth)?;
-            }
-            Ok(())
+            return Ok(());
         }
         Node::Text(text) => {
-            // Spellings that are always wrong: `DTrace`, `KiB` and `kB` have
-            // one correct casing each.
-            let incorrect = ["dtrace", "dTrace", "Dtrace", "Kib", "kb", "KB", "Kb"];
-            // Splitting on non-letters yields maximal runs of letters, which is
-            // exactly the notion of "word" this lint wants: `workbench` is one
-            // word and never matches `kb`, while the `KB` in `100KB` and the
-            // `dtrace` in `dtrace-based` are words of their own. Note that
-            // `split_whitespace` would not do: it keeps the digits and the
-            // punctuation attached.
-            for word in text.value.split(|c: char| !c.is_alphabetic()) {
-                if incorrect.contains(&word) {
-                    bail!(
-                        "incorrect spelling `{}`: file={:?} position={:?}",
-                        word,
-                        md_path.to_str(),
-                        text.position
-                    );
-                }
+            if let Some(word) = md_lint_spelling(text) {
+                bail!(
+                    "incorrect spelling `{}`: file={:?} position={:?}",
+                    word,
+                    md_path.to_str(),
+                    node.position()
+                );
             }
-
-            Ok(())
+            return Ok(());
         }
 
-        Node::Code(code) => {
-            match &code.lang {
+        Node::Code { lang, .. } => {
+            match lang {
                 None => {
                     bail!(
                         "missing language for code block: file={:?} position={:?}",
                         md_path.to_str(),
-                        code.position
+                        node.position()
                     );
                 }
                 Some(lang) => {
-                    if !(STANDARD_LANGS.contains(&lang.as_str())
-                        || CUSTOM_LANGS.contains(&lang.as_str()))
-                    {
-                        bail!("unknown lang: {} position={:?}", lang, code.position);
+                    if !(STANDARD_LANGS.contains(&lang) || CUSTOM_LANGS.contains(&lang)) {
+                        bail!("unknown lang: {} position={:?}", lang, node.position());
                     }
                 }
             }
-            Ok(())
+            return Ok(());
         }
-        Node::Heading(x) => {
-            if x.depth < 2 {
+        Node::Heading { depth } => {
+            if depth < 2 {
                 bail!(
                     "heading must be `##` or deeper, the `#` is rendered from the `Title:` metadata: file={:?} position={:?}",
                     md_path.to_str(),
-                    x.position
+                    node.position()
                 );
             }
-            if x.depth > *previous_heading_depth + 1 {
+            if depth > *previous_heading_depth + 1 {
                 bail!(
                     "heading jumps from depth {} to {}, it may only go one level deeper at a time: file={:?} position={:?}",
                     previous_heading_depth,
-                    x.depth,
+                    depth,
                     md_path.to_str(),
-                    x.position
+                    node.position()
                 );
             }
             // Both checks above rejected everything outside this range, and
             // markdown cannot produce a heading deeper than 6.
-            assert!(x.depth >= 2);
-            assert!(x.depth <= 6);
-            *previous_heading_depth = x.depth;
-
-            for child in &x.children {
-                md_lint_rec(child, md_path, previous_heading_depth)?;
-            }
-            Ok(())
+            assert!(depth >= 2);
+            assert!(depth <= 6);
+            *previous_heading_depth = depth;
         }
-        Node::Table(x) => {
-            for child in &x.children {
-                md_lint_rec(child, md_path, previous_heading_depth)?;
-            }
-            Ok(())
-        }
-        Node::ThematicBreak(_) => Ok(()),
-        Node::TableRow(x) => {
-            for child in &x.children {
-                md_lint_rec(child, md_path, previous_heading_depth)?;
-            }
-            Ok(())
-        }
-        Node::TableCell(x) => {
-            for child in &x.children {
-                md_lint_rec(child, md_path, previous_heading_depth)?;
-            }
-            Ok(())
-        }
-        Node::ListItem(x) => {
-            for child in &x.children {
-                md_lint_rec(child, md_path, previous_heading_depth)?;
-            }
-            Ok(())
-        }
-        Node::Paragraph(x) => {
-            for child in &x.children {
-                md_lint_rec(child, md_path, previous_heading_depth)?;
-            }
-            Ok(())
-        }
+        Node::Root
+        | Node::Blockquote
+        | Node::List { .. }
+        | Node::ListItem
+        | Node::Paragraph
+        | Node::Table
+        | Node::TableRow
+        | Node::TableCell
+        | Node::Emphasis
+        | Node::Strong
+        | Node::Delete => {}
     }
+
+    for child in node.children() {
+        md_lint_rec(child, md_path, previous_heading_depth)?;
+    }
+    Ok(())
 }
 
 fn git_get_articles_stats() -> anyhow::Result<Vec<GitStat>> {
@@ -768,31 +797,30 @@ fn git_parse_log(output_str: &str) -> anyhow::Result<Vec<GitStat>> {
 
 // TODO: Return Rc<String> or Cow<str>?
 fn md_collect_titles(
-    node: &Node,
+    node: NodeRef,
     title_to_counter: &mut BTreeMap<String, u32>,
     titles: &mut Vec<Title>,
 ) -> anyhow::Result<()> {
-    match node {
-        Node::Root(root) => {
-            for child in &root.children {
+    match node.get()? {
+        Node::Root | Node::Paragraph => {
+            for child in node.children() {
                 md_collect_titles(child, title_to_counter, titles)?;
             }
         }
-        Node::Heading(heading) => {
-            let depth = heading.depth;
+        Node::Heading { depth } => {
             assert!(depth >= 1);
             assert!(depth <= 6);
             // A heading is not necessarily one text node: it can hold inline
             // code, a link, or emphasis. Flatten it to plain text for the slug
             // and the table of contents.
             let mut content = String::new();
-            for child in &heading.children {
-                md_to_text_rec(child, &mut content);
+            for child in node.children() {
+                md_to_text_rec(child, &mut content)?;
             }
             if content.is_empty() {
                 bail!(
                     "heading has no text content: position={:?}",
-                    heading.position
+                    node.position()
                 );
             }
 
@@ -819,14 +847,9 @@ fn md_collect_titles(
             titles.push(Title {
                 text: content,
                 depth,
-                start_md_line: heading.position.line,
+                start_md_line: node.position().line,
                 slug,
             });
-        }
-        Node::Paragraph(paragraph) => {
-            for child in &paragraph.children {
-                md_collect_titles(child, title_to_counter, titles)?;
-            }
         }
         _ => {}
     }
@@ -951,6 +974,10 @@ mod cmark {
     pub struct cmark_syntax_extension {
         _private: [u8; 0],
     }
+    #[repr(C)]
+    pub struct cmark_mem {
+        _private: [u8; 0],
+    }
 
     pub type cmark_node_type = u32;
     const CMARK_NODE_TYPE_BLOCK: cmark_node_type = 0x8000;
@@ -982,25 +1009,30 @@ mod cmark {
     pub const CMARK_OPT_FOOTNOTES: c_int = 1 << 13;
 
     unsafe extern "C" {
+        // Assigned by `cmark_gfm_core_extensions_ensure_registered`, from
+        // `table.h` and `strikethrough.h`.
+        pub static CMARK_NODE_TABLE: cmark_node_type;
+        pub static CMARK_NODE_TABLE_ROW: cmark_node_type;
+        pub static CMARK_NODE_TABLE_CELL: cmark_node_type;
+        pub static CMARK_NODE_STRIKETHROUGH: cmark_node_type;
+
         pub fn cmark_gfm_core_extensions_ensure_registered();
         pub fn cmark_find_syntax_extension(name: *const c_char) -> *mut cmark_syntax_extension;
 
-        pub fn cmark_parser_new(options: c_int) -> *mut cmark_parser;
+        pub fn cmark_get_arena_mem_allocator() -> *mut cmark_mem;
+        pub fn cmark_arena_reset();
+        pub fn cmark_parser_new_with_mem(options: c_int, mem: *mut cmark_mem) -> *mut cmark_parser;
         pub fn cmark_parser_attach_syntax_extension(
             parser: *mut cmark_parser,
             extension: *mut cmark_syntax_extension,
         ) -> c_int;
         pub fn cmark_parser_feed(parser: *mut cmark_parser, buffer: *const c_char, len: usize);
         pub fn cmark_parser_finish(parser: *mut cmark_parser) -> *mut cmark_node;
-        pub fn cmark_parser_free(parser: *mut cmark_parser);
 
-        pub fn cmark_node_free(node: *mut cmark_node);
         pub fn cmark_node_next(node: *mut cmark_node) -> *mut cmark_node;
         pub fn cmark_node_first_child(node: *mut cmark_node) -> *mut cmark_node;
-        pub fn cmark_node_parent_footnote_def(node: *mut cmark_node) -> *mut cmark_node;
         pub fn cmark_node_get_type(node: *mut cmark_node) -> cmark_node_type;
-        pub fn cmark_node_get_type_string(node: *mut cmark_node) -> *const c_char;
-        pub fn cmark_node_get_literal(node: *mut cmark_node) -> *const c_char;
+        pub fn cmark_node_get_literal_chunk(node: *mut cmark_node, len: *mut usize) -> *const u8;
         pub fn cmark_node_get_heading_level(node: *mut cmark_node) -> c_int;
         pub fn cmark_node_get_list_type(node: *mut cmark_node) -> cmark_list_type;
         pub fn cmark_node_get_list_start(node: *mut cmark_node) -> c_int;
@@ -1014,53 +1046,61 @@ mod cmark {
 // Parse markdown with libcmark-gfm: CommonMark, plus the GFM tables,
 // strikethrough (single or double tilde) and footnotes. Autolinking of bare
 // URLs is left out on purpose: a link is always explicit.
-fn md_parse(md_content: &str) -> anyhow::Result<Node> {
+//
+// The document only lives for the duration of `f`. It is allocated in the
+// thread's arena, which is reset afterwards: that is one call instead of a free
+// per node, but it means one document at a time per thread.
+fn md_parse<R>(
+    md_content: &str,
+    f: impl for<'a> FnOnce(NodeRef<'a>) -> anyhow::Result<R>,
+) -> anyhow::Result<R> {
+    thread_local! {
+        static PARSING: Cell<bool> = const { Cell::new(false) };
+    }
+    assert!(
+        !PARSING.replace(true),
+        "a markdown document is already alive on this thread"
+    );
+
     // The registration guards itself with a plain `static int`, which is a
     // data race when two threads (e.g. tests) parse for the first time at once.
     static REGISTER_EXTENSIONS: Once = Once::new();
     REGISTER_EXTENSIONS
         .call_once(|| unsafe { cmark::cmark_gfm_core_extensions_ensure_registered() });
 
-    let parser = unsafe { cmark::cmark_parser_new(cmark::CMARK_OPT_FOOTNOTES) };
-    assert!(!parser.is_null());
-    for extension in [c"table", c"strikethrough"] {
-        let ext = unsafe { cmark::cmark_find_syntax_extension(extension.as_ptr()) };
-        if ext.is_null() || unsafe { cmark::cmark_parser_attach_syntax_extension(parser, ext) } == 0
-        {
-            unsafe { cmark::cmark_parser_free(parser) };
-            bail!(
+    let res = (|| {
+        let parser = unsafe {
+            cmark::cmark_parser_new_with_mem(
+                cmark::CMARK_OPT_FOOTNOTES,
+                cmark::cmark_get_arena_mem_allocator(),
+            )
+        };
+        assert!(!parser.is_null());
+        for extension in [c"table", c"strikethrough"] {
+            let ext = unsafe { cmark::cmark_find_syntax_extension(extension.as_ptr()) };
+            ensure!(
+                !ext.is_null()
+                    && unsafe { cmark::cmark_parser_attach_syntax_extension(parser, ext) } != 0,
                 "failed to parse markdown: unknown extension {:?}",
                 extension
             );
         }
-    }
-    // The document is owned by the caller of `cmark_parser_finish`, and
-    // outlives the parser.
-    let doc = unsafe {
-        cmark::cmark_parser_feed(parser, md_content.as_ptr().cast(), md_content.len());
-        let doc = cmark::cmark_parser_finish(parser);
-        cmark::cmark_parser_free(parser);
-        doc
-    };
-    ensure!(!doc.is_null(), "failed to parse markdown: no document");
+        // The parser and the document are both in the arena, so neither needs
+        // freeing.
+        let doc = unsafe {
+            cmark::cmark_parser_feed(parser, md_content.as_ptr().cast(), md_content.len());
+            cmark::cmark_parser_finish(parser)
+        };
+        let root = NodeRef::new(doc).ok_or(anyhow!("failed to parse markdown: no document"))?;
+        assert!(matches!(root.get()?, Node::Root));
 
-    let res = unsafe { md_from_cmark(doc) };
-    unsafe { cmark::cmark_node_free(doc) };
-    let mut res = res?;
+        f(root)
+    })();
 
-    // libcmark-gfm moves the footnote definitions to the end of the document,
-    // in the order they are first referenced. Put them back in source order,
-    // which is the order they are rendered in. Nothing else looks at where they
-    // are in the tree.
-    if let Node::Root(root) = &mut res {
-        root.children.sort_by_key(|n| match n {
-            Node::FootnoteDefinition(def) => (true, def.position.line),
-            _ => (false, 0),
-        });
-    }
+    unsafe { cmark::cmark_arena_reset() };
+    PARSING.set(false);
 
-    assert!(matches!(res, Node::Root(_)));
-    Ok(res)
+    res
 }
 
 fn md_footnote_identifier(label: &str) -> String {
@@ -1071,243 +1111,62 @@ fn md_footnote_identifier(label: &str) -> String {
         .to_lowercase()
 }
 
-// An empty string for a null pointer: libcmark-gfm returns one for an absent
-// URL or info string.
-//
-// SAFETY: `s` is null or a NUL-terminated string that outlives the call.
-unsafe fn cmark_string(s: *const c_char) -> String {
-    if s.is_null() {
-        return String::new();
-    }
-    // libcmark-gfm validates and replaces invalid UTF-8 on input, so this is
-    // never lossy in practice.
-    unsafe { CStr::from_ptr(s) }.to_string_lossy().into_owned()
-}
-
 // The text an image is described by: its content, with the markup dropped.
-fn md_alt_text_rec(node: &Node, out: &mut String) {
-    match node {
-        Node::Text(x) | Node::InlineCode(x) => out.push_str(&x.value),
-        Node::Image(x) => out.push_str(&x.alt),
-        other => {
-            for child in other.children().into_iter().flatten() {
-                md_alt_text_rec(child, out);
+fn md_alt_text_rec(node: NodeRef, out: &mut String) -> anyhow::Result<()> {
+    match node.get()? {
+        Node::Text(x) | Node::InlineCode(x) => out.push_str(x),
+        Node::SoftBreak => out.push('\n'),
+        _ => {
+            for child in node.children() {
+                md_alt_text_rec(child, out)?;
             }
         }
     }
-}
-
-// SAFETY: `node` is a node of a live libcmark-gfm tree, which is not mutated
-// for the duration of the call.
-unsafe fn md_from_cmark(node: *mut cmark::cmark_node) -> anyhow::Result<Node> {
-    assert!(!node.is_null());
-
-    let position = Position {
-        line: unsafe { cmark::cmark_node_get_start_line(node) } as usize,
-        column: unsafe { cmark::cmark_node_get_start_column(node) } as usize,
-    };
-    let literal = || unsafe { cmark_string(cmark::cmark_node_get_literal(node)) };
-    let children = || -> anyhow::Result<Vec<Node>> {
-        let mut res: Vec<Node> = Vec::new();
-        let mut child = unsafe { cmark::cmark_node_first_child(node) };
-        while !child.is_null() {
-            let converted = unsafe { md_from_cmark(child) }?;
-            // libcmark-gfm splits text at soft line breaks; mdast does not.
-            if let Node::Text(text) = &converted
-                && let Some(Node::Text(previous)) = res.last_mut()
-            {
-                previous.value.push_str(&text.value);
-            } else {
-                res.push(converted);
-            }
-            child = unsafe { cmark::cmark_node_next(child) };
-        }
-        Ok(res)
-    };
-    let parent = || -> anyhow::Result<Parent> {
-        Ok(Parent {
-            children: children()?,
-            position,
-        })
-    };
-
-    let res = match unsafe { cmark::cmark_node_get_type(node) } {
-        cmark::CMARK_NODE_DOCUMENT => Node::Root(parent()?),
-        cmark::CMARK_NODE_BLOCK_QUOTE => Node::Blockquote(parent()?),
-        cmark::CMARK_NODE_LIST => {
-            let ordered =
-                unsafe { cmark::cmark_node_get_list_type(node) } == cmark::CMARK_ORDERED_LIST;
-            let start = unsafe { cmark::cmark_node_get_list_start(node) };
-            Node::List(List {
-                ordered,
-                start: if ordered {
-                    Some(start.try_into()?)
-                } else {
-                    None
-                },
-                children: children()?,
-                position,
-            })
-        }
-        cmark::CMARK_NODE_ITEM => Node::ListItem(parent()?),
-        cmark::CMARK_NODE_CODE_BLOCK => {
-            let info = unsafe { cmark_string(cmark::cmark_node_get_fence_info(node)) };
-            let mut value = literal();
-            if value.ends_with('\n') {
-                value.pop();
-            }
-            Node::Code(Code {
-                lang: info.split_whitespace().next().map(|s| s.to_owned()),
-                value,
-                position,
-            })
-        }
-        cmark::CMARK_NODE_HTML_BLOCK => {
-            let mut value = literal();
-            if value.ends_with('\n') {
-                value.pop();
-            }
-            Node::Html(Literal { value, position })
-        }
-        cmark::CMARK_NODE_PARAGRAPH => Node::Paragraph(parent()?),
-        cmark::CMARK_NODE_HEADING => Node::Heading(Heading {
-            depth: unsafe { cmark::cmark_node_get_heading_level(node) }.try_into()?,
-            children: children()?,
-            position,
-        }),
-        cmark::CMARK_NODE_THEMATIC_BREAK => Node::ThematicBreak(position),
-        cmark::CMARK_NODE_FOOTNOTE_DEFINITION => {
-            let label = literal();
-            ensure!(
-                !label.is_empty(),
-                "footnote definition has no label: position={:?}",
-                position
-            );
-            Node::FootnoteDefinition(FootnoteDefinition {
-                identifier: md_footnote_identifier(&label),
-                children: children()?,
-                position,
-            })
-        }
-        cmark::CMARK_NODE_TEXT => Node::Text(Literal {
-            value: literal(),
-            position,
-        }),
-        cmark::CMARK_NODE_SOFTBREAK => Node::Text(Literal {
-            value: "\n".to_owned(),
-            position,
-        }),
-        cmark::CMARK_NODE_LINEBREAK => Node::Break(position),
-        cmark::CMARK_NODE_CODE => Node::InlineCode(Literal {
-            value: literal(),
-            position,
-        }),
-        cmark::CMARK_NODE_HTML_INLINE => Node::Html(Literal {
-            value: literal(),
-            position,
-        }),
-        cmark::CMARK_NODE_EMPH => Node::Emphasis(parent()?),
-        cmark::CMARK_NODE_STRONG => Node::Strong(parent()?),
-        cmark::CMARK_NODE_LINK => Node::Link(Link {
-            url: unsafe { cmark_string(cmark::cmark_node_get_url(node)) },
-            children: children()?,
-            position,
-        }),
-        cmark::CMARK_NODE_IMAGE => {
-            let mut alt = String::new();
-            for child in &children()? {
-                md_alt_text_rec(child, &mut alt);
-            }
-            Node::Image(Image {
-                url: unsafe { cmark_string(cmark::cmark_node_get_url(node)) },
-                alt,
-                position,
-            })
-        }
-        cmark::CMARK_NODE_FOOTNOTE_REFERENCE => {
-            // The literal is the 1-based index of the definition, which holds
-            // the label.
-            let def = unsafe { cmark::cmark_node_parent_footnote_def(node) };
-            ensure!(
-                !def.is_null(),
-                "unknown footnote reference: position={:?}",
-                position
-            );
-            let label = unsafe { cmark_string(cmark::cmark_node_get_literal(def)) };
-            Node::FootnoteReference(FootnoteReference {
-                identifier: md_footnote_identifier(&label),
-                label,
-                position,
-            })
-        }
-        // The nodes of the extensions have types allocated at runtime.
-        _ => {
-            let type_string = unsafe { cmark_string(cmark::cmark_node_get_type_string(node)) };
-            match type_string.as_str() {
-                "table" => Node::Table(parent()?),
-                "table_header" | "table_row" => Node::TableRow(parent()?),
-                "table_cell" => Node::TableCell(parent()?),
-                "strikethrough" => Node::Delete(parent()?),
-                other => bail!(
-                    "unsupported markdown node: {} position={:?}",
-                    other,
-                    position
-                ),
-            }
-        }
-    };
-
-    Ok(res)
+    Ok(())
 }
 
 fn md_to_html(md_content: &str) -> anyhow::Result<Vec<u8>> {
     let mut sb = Vec::with_capacity(md_content.len());
-    let md_ast = md_parse(md_content)?;
+    md_parse(md_content, |root| {
+        let mut footnote_defs = Vec::new();
 
-    let mut footnote_defs = Vec::new();
-
-    if let Node::Root(r) = &md_ast
-        && r.children.len() == 1
-        && let Node::Paragraph(p) = &r.children[0]
-    {
-        for c in &p.children {
-            md_to_html_rec(&mut sb, &mut footnote_defs, c, &[], false)?;
+        if let Some(p) = root.only_paragraph() {
+            for c in p.children() {
+                md_to_html_rec(&mut sb, &mut footnote_defs, c, &[], false)?;
+            }
+        } else {
+            md_to_html_rec(&mut sb, &mut footnote_defs, root, &[], false)?;
         }
-        // Every caller turns this back into a `String`. Asserted at both
-        // returns: this one skips the recursion the other one goes through.
-        assert!(std::str::from_utf8(&sb).is_ok());
-        return Ok(sb);
-    }
-    md_to_html_rec(&mut sb, &mut footnote_defs, &md_ast, &[], false)?;
+        Ok(())
+    })?;
 
+    // Every caller turns this back into a `String`.
     assert!(std::str::from_utf8(&sb).is_ok());
 
     Ok(sb)
 }
 
-fn md_to_text_rec(node: &Node, out: &mut String) {
+fn md_to_text_rec(node: NodeRef, out: &mut String) -> anyhow::Result<()> {
     let len_before = out.len();
 
-    match node {
-        Node::Text(text) => out.push_str(&text.value),
+    match node.get()? {
+        Node::Text(text) => out.push_str(text),
+        Node::SoftBreak => out.push('\n'),
         // Keep the strikethrough markers: the title
         // `Making my static blog generator ~11~ 33 times faster` turns into
         // the meaningless `... 11 33 times faster` without them.
-        Node::Delete(delete) => {
+        Node::Delete => {
             out.push('~');
-            for child in &delete.children {
-                md_to_text_rec(child, out);
+            for child in node.children() {
+                md_to_text_rec(child, out)?;
             }
             out.push('~');
         }
 
-        Node::InlineCode(code) => out.push_str(&code.value),
-        Node::Code(code) => out.push_str(&code.value),
-        other => {
-            if let Some(children) = other.children() {
-                for child in children {
-                    md_to_text_rec(child, out);
-                }
+        Node::InlineCode(value) | Node::Code { value, .. } => out.push_str(value),
+        _ => {
+            for child in node.children() {
+                md_to_text_rec(child, out)?;
             }
         }
     }
@@ -1315,15 +1174,14 @@ fn md_to_text_rec(node: &Node, out: &mut String) {
     // Flattening to text only ever appends: no node rewrites what a previous
     // one wrote.
     assert!(out.len() >= len_before);
+    Ok(())
 }
 
 // Render markdown to plain text, for the places where markup is not allowed:
 // `<title>`, or an Atom feed entry title.
 fn md_to_text(md_content: &str) -> anyhow::Result<String> {
-    let md_ast = md_parse(md_content)?;
-
     let mut res = String::with_capacity(md_content.len());
-    md_to_text_rec(&md_ast, &mut res);
+    md_parse(md_content, |root| md_to_text_rec(root, &mut res))?;
 
     // Markup is dropped, never expanded: every byte of the output comes from a
     // byte of the source. This is also why the capacity above is exact.
@@ -1334,16 +1192,16 @@ fn md_to_text(md_content: &str) -> anyhow::Result<String> {
 
 fn md_html_append(md_content: &str, html_content: &mut Vec<u8>) -> anyhow::Result<()> {
     let len_before = html_content.len();
-    let mut footnote_defs = Vec::new();
 
-    let md_ast = md_parse(md_content)?;
+    md_parse(md_content, |root| {
+        let mut md_titles = Vec::with_capacity(12);
+        let mut title_to_counter: BTreeMap<String, u32> = BTreeMap::new();
+        md_collect_titles(root, &mut title_to_counter, &mut md_titles)?;
 
-    let mut md_titles = Vec::with_capacity(12);
-    let mut title_to_counter: BTreeMap<String, u32> = BTreeMap::new();
-    md_collect_titles(&md_ast, &mut title_to_counter, &mut md_titles)?;
-
-    md_to_html_rec(html_content, &mut footnote_defs, &md_ast, &md_titles, false)?;
-    md_render_footnote_definitions(html_content, &footnote_defs)?;
+        let mut footnote_defs = Vec::new();
+        md_to_html_rec(html_content, &mut footnote_defs, root, &md_titles, false)?;
+        md_render_footnote_definitions(html_content, &footnote_defs)
+    })?;
 
     // Appended to, never truncated, and the appended part is text.
     assert!(html_content.len() >= len_before);
@@ -1373,129 +1231,117 @@ fn capitalize_first(s: &str) -> Cow<'_, str> {
     res
 }
 
-fn md_to_html_rec(
+fn md_to_html_rec<'a>(
     content: &mut Vec<u8>,
-    footnote_defs: &mut Vec<FootnoteDefinition>,
-    node: &Node,
+    footnote_defs: &mut Vec<NodeRef<'a>>,
+    node: NodeRef<'a>,
     titles: &[Title],
     inside_thead: bool,
 ) -> anyhow::Result<()> {
+    let kind = node.get()?;
     // `inside_thead` is threaded down from `Node::Table` through the header
     // row to its cells, and reset everywhere else: no other node can observe
     // it set.
-    assert!(!inside_thead || matches!(node, Node::TableRow(_) | Node::TableCell(_)));
+    assert!(!inside_thead || matches!(kind, Node::TableRow | Node::TableCell));
     let len_before = content.len();
 
-    match node {
-        Node::Root(root) => {
-            for child in &root.children {
+    let children =
+        |content: &mut Vec<u8>, footnote_defs: &mut Vec<NodeRef<'a>>, parent: NodeRef<'a>| {
+            for child in parent.children() {
                 md_to_html_rec(content, footnote_defs, child, titles, false)?;
             }
-        }
-        Node::Blockquote(blockquote) => {
-            writeln!(content, "<blockquote>")?;
+            anyhow::Ok(())
+        };
 
-            for child in &blockquote.children {
-                md_to_html_rec(content, footnote_defs, child, titles, false)?;
-            }
+    match kind {
+        Node::Root => children(content, footnote_defs, node)?,
+        Node::Blockquote => {
+            writeln!(content, "<blockquote>")?;
+            children(content, footnote_defs, node)?;
             writeln!(content, "</blockquote>")?;
         }
-        Node::FootnoteDefinition(footnote_definition) => {
-            footnote_defs.push(footnote_definition.clone());
+        Node::FootnoteDefinition { .. } => {
+            footnote_defs.push(node);
         }
-        Node::List(list) => {
-            let tag = if list.ordered { "ol" } else { "ul" };
-            if let Some(start) = list.start
+        Node::List { ordered, start } => {
+            let tag = if ordered { "ol" } else { "ul" };
+            if let Some(start) = start
                 && start > 1
             {
                 writeln!(content, r#"<{} start="{}">"#, tag, start)?;
             } else {
                 writeln!(content, r#"<{}>"#, tag)?;
             }
-            for child in &list.children {
-                md_to_html_rec(content, footnote_defs, child, titles, false)?;
-            }
+            children(content, footnote_defs, node)?;
             writeln!(content, "</{}>", tag)?;
         }
-        Node::Break(_) => bail!(
+        Node::Break => bail!(
             "unsupported markdown node: Break position={:?}",
             node.position()
         ),
-        Node::InlineCode(inline_code) => {
-            let sanitized = text_sanitize_for_html(&inline_code.value, false);
-            write!(content, "<code>{}</code>", sanitized)?;
+        Node::InlineCode(value) => {
+            content.extend_from_slice(b"<code>");
+            text_sanitize_for_html_into(content, value);
+            content.extend_from_slice(b"</code>");
         }
-        Node::Delete(delete) => {
+        Node::Delete => {
             write!(content, "<del>")?;
-            for child in &delete.children {
-                md_to_html_rec(content, footnote_defs, child, titles, false)?;
-            }
+            children(content, footnote_defs, node)?;
             write!(content, "</del>")?;
         }
-        Node::Emphasis(emphasis) => {
+        Node::Emphasis => {
             write!(content, "<em>")?;
-            for child in &emphasis.children {
-                md_to_html_rec(content, footnote_defs, child, titles, false)?;
-            }
+            children(content, footnote_defs, node)?;
             write!(content, "</em>")?;
         }
-        Node::FootnoteReference(footnote_reference) => {
+        Node::FootnoteReference { label } => {
+            let identifier = md_footnote_identifier(label);
             writeln!(
                 content,
                 r##"<sup class="footnote-ref"><a href="#fn-{}" id="fnref-{}" data-footnote-ref>{}</a></sup>"##,
-                &footnote_reference.identifier,
-                footnote_reference.identifier,
-                footnote_reference.label,
+                identifier, identifier, label,
             )?;
         }
-        Node::Html(html) => {
-            writeln!(content, "{}", html.value)?;
+        Node::Html(value) => {
+            writeln!(content, "{}", value)?;
         }
-        Node::Image(image) => {
-            write!(
-                content,
-                r#"<img src="{}" alt="{}" />"#,
-                text_sanitize_for_html(&image.url, false),
-                text_sanitize_for_html(&image.alt, false),
-            )?;
+        Node::Image { url } => {
+            let mut alt = String::new();
+            md_alt_text_rec(node, &mut alt)?;
+            content.extend_from_slice(br#"<img src=""#);
+            text_sanitize_for_html_into(content, url);
+            content.extend_from_slice(br#"" alt=""#);
+            text_sanitize_for_html_into(content, &alt);
+            content.extend_from_slice(br#"" />"#);
         }
 
-        Node::Link(link) => {
-            write!(
-                content,
-                r#"<a href="{}">"#,
-                text_sanitize_for_html(&link.url, false)
-            )?;
-            for child in &link.children {
-                md_to_html_rec(content, footnote_defs, child, titles, false)?;
-            }
+        Node::Link { url } => {
+            content.extend_from_slice(br#"<a href=""#);
+            text_sanitize_for_html_into(content, url);
+            content.extend_from_slice(br#"">"#);
+            children(content, footnote_defs, node)?;
             write!(content, r#"</a>"#)?;
         }
-        Node::Strong(strong) => {
+        Node::Strong => {
             write!(content, "<strong>")?;
-            for child in &strong.children {
-                md_to_html_rec(content, footnote_defs, child, titles, false)?;
-            }
+            children(content, footnote_defs, node)?;
             write!(content, "</strong>")?;
         }
-        Node::Text(text) => {
-            let sanitized = text_sanitize_for_html(&text.value, false);
-            write!(content, "{}", sanitized)?;
-        }
-        Node::Code(code) => {
-            let sanitized = text_sanitize_for_html(&code.value, false);
+        Node::Text(value) => text_sanitize_for_html_into(content, value),
+        Node::SoftBreak => content.push(b'\n'),
+        Node::Code { lang, value } => {
             // `md_lint_rec` rejects a code block without a language, but not
             // every path through this renderer is linted first (`index.md` and
             // the article titles are not), so state the assumption where it is
             // relied upon rather than only where it is established.
+            let lang = lang.unwrap_or_else(|| {
+                panic!(
+                    "code block without a language: position={:?}",
+                    node.position()
+                )
+            });
             assert!(
-                code.lang.is_some(),
-                "code block without a language: position={:?}",
-                code.position
-            );
-            let lang = code.lang.as_ref().unwrap();
-            assert!(
-                STANDARD_LANGS.contains(&lang.as_str()) || CUSTOM_LANGS.contains(&lang.as_str()),
+                STANDARD_LANGS.contains(&lang) || CUSTOM_LANGS.contains(&lang),
                 "unknown lang: {}",
                 lang
             );
@@ -1511,92 +1357,82 @@ fn md_to_html_rec(
                 lang,
             )?;
 
-            for line in sanitized.lines() {
-                writeln!(
-                    content,
-                    r#"<span class="line-number"></span><span class="code-hl">{}</span>"#,
-                    line
-                )?;
+            for line in value.lines() {
+                content.extend_from_slice(
+                    br#"<span class="line-number"></span><span class="code-hl">"#,
+                );
+                text_sanitize_for_html_into(content, line);
+                content.extend_from_slice(b"</span>\n");
             }
             writeln!(content, "</code></pre>")?;
         }
-        Node::Heading(heading) => {
-            let position = heading.position;
+        Node::Heading { depth } => {
+            let position = node.position();
             let title = titles
                 .iter()
                 .find(|t| t.start_md_line == position.line)
                 .ok_or_else(|| anyhow!("failed to find title: position={:?}", position))?;
 
-            assert!(heading.depth >= 1);
-            assert!(heading.depth <= 6);
+            assert!(depth >= 1);
+            assert!(depth <= 6);
 
-            writeln!(content, r#"<h{} id="{}">"#, heading.depth, title.slug)?;
+            writeln!(content, r#"<h{} id="{}">"#, depth, title.slug)?;
             write!(content, r##"  <a class="title" href="#{}">"##, title.slug)?;
-            for child in &heading.children {
-                md_to_html_rec(content, footnote_defs, child, titles, false)?;
-            }
+            children(content, footnote_defs, node)?;
             writeln!(content, "</a>")?;
             writeln!(
                 content,
                 r##"  <a class="hash-anchor" href="#{}" aria-hidden="true" onclick="navigator.clipboard.writeText(this.href);"></a>"##,
                 title.slug
             )?;
-            writeln!(content, "</h{}>", heading.depth)?;
+            writeln!(content, "</h{}>", depth)?;
         }
-        Node::Table(table) => {
+        Node::Table => {
             writeln!(content, "<table>")?;
-            let (thead, tbdody) = table.children.split_first().ok_or(anyhow!("expected table element to have thead and tbody as first two children, but it did not"))?;
+            let mut rows = node.children();
+            let thead = rows.next().ok_or(anyhow!("expected table element to have thead and tbody as first two children, but it did not"))?;
             // `inside_thead` is only meaningful for a row of cells.
-            assert!(matches!(thead, Node::TableRow(_)));
+            assert!(matches!(thead.get()?, Node::TableRow));
             writeln!(content, "<thead>")?;
             md_to_html_rec(content, footnote_defs, thead, titles, true)?;
             writeln!(content, "</thead>")?;
 
             writeln!(content, "<tbody>")?;
-            for child in tbdody {
+            for child in rows {
                 md_to_html_rec(content, footnote_defs, child, titles, false)?;
             }
             writeln!(content, "</tbody>")?;
 
             writeln!(content, "</table>\n\n")?;
         }
-        Node::ThematicBreak(_) => {
+        Node::ThematicBreak => {
             writeln!(content, "<hr />")?;
         }
-        Node::TableRow(table_row) => {
+        Node::TableRow => {
             writeln!(content, "<tr>")?;
-            for child in &table_row.children {
+            for child in node.children() {
                 md_to_html_rec(content, footnote_defs, child, titles, inside_thead)?;
             }
             writeln!(content, "</tr>")?;
         }
-        Node::TableCell(table_cell) => {
+        Node::TableCell => {
             let tag = if inside_thead { "th" } else { "td" };
             write!(content, "<{}>", tag)?;
-            for child in &table_cell.children {
-                md_to_html_rec(content, footnote_defs, child, titles, false)?;
-            }
+            children(content, footnote_defs, node)?;
             writeln!(content, "</{}>", tag)?;
         }
-        Node::ListItem(list_item) => {
+        Node::ListItem => {
             write!(content, "<li>")?;
-            let children = if list_item.children.len() == 1
-                && let Node::Paragraph(p) = &list_item.children[0]
-            {
-                &p.children
-            } else {
-                &list_item.children
-            };
-            for child in children {
-                md_to_html_rec(content, footnote_defs, child, titles, false)?;
-            }
+            children(
+                content,
+                footnote_defs,
+                node.only_paragraph().unwrap_or(node),
+            )?;
             writeln!(content, "</li>")?;
         }
-        Node::Paragraph(paragraph) => {
+        Node::Paragraph => {
             write!(content, "<p>")?;
-            for child in &paragraph.children {
-                md_to_html_rec(content, footnote_defs, child, titles, false)?;
-            }
+            children(content, footnote_defs, node)?;
             writeln!(content, "</p>")?;
         }
     }
@@ -1642,6 +1478,63 @@ fn text_sanitize_for_html(s: &str, sanitize_single_quote: bool) -> Cow<'_, str> 
 
         Cow::Owned(result)
     }
+}
+
+// The index of the first byte of `bytes` that is one of `needles`, looking at
+// 8 bytes at a time: for each needle, `x` has a zero byte exactly where `word`
+// has the needle, and the classic `(x - 0x01..) & !x & 0x80..` sets the high bit
+// of the first zero byte (later ones may be false positives, which is why only
+// the lowest bit is used).
+fn find_any_byte<const N: usize>(bytes: &[u8], needles: [u8; N]) -> Option<usize> {
+    const LO: u64 = 0x0101_0101_0101_0101;
+    const HI: u64 = 0x8080_8080_8080_8080;
+
+    let mut chunks = bytes.chunks_exact(8);
+    for (i, chunk) in chunks.by_ref().enumerate() {
+        let word = u64::from_le_bytes(chunk.try_into().unwrap());
+        let mut found = 0;
+        for needle in needles {
+            let x = word ^ (LO * needle as u64);
+            found |= x.wrapping_sub(LO) & !x & HI;
+        }
+        if found != 0 {
+            return Some(i * 8 + (found.trailing_zeros() / 8) as usize);
+        }
+    }
+    let rest_start = bytes.len() - chunks.remainder().len();
+    chunks
+        .remainder()
+        .iter()
+        .position(|b| needles.contains(b))
+        .map(|i| rest_start + i)
+}
+
+// `text_sanitize_for_html(s, false)`, written straight into the output. The
+// characters to escape are ASCII, so the runs between them are copied as bytes.
+fn text_sanitize_for_html_into(out: &mut Vec<u8>, s: &str) {
+    let len_before = out.len();
+
+    let bytes = s.as_bytes();
+    let mut start = 0;
+    while let Some(offset) = find_any_byte(&bytes[start..], [b'&', b'<', b'>', b'"']) {
+        let i = start + offset;
+        out.extend_from_slice(&bytes[start..i]);
+        out.extend_from_slice(match bytes[i] {
+            b'&' => b"&amp;",
+            b'<' => b"&lt;",
+            b'>' => b"&gt;",
+            b'"' => b"&quot;",
+            _ => unreachable!(),
+        });
+        start = i + 1;
+    }
+    out.extend_from_slice(&bytes[start..]);
+
+    // The same postconditions as `text_sanitize_for_html`, on what was
+    // appended.
+    let appended = &out[len_before..];
+    assert!(appended.len() >= s.len());
+    assert!(find_any_byte(appended, [b'<', b'>', b'"']).is_none());
 }
 
 fn md_render_toc(content: &mut Vec<u8>, titles: &[Title]) -> anyhow::Result<()> {
@@ -1776,11 +1669,9 @@ fn md_render_article(
 
     let md_path = PathBuf::from(&git_stat.path_from_git_root);
     let html_path = md_path.with_extension("html");
-    let md_ast = md_parse(md_content_article)
-        .with_context(|| format!("path={}", &git_stat.path_from_git_root))?;
 
-    md_lint(&md_ast, &md_path)?;
-
+    // The title is parsed, and done with, before the body is: only one
+    // document can be alive at a time.
     let mut sb: Vec<u8> = Vec::with_capacity(md_content_bytes_len * 8);
     let html_root_title = String::from_utf8(md_to_html(md_root_title)?).with_context(|| {
         format!(
@@ -1853,15 +1744,20 @@ fn md_render_article(
     writeln!(sb, r#"</div>"#)?;
     writeln!(sb, r#"</div>"#)?;
 
-    let mut md_titles = Vec::with_capacity(12);
-    let mut title_to_counter: BTreeMap<String, u32> = BTreeMap::new();
-    md_collect_titles(&md_ast, &mut title_to_counter, &mut md_titles)?;
+    md_parse(md_content_article, |root| {
+        md_lint(root, &md_path)?;
 
-    md_render_toc(&mut sb, &md_titles)?;
+        let mut md_titles = Vec::with_capacity(12);
+        let mut title_to_counter: BTreeMap<String, u32> = BTreeMap::new();
+        md_collect_titles(root, &mut title_to_counter, &mut md_titles)?;
 
-    let mut footnote_defs = Vec::with_capacity(8);
-    md_to_html_rec(&mut sb, &mut footnote_defs, &md_ast, &md_titles, false)?;
-    md_render_footnote_definitions(&mut sb, &footnote_defs)?;
+        md_render_toc(&mut sb, &md_titles)?;
+
+        let mut footnote_defs = Vec::with_capacity(8);
+        md_to_html_rec(&mut sb, &mut footnote_defs, root, &md_titles, false)?;
+        md_render_footnote_definitions(&mut sb, &footnote_defs)
+    })
+    .with_context(|| format!("path={}", &git_stat.path_from_git_root))?;
 
     writeln!(sb, "{}", BACK_LINK)?;
     sb.extend(html_footer);
@@ -1894,7 +1790,7 @@ fn md_render_article(
 
 fn md_render_footnote_definitions(
     content: &mut Vec<u8>,
-    footnote_defs: &[FootnoteDefinition],
+    footnote_defs: &[NodeRef],
 ) -> anyhow::Result<()> {
     let len_before = content.len();
 
@@ -1909,37 +1805,33 @@ fn md_render_footnote_definitions(
     )?;
 
     for def in footnote_defs {
+        let Node::FootnoteDefinition { label } = def.get()? else {
+            unreachable!("not a footnote definition");
+        };
         // The identifier is both an `id` and the target of the `<sup>` link
         // written by `Node::FootnoteReference`.
-        assert!(!def.identifier.is_empty());
+        let identifier = md_footnote_identifier(label);
+        assert!(!identifier.is_empty());
 
-        writeln!(content, r#"<li id="fn-{}">"#, def.identifier)?;
+        writeln!(content, r#"<li id="fn-{}">"#, identifier)?;
 
-        let [child] = def.children.as_slice() else {
+        let Some(paragraph) = def.only_paragraph() else {
             bail!(
                 "expected exactly one paragraph in footnote definition: id={} children={}",
-                def.identifier,
-                def.children.len()
+                identifier,
+                def.children().count()
             );
-        };
-        let children = match child {
-            Node::Paragraph(p) => &p.children,
-            other => bail!(
-                "expected a paragraph in footnote definition: id={} position={:?}",
-                def.identifier,
-                other.position()
-            ),
         };
 
         writeln!(content, r#"<p>"#)?;
-        for child in children {
+        for child in paragraph.children() {
             md_to_html_rec(content, &mut vec![], child, &[], false)?;
         }
 
         writeln!(
             content,
             r##"<a href="#fnref-{}" class="footnote-backref" data-footnote-backref data-footnote-backref-idx="{}" aria-label="Back to reference {}">↩</a>"##,
-            &def.identifier, &def.identifier, &def.identifier
+            &identifier, &identifier, &identifier
         )?;
 
         writeln!(
@@ -2902,10 +2794,6 @@ mod tests {
 
     // ---------------------------------------------------------------- helpers
 
-    fn parse_md(md: &str) -> Node {
-        md_parse(md).unwrap()
-    }
-
     fn render_md(md: &str) -> anyhow::Result<String> {
         let mut out = Vec::new();
         md_html_append(md, &mut out)?;
@@ -2913,13 +2801,16 @@ mod tests {
     }
 
     fn lint_md(md: &str) -> anyhow::Result<()> {
-        md_lint(&parse_md(md), Path::new("test.md"))
+        md_parse(md, |root| md_lint(root, Path::new("test.md")))
     }
 
     fn collect_titles(md: &str) -> Vec<Title> {
         let mut titles = Vec::new();
         let mut counters = BTreeMap::new();
-        md_collect_titles(&parse_md(md), &mut counters, &mut titles).unwrap();
+        md_parse(md, |root| {
+            md_collect_titles(root, &mut counters, &mut titles)
+        })
+        .unwrap();
         titles
     }
 
@@ -3178,6 +3069,72 @@ mod tests {
     }
 
     // --- toc nesting
+
+    #[test]
+    fn find_any_byte_finds_the_first_needle() {
+        let needles = [b'&', b'<', b'>', b'"'];
+        // Every position, in and around one 8-byte chunk, and past it.
+        for len in 0..40 {
+            for at in 0..len {
+                let mut s = vec![b'a'; len];
+                s[at] = b'<';
+                assert_eq!(
+                    Some(at),
+                    find_any_byte(&s, needles),
+                    "len={} at={}",
+                    len,
+                    at
+                );
+                // A later needle does not hide the first one.
+                if at + 1 < len {
+                    s[len - 1] = b'"';
+                    assert_eq!(Some(at), find_any_byte(&s, needles));
+                }
+            }
+            assert_eq!(None, find_any_byte(&vec![b'a'; len], needles));
+        }
+        // Bytes one away from a needle, and with the high bit set.
+        assert_eq!(None, find_any_byte(b"%';=?!#\x80\xff\xbc\xbd", needles));
+        assert_eq!(None, find_any_byte("é€😀".as_bytes(), needles));
+    }
+
+    #[test]
+    fn sanitizing_into_a_buffer_matches_sanitizing_a_string() {
+        for s in [
+            "",
+            "plain",
+            "a<b>&\"c\"'d",
+            "<<<<<<<<<<",
+            "é<€>😀&",
+            "0123456789&",
+        ] {
+            let mut out = Vec::new();
+            text_sanitize_for_html_into(&mut out, s);
+            assert_eq!(
+                text_sanitize_for_html(s, false),
+                String::from_utf8(out).unwrap()
+            );
+        }
+    }
+
+    #[test]
+    fn spelling_lint_matches_whole_words_only() {
+        assert_eq!(Some("KB"), md_lint_spelling("100KB of memory"));
+        assert_eq!(Some("dtrace"), md_lint_spelling("a dtrace-based tool"));
+        assert_eq!(Some("Kb"), md_lint_spelling("Kb"));
+        // Part of a longer word, ASCII or not.
+        assert_eq!(None, md_lint_spelling("workbench"));
+        assert_eq!(None, md_lint_spelling("éKB"));
+        assert_eq!(None, md_lint_spelling("KBé"));
+        // The correct spellings.
+        assert_eq!(None, md_lint_spelling("DTrace, 1 KiB, 1 kB"));
+    }
+
+    #[test]
+    fn a_second_document_on_the_same_thread_is_refused() {
+        let res = std::panic::catch_unwind(|| md_parse("a", |_| md_parse("b", |_| Ok(()))));
+        assert!(res.is_err());
+    }
 
     #[test]
     fn heading_lint_rejects_a_top_level_heading() {
