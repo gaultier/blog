@@ -5,10 +5,10 @@ edition = "2024"
 
 [dependencies]
 anyhow = "1.0.102"
+# Markdown is parsed by libcmark-gfm, built by `build.rs` from
+# `vendor/cmark-gfm`.
 # Live-reload HTTP server.
 httparse = "1.10.1"
-# Parse .md files.
-markdown = "1.0.0"
 # Watch files.
 notify = "8.2.0"
 # RSS feed.
